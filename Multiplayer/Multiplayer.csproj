@@ -1,0 +1,40 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net48</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <RootNamespace>Multiplayer</RootNamespace>
+        <Version>0.1.0</Version>
+    </PropertyGroup>
+
+    <!-- Derail Valley -->
+    <ItemGroup>
+        <Reference Include="Assembly-CSharp" />
+        <Reference Include="DV.Interaction" />
+        <Reference Include="DV.ThingTypes" />
+        <Reference Include="DV.Utils" />
+    </ItemGroup>
+
+    <!-- Mod Loader -->
+    <ItemGroup>
+        <PackageReference Include="UnityModManager" Version="0.27.0" />
+    </ItemGroup>
+
+    <!-- Third-Party -->
+    <ItemGroup>
+        <Reference Include="Newtonsoft.Json" />
+    </ItemGroup>
+
+    <!-- Unity -->
+    <ItemGroup>
+        <PackageReference Include="UnityEngine.Modules" Version="2019.4.40" IncludeAssets="compile" />
+    </ItemGroup>
+
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <!-- Copy to build folder -->
+        <Copy SourceFiles="$(TargetPath)" DestinationFolder="../build/" />
+
+        <!-- Copy to game install folder -->
+        <Exec Condition="Exists('$(DvInstallDir)') And '$(OS)' == 'Windows_NT'" Command="powershell -executionpolicy bypass -Command &quot;(../package.ps1 -NoArchive -OutputDirectory '$(DvInstallDir)\Mods')&quot;" />
+        <Exec Condition="Exists('$(DvInstallDir)') And '$(OS)' != 'Windows_NT'" Command="pwsh  -Command &quot;(../package.ps1 -NoArchive -OutputDirectory '$(DvInstallDir)/Mods')&quot;" />
+    </Target>
+</Project>

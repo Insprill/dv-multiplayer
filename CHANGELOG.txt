@@ -1,0 +1,37 @@
+1.2.1:
+- Fixed turntable rails not being regauged.
+
+
+1.2.0:
+- Added support for Simulator.
+- Switched to BepInEx.
+- Fixed buffer stop sleepers being regauged.
+- Fixed the inside of the S282 firebox being visible outside the locomotive on narrow gauges.
+
+
+1.1.2:
+- Fixed wheelslip particles not being regauged.
+- Fixed an error if the AssetBundle isn't present.
+
+
+1.1.1:
+- Fixed the actual track gauge being 70mm too narrow.
+- Fixed a stretched vertex on switches.
+
+
+1.1.0:
+- Added support for broad gauges.
+- Added an option to bypass settings restrictions.
+- Fixed roundhouse rails not being regauged.
+- Fixed service station markers not being regauged.
+- Fixed switch stands floating on narrow gauges.
+- Fixed some minor switch deformations.
+- Fixed non-standard gauge custom cars not being regauged when standard gauge is selected.
+- Fixed non-standard gauge custom cars with one default bogie not being regauged properly.
+- Fixed train wheels clipping through roundhouse rails (vanilla issue, fix only applies to non-standard gauge).
+- Fixed the settings menu showing two different units for custom gauge inputs.
+- Fixed the mod trying to load with Unity Mod Manager versions older than 0.25.0.
+
+
+1.0.0:
+- Initial release.
