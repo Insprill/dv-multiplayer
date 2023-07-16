@@ -9,23 +9,45 @@
     <!-- Derail Valley -->
     <ItemGroup>
         <Reference Include="Assembly-CSharp" />
+        <Reference Include="DV.BrakeSystem" />
+        <Reference Include="DV.Common" />
+        <Reference Include="DV.ControllerAnchors" />
+        <Reference Include="DV.Highlighting" />
         <Reference Include="DV.Interaction" />
+        <Reference Include="DV.Inventory" />
+        <Reference Include="DV.Localization" />
+        <Reference Include="DV.NAudio" />
+        <Reference Include="DV.PointSet" />
+        <Reference Include="DV.RadioPlayer" />
+        <Reference Include="DV.Scenarios.CRUD" />
+        <Reference Include="DV.Simulation" />
+        <Reference Include="DV.Telemetry" />
+        <Reference Include="DV.TerrainSystem" />
+        <Reference Include="DV.TerrainTools" />
         <Reference Include="DV.ThingTypes" />
+        <Reference Include="DV.UI" />
+        <Reference Include="DV.UIFramework" />
+        <Reference Include="DV.UserManagement" />
         <Reference Include="DV.Utils" />
+        <Reference Include="DV.WeatherSystem" />
     </ItemGroup>
 
     <!-- Mod Loader -->
     <ItemGroup>
+        <PackageReference Include="LiteNetLib" Version="1.1.0" />
         <PackageReference Include="UnityModManager" Version="0.27.0" />
     </ItemGroup>
 
     <!-- Third-Party -->
     <ItemGroup>
         <Reference Include="Newtonsoft.Json" />
+        <Reference Include="UniTask" />
     </ItemGroup>
 
     <!-- Unity -->
     <ItemGroup>
+        <Reference Include="UnityEngine.UI" />
+        <Reference Include="Unity.TextMeshPro" />
         <PackageReference Include="UnityEngine.Modules" Version="2019.4.40" IncludeAssets="compile" />
     </ItemGroup>
 

@@ -285,3 +285,21 @@ dist/
 
 # User-specific refrence paths
 Directory.Build.targets
+
+### Unity Assets
+# What kind of git nonsense is this...
+# Required Assets
+!MultiplayerAssets/
+MultiplayerAssets/*
+!MultiplayerAssets/Assets/
+MultiplayerAssets/Assets/Scenes
+MultiplayerAssets/Assets/Scenes.meta
+# Project Settings
+!MultiplayerAssets/ProjectSettings/
+MultiplayerAssets/ProjectSettings/*
+!MultiplayerAssets/ProjectSettings/ProjectSettings.asset
+!MultiplayerAssets/ProjectSettings/EditorSettings.asset
+!MultiplayerAssets/ProjectSettings/PackageManagerSettings.asset
+!MultiplayerAssets/ProjectSettings/ProjectVersion.txt
+# Packages
+!MultiplayerAssets/Packages

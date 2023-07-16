@@ -1,5 +1,8 @@
 ﻿using System;
+using System.IO;
 using HarmonyLib;
+using Multiplayer.Components.Networking;
+using UnityEngine;
 using UnityModManagerNet;
 
 namespace Multiplayer;
@@ -7,7 +10,9 @@ namespace Multiplayer;
 public static class Multiplayer
 {
     private static UnityModManager.ModEntry ModEntry;
-    private static Settings Settings;
+    public static Settings Settings;
+
+    public static AssetBundle AssetBundle { get; private set; }
 
     private static bool Load(UnityModManager.ModEntry modEntry)
     {
@@ -23,7 +28,12 @@ public static class Multiplayer
             Log("Patching...");
             harmony = new Harmony(ModEntry.Info.Id);
             harmony.PatchAll();
-            Log("Successfully patched");
+
+            Log("Loading AssetBundle...");
+            AssetBundle = AssetBundle.LoadFromFile(Path.Combine(ModEntry.Path, "multiplayer.assetbundle"));
+
+            Log("Creating NetworkManager...");
+            NetworkManager.CreateNetworkManager();
         }
         catch (Exception ex)
         {
