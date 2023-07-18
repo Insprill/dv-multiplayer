@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using DV.Utils;
 using Multiplayer.Networking.Listeners;
@@ -27,9 +28,20 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         {
             if (scene.buildIndex != (int)DVScenes.MainMenu)
                 return;
-            while (mainMenuLoadedQueue.Count > 0)
-                mainMenuLoadedQueue.Dequeue().Invoke();
+            TriggerMainMenuEventLater();
         };
+    }
+
+    public void TriggerMainMenuEventLater()
+    {
+        SingletonBehaviour<CoroutineManager>.Instance.StartCoroutine(TriggerMainMenuEvent());
+    }
+
+    private IEnumerator TriggerMainMenuEvent()
+    {
+        yield return null;
+        while (mainMenuLoadedQueue.Count > 0)
+            mainMenuLoadedQueue.Dequeue().Invoke();
     }
 
     public void QueueMainMenuEvent(Action action)

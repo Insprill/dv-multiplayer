@@ -61,9 +61,14 @@ public class NetworkClient : NetworkManager
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
         if (MainMenuThingsAndStuff.Instance != null)
+        {
             MainMenuThingsAndStuff.Instance.SwitchToDefaultMenu();
+            NetworkLifecycle.Instance.TriggerMainMenuEventLater();
+        }
         else
+        {
             MainMenu.GoBackToMainMenu();
+        }
 
         string text = $"{disconnectInfo.Reason}";
 
