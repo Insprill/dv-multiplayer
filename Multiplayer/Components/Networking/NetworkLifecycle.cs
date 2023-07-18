@@ -73,6 +73,11 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         IsHost = false;
     }
 
+    private void OnApplicationQuit()
+    {
+        Stop();
+    }
+
     public static void CreateLifecycle()
     {
         if (FindObjectOfType<NetworkLifecycle>() != null)

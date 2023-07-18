@@ -65,22 +65,26 @@ public class NetworkClient : NetworkManager
         else
             MainMenu.GoBackToMainMenu();
 
+        string text = $"{disconnectInfo.Reason}";
+
         switch (disconnectInfo.Reason)
         {
             case DisconnectReason.DisconnectPeerCalled:
             case DisconnectReason.ConnectionRejected:
                 netPacketProcessor.ReadAllPackets(disconnectInfo.AdditionalData);
-                break;
-            default:
-                NetworkLifecycle.Instance.QueueMainMenuEvent(() =>
-                {
-                    Popup popup = MainMenuThingsAndStuff.Instance.ShowOkPopup();
-                    if (popup == null)
-                        return;
-                    popup.labelTMPro.text = $"{disconnectInfo.Reason}";
-                });
+                return;
+            case DisconnectReason.RemoteConnectionClose:
+                text = "The server shut down";
                 break;
         }
+
+        NetworkLifecycle.Instance.QueueMainMenuEvent(() =>
+        {
+            Popup popup = MainMenuThingsAndStuff.Instance.ShowOkPopup();
+            if (popup == null)
+                return;
+            popup.labelTMPro.text = text;
+        });
     }
 
     public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
