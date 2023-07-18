@@ -60,6 +60,8 @@ public class NetworkClient : NetworkManager
 
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
+        NetworkLifecycle.Instance.Stop();
+
         if (MainMenuThingsAndStuff.Instance != null)
         {
             MainMenuThingsAndStuff.Instance.SwitchToDefaultMenu();
