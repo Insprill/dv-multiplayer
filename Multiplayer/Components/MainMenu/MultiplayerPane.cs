@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text.RegularExpressions;
-using DV.UI;
 using DV.UIFramework;
 using DV.Utils;
 using Multiplayer.Components.Networking;
@@ -18,49 +17,9 @@ public class MultiplayerPane : MonoBehaviour
     // @formatter:on
 
     private bool why;
-    private PopupManager popupManager;
-    public Popup renamePopupPrefab;
-    public Popup okPopupPrefab;
-    public UIMenuController uiMenuController;
 
     private string address;
     private ushort port;
-
-    private void Awake()
-    {
-        bool shouldDestroy = false;
-
-        this.FindPopupManager(ref popupManager);
-
-        if (popupManager == null)
-        {
-            Multiplayer.LogError("Failed to find PopupManager! Destroying self.");
-            shouldDestroy = true;
-        }
-
-        if (renamePopupPrefab == null)
-        {
-            Multiplayer.LogError($"{nameof(renamePopupPrefab)} is null! Destroying self.");
-            shouldDestroy = true;
-        }
-
-        if (okPopupPrefab == null)
-        {
-            Multiplayer.LogError($"{nameof(okPopupPrefab)} is null! Destroying self.");
-            shouldDestroy = true;
-        }
-
-        if (uiMenuController == null)
-        {
-            Multiplayer.LogError($"{nameof(uiMenuController)} is null! Destroying self.");
-            shouldDestroy = true;
-        }
-
-        if (!shouldDestroy)
-            return;
-
-        Destroy(this);
-    }
 
     private void OnEnable()
     {
@@ -75,17 +34,17 @@ public class MultiplayerPane : MonoBehaviour
 
     private void ShowIpPopup()
     {
-        if (!CanShowPopup())
+        Popup popup = MainMenuThingsAndStuff.Instance.ShowRenamePopup();
+        if (popup == null)
             return;
 
-        Popup popup = popupManager.ShowPopup(renamePopupPrefab);
         popup.labelTMPro.text = "Enter IP Address";
 
         popup.Closed += result =>
         {
             if (result.closedBy == PopupClosedByAction.Abortion)
             {
-                uiMenuController.SwitchMenuTask(uiMenuController.defaultMenuIndex);
+                MainMenuThingsAndStuff.Instance.SwitchToDefaultMenu();
                 return;
             }
 
@@ -103,17 +62,17 @@ public class MultiplayerPane : MonoBehaviour
 
     private void ShowPortPopup()
     {
-        if (!CanShowPopup())
+        Popup popup = MainMenuThingsAndStuff.Instance.ShowRenamePopup();
+        if (popup == null)
             return;
 
-        Popup popup = popupManager.ShowPopup(renamePopupPrefab);
         popup.labelTMPro.text = "Enter the port (7777 by default)";
 
         popup.Closed += result =>
         {
             if (result.closedBy == PopupClosedByAction.Abortion)
             {
-                uiMenuController.SwitchMenuTask(uiMenuController.defaultMenuIndex);
+                MainMenuThingsAndStuff.Instance.SwitchToDefaultMenu();
                 return;
             }
 
@@ -131,17 +90,17 @@ public class MultiplayerPane : MonoBehaviour
 
     private void ShowPasswordPopup()
     {
-        if (!CanShowPopup())
+        Popup popup = MainMenuThingsAndStuff.Instance.ShowRenamePopup();
+        if (popup == null)
             return;
 
-        Popup popup = popupManager.ShowPopup(renamePopupPrefab);
         popup.labelTMPro.text = "Enter the password";
 
         popup.Closed += result =>
         {
             if (result.closedBy == PopupClosedByAction.Abortion)
             {
-                uiMenuController.SwitchMenuTask(uiMenuController.defaultMenuIndex);
+                MainMenuThingsAndStuff.Instance.SwitchToDefaultMenu();
                 return;
             }
 
@@ -149,21 +108,13 @@ public class MultiplayerPane : MonoBehaviour
         };
     }
 
-    private void ShowOkPopup(string text, Action onClick)
+    private static void ShowOkPopup(string text, Action onClick)
     {
-        if (!CanShowPopup())
+        Popup popup = MainMenuThingsAndStuff.Instance.ShowOkPopup();
+        if (popup == null)
             return;
 
-        Popup popup = popupManager.ShowPopup(okPopupPrefab);
         popup.labelTMPro.text = text;
         popup.Closed += _ => { onClick(); };
-    }
-
-    private bool CanShowPopup()
-    {
-        if (popupManager.CanShowPopup())
-            return true;
-        Multiplayer.LogError("PopupManager cannot show popup!");
-        return false;
     }
 }

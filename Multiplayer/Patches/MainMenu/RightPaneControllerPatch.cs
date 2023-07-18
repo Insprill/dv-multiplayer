@@ -36,10 +36,17 @@ public class RightPaneController_OnEnable_Patch
         Object.Destroy(multiplayerPane.FindChildByName("Savegame Details Background"));
         Object.Destroy(multiplayerPane.FindChildByName("ButtonTextIcon Run"));
 
-        MultiplayerPane multiplayer = multiplayerPane.AddComponent<MultiplayerPane>();
-        multiplayer.renamePopupPrefab = __instance.continueLoadNewController.career.renamePopupPrefab;
-        multiplayer.okPopupPrefab = __instance.continueLoadNewController.career.okPopupPrefab;
-        multiplayer.uiMenuController = __instance.menuController;
+        multiplayerPane.AddComponent<MultiplayerPane>();
+
+        MainMenuThingsAndStuff.Create(manager =>
+        {
+            PopupManager popupManager = null;
+            __instance.FindPopupManager(ref popupManager);
+            manager.popupManager = popupManager;
+            manager.renamePopupPrefab = __instance.continueLoadNewController.career.renamePopupPrefab;
+            manager.okPopupPrefab = __instance.continueLoadNewController.career.okPopupPrefab;
+            manager.uiMenuController = __instance.menuController;
+        });
 
         multiplayerPane.SetActive(true);
     }

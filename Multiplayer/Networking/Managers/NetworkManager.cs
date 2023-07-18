@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Networking.Serialization;
 
 namespace Multiplayer.Networking.Listeners;
 
@@ -10,8 +11,9 @@ public abstract class NetworkManager : INetEventListener
 {
     protected readonly NetPacketProcessor netPacketProcessor;
     protected readonly NetManager netManager;
+    protected readonly NetDataWriter cachedWriter = new();
 
-    private readonly NetDataWriter cachedWriter = new();
+    public bool IsRunning => netManager.IsRunning;
 
     protected NetworkManager(Settings settings)
     {
@@ -68,7 +70,14 @@ public abstract class NetworkManager : INetEventListener
 
     public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
     {
-        netPacketProcessor.ReadAllPackets(reader, peer);
+        try
+        {
+            netPacketProcessor.ReadAllPackets(reader, peer);
+        }
+        catch (ParseException)
+        {
+            // 💀
+        }
     }
 
     public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)

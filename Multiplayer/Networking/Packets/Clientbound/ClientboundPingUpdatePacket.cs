@@ -1,6 +1,7 @@
 namespace Multiplayer.Networking.Packets.Clientbound;
 
-public class ClientAcceptedPacket
+public class ClientboundPingUpdatePacket
 {
     public byte Id { get; set; }
+    public int Ping { get; set; }
 }

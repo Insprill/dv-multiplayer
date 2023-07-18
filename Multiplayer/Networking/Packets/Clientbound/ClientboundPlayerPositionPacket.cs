@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Multiplayer.Networking.Packets.Serverbound;
+namespace Multiplayer.Networking.Packets.Clientbound;
 
 public class ClientboundPlayerPositionPacket
 {

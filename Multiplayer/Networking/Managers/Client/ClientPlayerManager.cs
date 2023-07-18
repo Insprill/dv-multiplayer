@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using Multiplayer.Components.Networking.Player;
-using Multiplayer.Networking.Packets.Common;
 using UnityEngine;
 
 namespace Multiplayer.Networking.Listeners;

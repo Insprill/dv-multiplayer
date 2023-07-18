@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using DV;
 using LiteNetLib;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Common;
@@ -13,9 +14,12 @@ public class NetworkServer : NetworkManager
 {
     private readonly Dictionary<byte, ServerPlayer> serverPlayers = new();
     private readonly Dictionary<byte, NetPeer> netPeers = new();
+    private readonly ModInfo[] serverMods;
 
     public NetworkServer(Settings settings) : base(settings)
-    { }
+    {
+        serverMods = ModInfo.FromModEntries(UnityModManager.modEntries);
+    }
 
     public void Start(int port)
     {
@@ -24,7 +28,7 @@ public class NetworkServer : NetworkManager
 
     protected override void Subscribe()
     {
-        netPacketProcessor.SubscribeReusable<ServerboundClientInfoPacket, NetPeer>(OnClientInfoPacket);
+        netPacketProcessor.SubscribeReusable<ServerboundClientLoginPacket, ConnectionRequest>(OnServerboundClientLoginPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
     }
 
@@ -59,48 +63,80 @@ public class NetworkServer : NetworkManager
         if (TryGetServerPlayer(peer, out ServerPlayer player))
             player.Ping = latency;
 
-        ClientPingUpdatePacket clientPingUpdatePacket = new() {
+        ClientboundPingUpdatePacket clientboundPingUpdatePacket = new() {
             Id = (byte)peer.Id,
             Ping = latency
         };
 
-        netManager.SendToAll(WritePacket(clientPingUpdatePacket), DeliveryMethod.ReliableOrdered);
+        netManager.SendToAll(WritePacket(clientboundPingUpdatePacket), DeliveryMethod.ReliableOrdered, peer);
     }
 
     public override void OnConnectionRequest(ConnectionRequest request)
     {
-        if (netManager.ConnectedPeersCount < Multiplayer.Settings.MaxPlayers)
-            request.AcceptIfKey(Multiplayer.Settings.Password);
-        else
-            request.Reject(); //todo: send packet with reason
+        netPacketProcessor.ReadAllPackets(request.Data, request);
     }
 
     #endregion
 
-    private void OnClientInfoPacket(ServerboundClientInfoPacket packet, NetPeer peer)
+    private void OnServerboundClientLoginPacket(ServerboundClientLoginPacket packet, ConnectionRequest request)
     {
-        byte peerId = (byte)peer.Id;
+        Multiplayer.Log($"Processing login packet{(Multiplayer.Settings.LogIps ? $" from ({request.RemoteEndPoint.Address})" : "")}");
 
-        if (netPeers.ContainsKey(peerId))
+        if (Multiplayer.Settings.Password != packet.Password)
         {
-            Multiplayer.LogError("Client sent ClientInfoPacket twice!");
-            peer.Disconnect();
+            Multiplayer.LogWarning("Denied login due to invalid password!");
+            ClientboundServerDenyPacket denyPacket = new() {
+                Reason = "Invalid password!"
+            };
+            request.Reject(WritePacket(denyPacket));
             return;
         }
 
-        ModInfo[] serverMods = ModInfo.FromModEntries(UnityModManager.modEntries);
-        ModInfo[] clientMods = packet.Mods;
+        if (packet.BuildMajorVersion != BuildInfo.BUILD_VERSION_MAJOR)
+        {
+            Multiplayer.LogWarning($"Denied login to incorrect game version! Got: {packet.BuildMajorVersion}, expected: {BuildInfo.BUILD_VERSION_MAJOR}");
+            ClientboundServerDenyPacket denyPacket = new() {
+                Reason = "Server is full!"
+            };
+            request.Reject(WritePacket(denyPacket));
+        }
 
+        if (netManager.ConnectedPeersCount >= Multiplayer.Settings.MaxPlayers)
+        {
+            Multiplayer.LogWarning("Denied login due to server being full!");
+            ClientboundServerDenyPacket denyPacket = new() {
+                Reason = "Server is full!"
+            };
+            request.Reject(WritePacket(denyPacket));
+        }
+
+        ModInfo[] clientMods = packet.Mods;
         if (!serverMods.SequenceEqual(clientMods))
         {
-            ModMismatchPacket modMismatchPacket = new() {
-                Missing = serverMods.Except(clientMods).ToArray(),
-                Extra = clientMods.Except(serverMods).ToArray()
+            ModInfo[] missing = serverMods.Except(clientMods).ToArray();
+            ModInfo[] extra = clientMods.Except(serverMods).ToArray();
+            Multiplayer.LogWarning($"Denied login due to mod mismatch! {missing.Length} missing, {extra.Length} extra");
+            ClientboundServerDenyPacket denyPacket = new() {
+                Reason = "Mod mismatch!",
+                Missing = missing,
+                Extra = extra
             };
-
-            peer.Disconnect(WritePacket(modMismatchPacket));
+            request.Reject(WritePacket(denyPacket));
             return;
         }
+
+        Multiplayer.Log("Login accepted! Broadcasting to all clients");
+
+        NetPeer peer = request.Accept();
+
+        // Send all players to the new player
+        foreach (ServerPlayer player in serverPlayers.Values)
+            SendPacket(peer, new ClientboundPlayerJoinedPacket {
+                Id = player.Id,
+                Username = player.Username
+            }, DeliveryMethod.ReliableUnordered);
+
+        byte peerId = (byte)peer.Id;
 
         ServerPlayer serverPlayer = new() {
             Id = peerId,
@@ -110,14 +146,12 @@ public class NetworkServer : NetworkManager
         serverPlayers.Add(peerId, serverPlayer);
         netPeers.Add(peerId, peer);
 
-        ClientJoinedPacket clientJoinedPacket = new() {
+        ClientboundPlayerJoinedPacket clientboundPlayerJoinedPacket = new() {
             Id = peerId,
             Username = packet.Username
         };
 
-        netManager.SendToAll(WritePacket(clientJoinedPacket), DeliveryMethod.ReliableOrdered);
-
-        SendPacket(peer, new ClientAcceptedPacket(), DeliveryMethod.ReliableOrdered);
+        netManager.SendToAll(WritePacket(clientboundPlayerJoinedPacket), DeliveryMethod.ReliableOrdered, peer);
     }
 
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)
@@ -128,6 +162,6 @@ public class NetworkServer : NetworkManager
             RotationY = packet.RotationY
         };
 
-        netManager.SendToAll(WritePacket(clientboundPacket), DeliveryMethod.Sequenced);
+        netManager.SendToAll(WritePacket(clientboundPacket), DeliveryMethod.Sequenced, peer);
     }
 }

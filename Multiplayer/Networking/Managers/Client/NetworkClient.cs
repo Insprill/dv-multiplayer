@@ -1,8 +1,10 @@
 using System.Net;
 using DV;
 using DV.UI;
+using DV.UIFramework;
 using LiteNetLib;
-using LiteNetLib.Utils;
+using Multiplayer.Components.MainMenu;
+using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Serverbound;
@@ -13,7 +15,6 @@ namespace Multiplayer.Networking.Listeners;
 
 public class NetworkClient : NetworkManager
 {
-    private byte localId;
     private NetPeer serverPeer;
     private readonly ClientPlayerManager playerManager;
 
@@ -25,15 +26,25 @@ public class NetworkClient : NetworkManager
     public void Start(string address, int port, string password)
     {
         netManager.Start();
-        netManager.Connect(address, port, password);
+        ServerboundClientLoginPacket serverboundClientLoginPacket = new() {
+            Username = Multiplayer.Settings.Username,
+            Password = password,
+            BuildMajorVersion = (ushort)BuildInfo.BUILD_VERSION_MAJOR,
+            Mods = ModInfo.FromModEntries(UnityModManager.modEntries)
+        };
+        netPacketProcessor.Write(cachedWriter, serverboundClientLoginPacket);
+        netManager.Connect(address, port, cachedWriter);
     }
 
     protected override void Subscribe()
     {
-        netPacketProcessor.SubscribeReusable<ClientAcceptedPacket, NetPeer>(OnClientAcceptedPacket);
-        netPacketProcessor.SubscribeReusable<ClientJoinedPacket, NetPeer>(OnClientJoinedPacket);
-        netPacketProcessor.SubscribeReusable<ClientLeftPacket, NetPeer>(OnClientLeftPacket);
-        netPacketProcessor.SubscribeReusable<ClientboundPlayerPositionPacket, NetPeer>(OnClientboundPlayerPositionPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundServerDenyPacket>(OnClientboundServerDenyPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundPlayerJoinedPacket>(OnClientJoinedPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundPlayerDisconnectPacket>(OnClientLeftPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundPlayerPositionPacket>(OnClientboundPlayerPositionPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundPingUpdatePacket>(packet =>
+        { /* TODO */
+        });
     }
 
     #region Common
@@ -41,20 +52,35 @@ public class NetworkClient : NetworkManager
     public override void OnPeerConnected(NetPeer peer)
     {
         serverPeer = peer;
-        ServerboundClientInfoPacket serverboundClientInfoPacket = new() {
-            Username = Multiplayer.Settings.Username,
-            BuildMajorVersion = (ushort)BuildInfo.BUILD_VERSION_MAJOR,
-            Mods = ModInfo.FromModEntries(UnityModManager.modEntries)
-        };
-        NetDataWriter writer = new();
-        netPacketProcessor.Write(writer, serverboundClientInfoPacket);
-        peer.Send(writer, DeliveryMethod.ReliableOrdered);
+        if (NetworkLifecycle.Instance.IsHost)
+            return;
+        AStartGameData.FallbackNewCareer();
+        SceneSwitcher.SwitchToScene(DVScenes.Game);
     }
 
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        // todo: popup, read additional info from disconnectInfo
-        MainMenu.GoBackToMainMenu();
+        if (MainMenuThingsAndStuff.Instance != null)
+            MainMenuThingsAndStuff.Instance.SwitchToDefaultMenu();
+        else
+            MainMenu.GoBackToMainMenu();
+
+        switch (disconnectInfo.Reason)
+        {
+            case DisconnectReason.DisconnectPeerCalled:
+            case DisconnectReason.ConnectionRejected:
+                netPacketProcessor.ReadAllPackets(disconnectInfo.AdditionalData);
+                break;
+            default:
+                NetworkLifecycle.Instance.QueueMainMenuEvent(() =>
+                {
+                    Popup popup = MainMenuThingsAndStuff.Instance.ShowOkPopup();
+                    if (popup == null)
+                        return;
+                    popup.labelTMPro.text = $"{disconnectInfo.Reason}";
+                });
+                break;
+        }
     }
 
     public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -76,31 +102,32 @@ public class NetworkClient : NetworkManager
 
     #region Listeners
 
-    private void OnClientAcceptedPacket(ClientAcceptedPacket packet, NetPeer peer)
+    private void OnClientboundServerDenyPacket(ClientboundServerDenyPacket packet)
     {
-        localId = packet.Id;
-        AStartGameData.FallbackNewCareer();
-        SceneSwitcher.SwitchToScene(DVScenes.Game);
+        NetworkLifecycle.Instance.QueueMainMenuEvent(() =>
+        {
+            Popup popup = MainMenuThingsAndStuff.Instance.ShowOkPopup();
+            if (popup == null)
+                return;
+            string text = $"{packet.Reason}";
+            if (packet.Extra != null && packet.Missing != null)
+                text += $"\n\nMissing mods:\n{string.Join("\n - ", packet.Missing)}\n\nExtra mods:\n{string.Join("\n - ", packet.Extra)}";
+            popup.labelTMPro.text = text;
+        });
     }
 
-    private void OnClientJoinedPacket(ClientJoinedPacket packet, NetPeer peer)
+    private void OnClientJoinedPacket(ClientboundPlayerJoinedPacket packet)
     {
-        if (packet.Id == localId)
-            return;
         playerManager.AddPlayer(packet.Id, packet.Username);
     }
 
-    private void OnClientLeftPacket(ClientLeftPacket packet, NetPeer peer)
+    private void OnClientLeftPacket(ClientboundPlayerDisconnectPacket packet)
     {
-        if (packet.Id == localId)
-            return;
         playerManager.RemovePlayer(packet.Id);
     }
 
-    private void OnClientboundPlayerPositionPacket(ClientboundPlayerPositionPacket packet, NetPeer peer)
+    private void OnClientboundPlayerPositionPacket(ClientboundPlayerPositionPacket packet)
     {
-        if (packet.Id == localId)
-            return;
         playerManager.UpdatePosition(packet.Id, packet.Position, packet.RotationY);
     }
 

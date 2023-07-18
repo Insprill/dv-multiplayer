@@ -1,7 +1,7 @@
 using LiteNetLib.Utils;
 using UnityEngine;
 
-namespace Multiplayer.Networking.Packets.Common;
+namespace Multiplayer.Networking.Serialization;
 
 public static class Vector3Serializer
 {

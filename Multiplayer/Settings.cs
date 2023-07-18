@@ -33,10 +33,13 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public bool ReuseNetPacketReaders = true;
     [Draw("Use Native Sockets", VisibleOn = "ShowAdvancedSettings|true")]
     public bool UseNativeSockets = true;
+    [Draw("Log Full IPs", Tooltip = "Whether to log the full IP address of clients. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
+    public bool LogIps = true;
 
     public override void Save(UnityModManager.ModEntry modEntry)
     {
         Port = Mathf.Clamp(Port, 1024, 49151);
+        MaxPlayers = Mathf.Clamp(MaxPlayers, byte.MinValue, byte.MaxValue);
         OnSettingsUpdated?.Invoke(this);
         Save(this, modEntry);
     }

@@ -5,6 +5,7 @@ namespace Multiplayer.Components.Networking.Player;
 public class NetworkedPlayer : MonoBehaviour
 {
     // TODO: Interpolate position
+    // TODO: animations
     public void UpdatePosition(Vector3 newPosition, float newRotation)
     {
         Transform t = transform;

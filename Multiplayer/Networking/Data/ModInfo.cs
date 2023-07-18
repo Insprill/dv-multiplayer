@@ -18,6 +18,11 @@ public readonly struct ModInfo
         Version = version;
     }
 
+    public override string ToString()
+    {
+        return $"{Id} v{Version}";
+    }
+
     public static void Serialize(NetDataWriter writer, ModInfo modInfo)
     {
         writer.Put(modInfo.Id);
