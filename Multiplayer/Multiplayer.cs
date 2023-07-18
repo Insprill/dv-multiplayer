@@ -2,6 +2,7 @@
 using System.IO;
 using HarmonyLib;
 using Multiplayer.Components.Networking;
+using Multiplayer.Editor;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -12,7 +13,7 @@ public static class Multiplayer
     private static UnityModManager.ModEntry ModEntry;
     public static Settings Settings;
 
-    public static AssetBundle AssetBundle { get; private set; }
+    public static AssetIndex AssetIndex { get; private set; }
 
     private static bool Load(UnityModManager.ModEntry modEntry)
     {
@@ -28,12 +29,6 @@ public static class Multiplayer
             Log("Patching...");
             harmony = new Harmony(ModEntry.Info.Id);
             harmony.PatchAll();
-
-            Log("Loading AssetBundle...");
-            AssetBundle = AssetBundle.LoadFromFile(Path.Combine(ModEntry.Path, "multiplayer.assetbundle"));
-
-            Log("Creating NetworkManager...");
-            NetworkManager.CreateNetworkManager();
         }
         catch (Exception ex)
         {
@@ -42,6 +37,37 @@ public static class Multiplayer
             return false;
         }
 
+        return true;
+    }
+
+    internal static void OnBootstrapped()
+    {
+        if (!LoadAssets())
+            return;
+
+        Log("Creating NetworkManager...");
+        NetworkLifecycle.CreateLifecycle();
+    }
+
+    private static bool LoadAssets()
+    {
+        Log("Loading AssetBundle...");
+        string assetBundlePath = Path.Combine(ModEntry.Path, "multiplayer.assetbundle");
+        if (!File.Exists(assetBundlePath))
+        {
+            LogError($"AssetBundle not found at '{assetBundlePath}'!");
+            return false;
+        }
+
+        AssetBundle assetBundle = AssetBundle.LoadFromFile(assetBundlePath);
+        AssetIndex[] indices = assetBundle.LoadAllAssets<AssetIndex>();
+        if (indices.Length != 1)
+        {
+            LogError("Expected exactly one AssetIndex in the AssetBundle!");
+            return false;
+        }
+
+        AssetIndex = indices[0];
         return true;
     }
 
@@ -66,11 +92,6 @@ public static class Multiplayer
     public static void LogError(object msg)
     {
         ModEntry.Logger.Error($"{msg}");
-    }
-
-    public static void LogCritical(object msg)
-    {
-        ModEntry.Logger.Critical($"{msg}");
     }
 
     public static void LogException(object msg, Exception e)

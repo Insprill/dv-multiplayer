@@ -17,7 +17,7 @@ public class RightPaneController_OnEnable_Patch
         GameObject launcher = __instance.FindChildByName("PaneRight Launcher");
         if (launcher == null)
         {
-            Multiplayer.LogCritical("Failed to find Launcher pane!");
+            Multiplayer.LogError("Failed to find Launcher pane!");
             return;
         }
 

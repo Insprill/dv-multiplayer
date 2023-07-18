@@ -1,16 +1,13 @@
 
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multiplayer", "Multiplayer/Multiplayer.csproj", "{57D181A9-9D9D-4EBA-BBDD-9172EEB79983}"
+Project("{99d6f2a9-1021-4ea5-acb3-48cbd6fb8d09}") = "Multiplayer", "Multiplayer/Multiplayer.csproj", "{f712c7fb-eeae-4036-a938-356e022b0455}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{57D181A9-9D9D-4EBA-BBDD-9172EEB79983}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{57D181A9-9D9D-4EBA-BBDD-9172EEB79983}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{57D181A9-9D9D-4EBA-BBDD-9172EEB79983}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{57D181A9-9D9D-4EBA-BBDD-9172EEB79983}.Release|Any CPU.Build.0 = Release|Any CPU
+		{f712c7fb-eeae-4036-a938-356e022b0455}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{f712c7fb-eeae-4036-a938-356e022b0455}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

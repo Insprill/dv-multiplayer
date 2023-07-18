@@ -19,7 +19,6 @@ public static class WorldStreamingInit_Awake_Patch
         // World moving is hard-disabled via the WorldMoverPatch, but we update this anyway so scripts are aware of that.
         WorldMover.Instance.movingEnabled = false;
 
-        NetworkManager.Instance.StartServer(Multiplayer.Settings.Port);
-        // todo: start hosting
+        NetworkLifecycle.Instance.StartServer(Multiplayer.Settings.Port);
     }
 }

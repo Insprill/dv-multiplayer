@@ -8,6 +8,6 @@ public class MainMenu_GoBackToMainMenu_Patch
 {
     private static void Prefix()
     {
-        NetworkManager.Instance.Stop();
+        NetworkLifecycle.Instance.Stop();
     }
 }

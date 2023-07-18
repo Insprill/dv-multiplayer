@@ -24,7 +24,6 @@ public class MultiplayerPane : MonoBehaviour
     public UIMenuController uiMenuController;
 
     private string address;
-    private string ipv6;
     private ushort port;
 
     private void Awake()
@@ -146,7 +145,7 @@ public class MultiplayerPane : MonoBehaviour
                 return;
             }
 
-            SingletonBehaviour<NetworkManager>.Instance.StartClient(address, port, result.data);
+            SingletonBehaviour<NetworkLifecycle>.Instance.StartClient(address, port, result.data);
         };
     }
 

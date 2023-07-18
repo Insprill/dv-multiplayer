@@ -40,7 +40,7 @@ public static class MainMenuController_Awake_Patch
             return;
         }
 
-        icon.GetComponent<Image>().sprite = Multiplayer.AssetBundle.LoadAsset<Sprite>("assets/textures/multiplayer_icon.png");
+        icon.GetComponent<Image>().sprite = Multiplayer.AssetIndex.multiplayerIcon;
     }
 }
 

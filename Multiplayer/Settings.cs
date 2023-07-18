@@ -8,30 +8,30 @@ namespace Multiplayer;
 [DrawFields(DrawFieldMask.OnlyDrawAttr)]
 public class Settings : UnityModManager.ModSettings, IDrawable
 {
-    public Action<Settings> OnSettingsUpdated;
+    public static Action<Settings> OnSettingsUpdated;
 
     [Header("Player")]
-    [Draw("Username")]
-    public string Username;
+    [Draw("Username", Tooltip = "Your username in-game")]
+    public string Username = "Player";
 
     [Header("Server")]
-    [Draw("Password")]
+    [Draw("Password", Tooltip = "The password required to join your server. Leave blank for no password.")]
     public string Password;
-    [Draw("Max Players")]
-    public int MaxPlayers;
-    [Draw("Port")]
-    public int Port;
+    [Draw("Max Players", Tooltip = "The maximum number of players that can join your server, including yourself.")]
+    public int MaxPlayers = 4;
+    [Draw("Port", Tooltip = "The port that your server will listen on. You generally don't need to change this.")]
+    public int Port = 7777;
 
     [Header("Advanced Settings")]
-    [Draw("Show Advanced Settings")]
+    [Draw("Show Advanced Settings", Tooltip = "You probably don't need to change these.")]
     public bool ShowAdvancedSettings;
-    [Draw("Verbose Logging", VisibleOn = "ShowAdvancedSettings")]
+    [Draw("Verbose Logging", Tooltip = "Whether to log extra information. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
     public bool VerboseLogging;
-    [Draw("Enable NAT Punch", VisibleOn = "ShowAdvancedSettings")]
+    [Draw("Enable NAT Punch", VisibleOn = "ShowAdvancedSettings|true")]
     public bool EnableNatPunch = true;
-    [Draw("Reuse NetPacketReaders", VisibleOn = "ShowAdvancedSettings")]
+    [Draw("Reuse NetPacketReaders", VisibleOn = "ShowAdvancedSettings|true")]
     public bool ReuseNetPacketReaders = true;
-    [Draw("Use Native Sockets", VisibleOn = "ShowAdvancedSettings")]
+    [Draw("Use Native Sockets", VisibleOn = "ShowAdvancedSettings|true")]
     public bool UseNativeSockets = true;
 
     public override void Save(UnityModManager.ModEntry modEntry)

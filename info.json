@@ -4,5 +4,5 @@
   "DisplayName": "Multiplayer",
   "Author": "Insprill",
   "EntryMethod": "Multiplayer.Multiplayer.Load",
-  "ManagerVersion": "0.27.0",
+  "ManagerVersion": "0.27.1"
 }

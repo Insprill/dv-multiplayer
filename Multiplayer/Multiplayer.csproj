@@ -3,7 +3,6 @@
         <TargetFramework>net48</TargetFramework>
         <LangVersion>latest</LangVersion>
         <RootNamespace>Multiplayer</RootNamespace>
-        <Version>0.1.0</Version>
     </PropertyGroup>
 
     <!-- Derail Valley -->
@@ -34,12 +33,17 @@
 
     <!-- Mod Loader -->
     <ItemGroup>
-        <PackageReference Include="LiteNetLib" Version="1.1.0" />
         <PackageReference Include="UnityModManager" Version="0.27.0" />
     </ItemGroup>
 
     <!-- Third-Party -->
     <ItemGroup>
+        <Reference Include="MultiplayerEditor">
+            <HintPath>../build/MultiplayerEditor.dll</HintPath>
+        </Reference>
+        <Reference Include="LiteNetLib">
+            <HintPath>../build/LiteNetLib.dll</HintPath>
+        </Reference>
         <Reference Include="Newtonsoft.Json" />
         <Reference Include="UniTask" />
     </ItemGroup>
