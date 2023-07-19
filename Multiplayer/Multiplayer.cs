@@ -3,6 +3,7 @@ using System.IO;
 using HarmonyLib;
 using Multiplayer.Components.Networking;
 using Multiplayer.Editor;
+using UnityChan;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -44,6 +45,11 @@ public static class Multiplayer
     {
         if (!LoadAssets())
             return;
+
+        if (typeof(AutoBlink).IsClass)
+        {
+            // Ensure the UnityChan assembly gets loaded.
+        }
 
         Log("Creating NetworkManager...");
         NetworkLifecycle.CreateLifecycle();

@@ -16,7 +16,7 @@ public class Settings : UnityModManager.ModSettings, IDrawable
 
     [Header("Server")]
     [Draw("Password", Tooltip = "The password required to join your server. Leave blank for no password.")]
-    public string Password;
+    public string Password = "";
     [Draw("Max Players", Tooltip = "The maximum number of players that can join your server, including yourself.")]
     public int MaxPlayers = 4;
     [Draw("Port", Tooltip = "The port that your server will listen on. You generally don't need to change this.")]
@@ -40,6 +40,7 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     {
         Port = Mathf.Clamp(Port, 1024, 49151);
         MaxPlayers = Mathf.Clamp(MaxPlayers, byte.MinValue, byte.MaxValue);
+        Password = Password?.Trim();
         OnSettingsUpdated?.Invoke(this);
         Save(this, modEntry);
     }

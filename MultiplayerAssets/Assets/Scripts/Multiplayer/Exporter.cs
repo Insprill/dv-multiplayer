@@ -12,7 +12,7 @@ namespace Multiplayer.Editor
     {
         private const string ASSET_BUNDLE_NAME = "multiplayer";
         private const string DEST_DIR = "../build";
-        private const string BUNDLE_DEST_PATH = DEST_DIR + "/" + ASSET_BUNDLE_NAME + ".assetbundle";
+        private const string ASSET_BUNDLE_DEST_NAME = ASSET_BUNDLE_NAME + ".assetbundle";
         private static readonly string[] COPY_DLLS = {
             "LiteNetLib.dll",
             "MultiplayerEditor.dll",
@@ -31,6 +31,10 @@ namespace Multiplayer.Editor
         {
             Debug.Log("Building Asset Bundle");
 
+            Directory.CreateDirectory(DEST_DIR);
+
+            string destFile = Path.Combine(DEST_DIR, ASSET_BUNDLE_DEST_NAME);
+
             AssetBundleBuild build = new AssetBundleBuild {
                 assetBundleName = ASSET_BUNDLE_NAME,
                 assetNames = AssetDatabase.GetAssetPathsFromAssetBundle(ASSET_BUNDLE_NAME)
@@ -41,18 +45,10 @@ namespace Multiplayer.Editor
             Directory.CreateDirectory(buildDir);
             BuildPipeline.BuildAssetBundles(buildDir, new[] { build }, BuildAssetBundleOptions.None, BuildTarget.StandaloneWindows64);
 
-            if (File.Exists(BUNDLE_DEST_PATH))
-                File.Delete(BUNDLE_DEST_PATH);
+            if (File.Exists(destFile))
+                File.Delete(destFile);
 
-            string bundleDestDir = Path.GetDirectoryName(BUNDLE_DEST_PATH);
-            if (bundleDestDir == null)
-            {
-                Debug.LogError("Could not get directory name for " + BUNDLE_DEST_PATH);
-                return;
-            }
-
-            Directory.CreateDirectory(bundleDestDir);
-            File.Move(Path.Combine(buildDir, ASSET_BUNDLE_NAME), BUNDLE_DEST_PATH);
+            File.Move(Path.Combine(buildDir, ASSET_BUNDLE_NAME), destFile);
 
             Directory.Delete(buildDir, true);
 
@@ -67,16 +63,24 @@ namespace Multiplayer.Editor
                 return;
 
             Debug.Log("Validation passed, building Scripts");
+            Directory.CreateDirectory(DEST_DIR);
             string buildDir = CreateTmpDir();
             string exePath = Path.Combine(buildDir, Path.GetRandomFileName());
             string managedFolder = $"{Path.Combine(buildDir, Path.GetFileNameWithoutExtension(exePath))}_Data/Managed";
             BuildPipeline.BuildPlayer(Array.Empty<string>(), exePath, BuildTarget.StandaloneWindows64, BuildOptions.BuildScriptsOnly);
             foreach (string dll in COPY_DLLS)
             {
+                string sourceName = Path.Combine(managedFolder, dll);
+                if (!File.Exists(sourceName))
+                {
+                    Debug.LogError($"Could not find {sourceName} in build! You can inspect the build at '{buildDir}'.");
+                    return;
+                }
+
                 string destName = Path.Combine(DEST_DIR, dll);
                 if (File.Exists(destName))
                     File.Delete(destName);
-                File.Move(Path.Combine(managedFolder, dll), destName);
+                File.Move(sourceName, destName);
             }
 
             Directory.Delete(buildDir, true);

@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Net;
 using DV;
 using DV.UI;
@@ -16,6 +17,8 @@ namespace Multiplayer.Networking.Listeners;
 public class NetworkClient : NetworkManager
 {
     private NetPeer serverPeer;
+    // One way ping in milliseconds
+    private int ping;
     private readonly ClientPlayerManager playerManager;
 
     public NetworkClient(Settings settings) : base(settings)
@@ -39,12 +42,10 @@ public class NetworkClient : NetworkManager
     protected override void Subscribe()
     {
         netPacketProcessor.SubscribeReusable<ClientboundServerDenyPacket>(OnClientboundServerDenyPacket);
-        netPacketProcessor.SubscribeReusable<ClientboundPlayerJoinedPacket>(OnClientJoinedPacket);
-        netPacketProcessor.SubscribeReusable<ClientboundPlayerDisconnectPacket>(OnClientLeftPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundPlayerJoinedPacket>(OnClientboundPlayerJoinedPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundPlayerDisconnectPacket>(OnClientboundPlayerDisconnectPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPlayerPositionPacket>(OnClientboundPlayerPositionPacket);
-        netPacketProcessor.SubscribeReusable<ClientboundPingUpdatePacket>(packet =>
-        { /* TODO */
-        });
+        netPacketProcessor.SubscribeReusable<ClientboundPingUpdatePacket>(OnClientboundPingUpdatePacket);
     }
 
     #region Common
@@ -53,9 +54,21 @@ public class NetworkClient : NetworkManager
     {
         serverPeer = peer;
         if (NetworkLifecycle.Instance.IsHost)
+        {
+            SendReadyPacket();
             return;
-        AStartGameData.FallbackNewCareer();
+        }
+
         SceneSwitcher.SwitchToScene(DVScenes.Game);
+        NetworkLifecycle.Instance.StartCoroutine(WaitForWorldToLoad());
+    }
+
+    private IEnumerator WaitForWorldToLoad()
+    {
+        while (WorldMover.Instance == null || WorldMover.Instance.originShiftParent == null)
+            yield return null;
+        yield return null;
+        SendReadyPacket();
     }
 
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -101,7 +114,7 @@ public class NetworkClient : NetworkManager
 
     public override void OnNetworkLatencyUpdate(NetPeer peer, int latency)
     {
-        // todo
+        ping = latency;
     }
 
     public override void OnConnectionRequest(ConnectionRequest request)
@@ -121,37 +134,59 @@ public class NetworkClient : NetworkManager
             if (popup == null)
                 return;
             string text = $"{packet.Reason}";
-            if (packet.Extra != null && packet.Missing != null)
+            if (packet.Extra.Length != 0 || packet.Missing.Length != 0)
                 text += $"\n\nMissing mods:\n{string.Join("\n - ", packet.Missing)}\n\nExtra mods:\n{string.Join("\n - ", packet.Extra)}";
             popup.labelTMPro.text = text;
         });
     }
 
-    private void OnClientJoinedPacket(ClientboundPlayerJoinedPacket packet)
+    private void OnClientboundPlayerJoinedPacket(ClientboundPlayerJoinedPacket packet)
     {
+        Log($"Received player joined packet (Id: {packet.Id}, Username: {packet.Username})");
         playerManager.AddPlayer(packet.Id, packet.Username);
     }
 
-    private void OnClientLeftPacket(ClientboundPlayerDisconnectPacket packet)
+    private void OnClientboundPlayerDisconnectPacket(ClientboundPlayerDisconnectPacket packet)
     {
+        Log($"Received player disconnect packet (Id: {packet.Id})");
         playerManager.RemovePlayer(packet.Id);
     }
 
     private void OnClientboundPlayerPositionPacket(ClientboundPlayerPositionPacket packet)
     {
-        playerManager.UpdatePosition(packet.Id, packet.Position, packet.RotationY);
+        playerManager.UpdatePosition(packet);
+    }
+
+    private void OnClientboundPingUpdatePacket(ClientboundPingUpdatePacket packet)
+    {
+        // todo
     }
 
     #endregion
 
     #region Senders
 
-    public void SendPlayerPosition(Vector3 newPosition, float newRotationY)
+    private void SendReadyPacket()
+    {
+        SendPacket(serverPeer, new ServerboundClientReadyPacket(), DeliveryMethod.ReliableUnordered);
+    }
+
+    public void SendPlayerPosition(Vector3 position, float rotationY, bool IsJumping, bool reliable = false)
     {
         SendPacket(serverPeer, new ServerboundPlayerPositionPacket {
-            Position = newPosition,
-            RotationY = newRotationY
-        }, DeliveryMethod.Sequenced);
+            Position = position,
+            RotationY = rotationY,
+            IsJumping = IsJumping
+        }, reliable ? DeliveryMethod.ReliableSequenced : DeliveryMethod.Sequenced);
+    }
+
+    #endregion
+
+    #region Logging
+
+    private static void Log(object msg)
+    {
+        Multiplayer.Log($"[Client] {msg}");
     }
 
     #endregion

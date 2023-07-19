@@ -29,6 +29,7 @@ public abstract class NetworkManager : INetEventListener
     private void RegisterNestedTypes()
     {
         netPacketProcessor.RegisterNestedType(ModInfo.Serialize, ModInfo.Deserialize);
+        netPacketProcessor.RegisterNestedType(Vector2Serializer.Serialize, Vector2Serializer.Deserialize);
         netPacketProcessor.RegisterNestedType(Vector3Serializer.Serialize, Vector3Serializer.Deserialize);
     }
 
@@ -74,9 +75,9 @@ public abstract class NetworkManager : INetEventListener
         {
             netPacketProcessor.ReadAllPackets(reader, peer);
         }
-        catch (ParseException)
+        catch (ParseException e)
         {
-            // 💀
+            Multiplayer.LogWarning($"Failed to parse packet: {e.Message}");
         }
     }
 

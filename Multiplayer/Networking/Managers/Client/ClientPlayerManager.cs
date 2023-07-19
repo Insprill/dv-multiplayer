@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Multiplayer.Components.Networking.Player;
+using Multiplayer.Networking.Packets.Clientbound;
 using UnityEngine;
 
 namespace Multiplayer.Networking.Listeners;
@@ -19,6 +20,7 @@ public class ClientPlayerManager
     {
         GameObject go = Object.Instantiate(playerPrefab, WorldMover.Instance.originShiftParent);
         NetworkedPlayer networkedPlayer = go.AddComponent<NetworkedPlayer>();
+        networkedPlayer.username = username;
         playerMap.Add(id, networkedPlayer);
     }
 
@@ -30,9 +32,10 @@ public class ClientPlayerManager
         playerMap.Remove(id);
     }
 
-    public void UpdatePosition(byte id, Vector3 position, float rotationY)
+    public void UpdatePosition(ClientboundPlayerPositionPacket packet)
     {
-        if (playerMap.TryGetValue(id, out NetworkedPlayer player))
-            player.UpdatePosition(position, rotationY);
+        if (!playerMap.TryGetValue(packet.Id, out NetworkedPlayer player))
+            return;
+        player.UpdatePosition(packet.Position, packet.RotationY, packet.IsJumping);
     }
 }

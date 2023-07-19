@@ -54,7 +54,7 @@ namespace UnityChan
 		{
 			ResetTimer ();
 			// ランダム判定用関数をスタートする
-			StartCoroutine ("RandomChange");
+			StartCoroutine (RandomChange ());
 		}
 
 		//タイマーリセット
@@ -120,7 +120,7 @@ namespace UnityChan
 			ref_SMR_EYE_DEF.SetBlendShapeWeight (6, ratio_Open);
 			ref_SMR_EL_DEF.SetBlendShapeWeight (6, ratio_Open);
 		}
-		
+
 		// ランダム判定用関数
 		IEnumerator RandomChange ()
 		{

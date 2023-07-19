@@ -5,4 +5,9 @@ public class ServerPlayer
     public byte Id { get; set; }
     public string Username { get; set; }
     public int Ping { get; set; }
+
+    public override string ToString()
+    {
+        return $"{Id} ({Username})";
+    }
 }

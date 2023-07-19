@@ -29,6 +29,7 @@ public class NetworkServer : NetworkManager
     protected override void Subscribe()
     {
         netPacketProcessor.SubscribeReusable<ServerboundClientLoginPacket, ConnectionRequest>(OnServerboundClientLoginPacket);
+        netPacketProcessor.SubscribeReusable<ServerboundClientReadyPacket, NetPeer>(OnServerboundClientReadyPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
     }
 
@@ -49,8 +50,12 @@ public class NetworkServer : NetworkManager
 
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
-        serverPlayers.Remove((byte)peer.Id);
-        netPeers.Remove((byte)peer.Id);
+        byte id = (byte)peer.Id;
+        serverPlayers.Remove(id);
+        netPeers.Remove(id);
+        netManager.SendToAll(WritePacket(new ClientboundPlayerDisconnectPacket {
+            Id = id
+        }), DeliveryMethod.ReliableUnordered);
     }
 
     public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
@@ -80,11 +85,11 @@ public class NetworkServer : NetworkManager
 
     private void OnServerboundClientLoginPacket(ServerboundClientLoginPacket packet, ConnectionRequest request)
     {
-        Multiplayer.Log($"Processing login packet{(Multiplayer.Settings.LogIps ? $" from ({request.RemoteEndPoint.Address})" : "")}");
+        Log($"Processing login packet{(Multiplayer.Settings.LogIps ? $" from ({request.RemoteEndPoint.Address})" : "")}");
 
         if (Multiplayer.Settings.Password != packet.Password)
         {
-            Multiplayer.LogWarning("Denied login due to invalid password!");
+            LogWarning("Denied login due to invalid password!");
             ClientboundServerDenyPacket denyPacket = new() {
                 Reason = "Invalid password!"
             };
@@ -94,7 +99,7 @@ public class NetworkServer : NetworkManager
 
         if (packet.BuildMajorVersion != BuildInfo.BUILD_VERSION_MAJOR)
         {
-            Multiplayer.LogWarning($"Denied login to incorrect game version! Got: {packet.BuildMajorVersion}, expected: {BuildInfo.BUILD_VERSION_MAJOR}");
+            LogWarning($"Denied login to incorrect game version! Got: {packet.BuildMajorVersion}, expected: {BuildInfo.BUILD_VERSION_MAJOR}");
             ClientboundServerDenyPacket denyPacket = new() {
                 Reason = "Server is full!"
             };
@@ -103,7 +108,7 @@ public class NetworkServer : NetworkManager
 
         if (netManager.ConnectedPeersCount >= Multiplayer.Settings.MaxPlayers)
         {
-            Multiplayer.LogWarning("Denied login due to server being full!");
+            LogWarning("Denied login due to server being full!");
             ClientboundServerDenyPacket denyPacket = new() {
                 Reason = "Server is full!"
             };
@@ -115,7 +120,7 @@ public class NetworkServer : NetworkManager
         {
             ModInfo[] missing = serverMods.Except(clientMods).ToArray();
             ModInfo[] extra = clientMods.Except(serverMods).ToArray();
-            Multiplayer.LogWarning($"Denied login due to mod mismatch! {missing.Length} missing, {extra.Length} extra");
+            LogWarning($"Denied login due to mod mismatch! {missing.Length} missing, {extra.Length} extra");
             ClientboundServerDenyPacket denyPacket = new() {
                 Reason = "Mod mismatch!",
                 Missing = missing,
@@ -125,17 +130,9 @@ public class NetworkServer : NetworkManager
             return;
         }
 
-        Multiplayer.Log("Login accepted! Broadcasting to all clients");
+        Log("Login accepted! Broadcasting to all clients");
 
         NetPeer peer = request.Accept();
-
-        // Send all players to the new player
-        foreach (ServerPlayer player in serverPlayers.Values)
-            SendPacket(peer, new ClientboundPlayerJoinedPacket {
-                Id = player.Id,
-                Username = player.Username
-            }, DeliveryMethod.ReliableUnordered);
-
         byte peerId = (byte)peer.Id;
 
         ServerPlayer serverPlayer = new() {
@@ -151,7 +148,21 @@ public class NetworkServer : NetworkManager
             Username = packet.Username
         };
 
-        netManager.SendToAll(WritePacket(clientboundPlayerJoinedPacket), DeliveryMethod.ReliableOrdered, peer);
+        netManager.SendToAll(WritePacket(clientboundPlayerJoinedPacket), DeliveryMethod.ReliableUnordered, peer);
+    }
+
+    private void OnServerboundClientReadyPacket(ServerboundClientReadyPacket packet, NetPeer peer)
+    {
+        Log($"Client {peer.Id} is ready. Sending world state");
+        foreach (ServerPlayer player in serverPlayers.Values)
+        {
+            if (player.Id == peer.Id)
+                continue;
+            SendPacket(peer, new ClientboundPlayerJoinedPacket {
+                Id = player.Id,
+                Username = player.Username
+            }, DeliveryMethod.ReliableUnordered);
+        }
     }
 
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)
@@ -159,9 +170,24 @@ public class NetworkServer : NetworkManager
         ClientboundPlayerPositionPacket clientboundPacket = new() {
             Id = (byte)peer.Id,
             Position = packet.Position,
-            RotationY = packet.RotationY
+            RotationY = packet.RotationY,
+            IsJumping = packet.IsJumping
         };
 
         netManager.SendToAll(WritePacket(clientboundPacket), DeliveryMethod.Sequenced, peer);
     }
+
+    #region Logging
+
+    private static void Log(object msg)
+    {
+        Multiplayer.Log($"[Server] {msg}");
+    }
+
+    private static void LogWarning(object msg)
+    {
+        Multiplayer.LogWarning($"[Server] {msg}");
+    }
+
+    #endregion
 }
