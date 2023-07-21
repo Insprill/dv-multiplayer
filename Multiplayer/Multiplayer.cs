@@ -30,6 +30,17 @@ public static class Multiplayer
             Log("Patching...");
             harmony = new Harmony(ModEntry.Info.Id);
             harmony.PatchAll();
+
+            if (!LoadAssets())
+                return false;
+
+            if (typeof(AutoBlink).IsClass)
+            {
+                // Ensure the UnityChan assembly gets loaded.
+            }
+
+            Log("Creating NetworkManager...");
+            NetworkLifecycle.CreateLifecycle();
         }
         catch (Exception ex)
         {
@@ -39,20 +50,6 @@ public static class Multiplayer
         }
 
         return true;
-    }
-
-    internal static void OnBootstrapped()
-    {
-        if (!LoadAssets())
-            return;
-
-        if (typeof(AutoBlink).IsClass)
-        {
-            // Ensure the UnityChan assembly gets loaded.
-        }
-
-        Log("Creating NetworkManager...");
-        NetworkLifecycle.CreateLifecycle();
     }
 
     private static bool LoadAssets()
