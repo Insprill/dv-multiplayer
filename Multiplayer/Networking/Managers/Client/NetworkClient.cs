@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net;
 using DV;
@@ -14,6 +15,7 @@ using Multiplayer.Patches.World;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityModManagerNet;
+using Object = UnityEngine.Object;
 
 namespace Multiplayer.Networking.Listeners;
 
@@ -25,6 +27,9 @@ public class NetworkClient : NetworkManager
     private int ping;
     private NetPeer serverPeer;
     private readonly ClientPlayerManager playerManager;
+
+    private int timeDifference;
+    private int timestamp => DateTime.UtcNow.Millisecond - timeDifference;
 
     public NetworkClient(Settings settings) : base(settings)
     {
@@ -51,6 +56,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundPlayerDisconnectPacket>(OnClientboundPlayerDisconnectPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPlayerPositionPacket>(OnClientboundPlayerPositionPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPingUpdatePacket>(OnClientboundPingUpdatePacket);
+        netPacketProcessor.SubscribeReusable<ClientboundTimeSyncPacket>(OnClientboundTimeSyncPacket);
         netPacketProcessor.SubscribeReusable<ClientboundBeginWorldSyncPacket>(OnClientboundBeginWorldSyncPacket);
         netPacketProcessor.SubscribeReusable<ClientboundWeatherPacket>(OnClientboundWeatherPacket);
         netPacketProcessor.SubscribeReusable<ClientboundRemoveLoadingScreenPacket>(OnClientboundRemoveLoadingScreen);
@@ -165,6 +171,11 @@ public class NetworkClient : NetworkManager
     private void OnClientboundPingUpdatePacket(ClientboundPingUpdatePacket packet)
     {
         // todo: update ping in ui
+    }
+
+    private void OnClientboundTimeSyncPacket(ClientboundTimeSyncPacket packet)
+    {
+        timeDifference = DateTime.UtcNow.Millisecond - (packet.ServerTime + ping);
     }
 
     private void OnClientboundBeginWorldSyncPacket(ClientboundBeginWorldSyncPacket packet)

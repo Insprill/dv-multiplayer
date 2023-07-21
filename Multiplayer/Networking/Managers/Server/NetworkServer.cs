@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -82,6 +83,10 @@ public class NetworkServer : NetworkManager
         };
 
         SendPacketToAll(clientboundPingUpdatePacket, DeliveryMethod.ReliableOrdered, peer);
+
+        SendPacket(peer, new ClientboundTimeSyncPacket {
+            ServerTime = DateTime.UtcNow.Millisecond
+        }, DeliveryMethod.ReliableOrdered);
     }
 
     public override void OnConnectionRequest(ConnectionRequest request)
