@@ -15,6 +15,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     public NetworkServer Server { get; private set; }
     public NetworkClient Client { get; private set; }
 
+    public bool IsServerRunning => Server?.IsRunning ?? false;
     public bool IsClientRunning => Client?.IsRunning ?? false;
 
     /// <summary>
@@ -23,7 +24,16 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     /// </summary>
     public bool IsHost(NetPeer peer)
     {
-        return Server?.IsRunning == true && Client?.selfPeer.Id == peer.Id;
+        return Server?.IsRunning == true && Client?.IsRunning == true && Client?.selfPeer?.Id == peer?.Id;
+    }
+
+    /// <summary>
+    ///     Whether the caller is the host.
+    ///     Note that this does NOT check authority, and should only be used for client-only logic.
+    /// </summary>
+    public bool IsHost()
+    {
+        return IsHost(Client?.selfPeer);
     }
 
     private readonly Queue<Action> mainMenuLoadedQueue = new();
