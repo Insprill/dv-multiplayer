@@ -54,6 +54,8 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundWeatherPacket>(OnClientboundWeatherPacket);
         netPacketProcessor.SubscribeReusable<ClientboundRemoveLoadingScreenPacket>(OnClientboundRemoveLoadingScreen);
         netPacketProcessor.SubscribeReusable<ClientboundTimeAdvancePacket>(OnClientboundTimeAdvancePacket);
+        netPacketProcessor.SubscribeReusable<ClientboundJunctionStatePacket>(OnClientboundJunctionStatePacket);
+        netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
     }
 
     #region Common
@@ -202,6 +204,21 @@ public class NetworkClient : NetworkManager
         TimeAdvance_AdvanceTime_Patch.DontSend = false;
     }
 
+    private void OnClientboundJunctionStatePacket(ClientboundJunctionStatePacket packet)
+    {
+        Junction[] junctions = WorldData.Instance.OrderedJunctions;
+        for (int i = 0; i < packet.selectedBranches.Length; i++) junctions[i].selectedBranch = packet.selectedBranches[i];
+    }
+
+    public void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet)
+    {
+        Junction_Switched_Patch.DontSend = true;
+        Junction junction = WorldData.Instance.OrderedJunctions[packet.junctionId];
+        junction.selectedBranch = packet.selectedBranch - 1;
+        junction.Switch(Junction.SwitchMode.REGULAR);
+        Junction_Switched_Patch.DontSend = false;
+    }
+
     #endregion
 
     #region Senders
@@ -225,6 +242,14 @@ public class NetworkClient : NetworkManager
     {
         SendPacket(serverPeer, new ServerboundTimeAdvancePacket {
             amountOfTimeToSkipInSeconds = amountOfTimeToSkipInSeconds
+        }, DeliveryMethod.ReliableUnordered);
+    }
+
+    public void SendJunctionSwitched(ushort junctionId, byte selectedBranch)
+    {
+        SendPacket(serverPeer, new CommonChangeJunctionPacket {
+            junctionId = junctionId,
+            selectedBranch = selectedBranch
         }, DeliveryMethod.ReliableUnordered);
     }
 

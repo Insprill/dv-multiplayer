@@ -35,6 +35,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundClientReadyPacket, NetPeer>(OnServerboundClientReadyPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
+        netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
     }
 
     public bool TryGetServerPlayer(NetPeer peer, out ServerPlayer player)
@@ -206,6 +207,11 @@ public class NetworkServer : NetworkManager
         // Send weather state
         SendPacket(peer, WeatherDriver.Instance.GetSaveData().ToObject<ClientboundWeatherPacket>(), DeliveryMethod.ReliableOrdered);
 
+        // Send junctions
+        SendPacket(peer, new ClientboundJunctionStatePacket {
+            selectedBranches = WorldData.Instance.OrderedJunctions.Select(j => (byte)j.selectedBranch).ToArray()
+        }, DeliveryMethod.ReliableOrdered);
+
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
     }
@@ -227,6 +233,11 @@ public class NetworkServer : NetworkManager
         SendPacketToAll(new ClientboundTimeAdvancePacket {
             amountOfTimeToSkipInSeconds = packet.amountOfTimeToSkipInSeconds
         }, DeliveryMethod.ReliableUnordered, peer);
+    }
+
+    private void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet)
+    {
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered);
     }
 
     #region Logging
