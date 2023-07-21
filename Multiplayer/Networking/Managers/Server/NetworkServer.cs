@@ -136,9 +136,10 @@ public class NetworkServer : NetworkManager
         {
             LogWarning($"Denied login to incorrect game version! Got: {packet.BuildMajorVersion}, expected: {BuildInfo.BUILD_VERSION_MAJOR}");
             ClientboundServerDenyPacket denyPacket = new() {
-                Reason = "Server is full!"
+                Reason = $"Game version mismatch! Server build: {BuildInfo.BUILD_VERSION_MAJOR}, your build: {packet.BuildMajorVersion}."
             };
             request.Reject(WritePacket(denyPacket));
+            return;
         }
 
         if (netManager.ConnectedPeersCount >= Multiplayer.Settings.MaxPlayers)
@@ -148,6 +149,7 @@ public class NetworkServer : NetworkManager
                 Reason = "Server is full!"
             };
             request.Reject(WritePacket(denyPacket));
+            return;
         }
 
         ModInfo[] clientMods = packet.Mods;
