@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Net;
 using DV;
 using DV.UI;
@@ -55,7 +56,9 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundRemoveLoadingScreenPacket>(OnClientboundRemoveLoadingScreen);
         netPacketProcessor.SubscribeReusable<ClientboundTimeAdvancePacket>(OnClientboundTimeAdvancePacket);
         netPacketProcessor.SubscribeReusable<ClientboundJunctionStatePacket>(OnClientboundJunctionStatePacket);
+        netPacketProcessor.SubscribeReusable<ClientboundTurntableStatePacket>(OnClientboundTurntableStatePacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
+        netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
     }
 
     #region Common
@@ -207,16 +210,50 @@ public class NetworkClient : NetworkManager
     private void OnClientboundJunctionStatePacket(ClientboundJunctionStatePacket packet)
     {
         Junction[] junctions = WorldData.Instance.OrderedJunctions;
-        for (int i = 0; i < packet.selectedBranches.Length; i++) junctions[i].selectedBranch = packet.selectedBranches[i];
+        for (int i = 0; i < packet.selectedBranches.Length; i++)
+            junctions[i].selectedBranch = packet.selectedBranches[i];
     }
 
-    public void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet)
+    private void OnClientboundTurntableStatePacket(ClientboundTurntableStatePacket packet)
+    {
+        for (int i = 0; i < packet.rotations.Length; i++)
+        {
+            TurntableRailTrack turntableRailTrack = TurntableController.allControllers[i].turntable;
+            turntableRailTrack.targetYRotation = packet.rotations[i];
+            turntableRailTrack.RotateToTargetRotation(true);
+        }
+    }
+
+    private void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet)
     {
         Junction_Switched_Patch.DontSend = true;
-        Junction junction = WorldData.Instance.OrderedJunctions[packet.junctionId];
+        Junction[] orderedJunctions = WorldData.Instance.OrderedJunctions;
+        if (packet.index >= orderedJunctions.Length)
+        {
+            LogWarning($"Received {nameof(CommonChangeJunctionPacket)} for junction with index {packet.index}, but there's only {orderedJunctions.Length} junctions on the map!");
+            return;
+        }
+
+        Junction junction = orderedJunctions[packet.index];
         junction.selectedBranch = packet.selectedBranch - 1;
         junction.Switch(Junction.SwitchMode.REGULAR);
         Junction_Switched_Patch.DontSend = false;
+    }
+
+    private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet)
+    {
+        TurntableRailTrack_RotateToTargetRotation_Patch.DontSend = true;
+        List<TurntableController> controllers = TurntableController.allControllers;
+        if (packet.index >= controllers.Count)
+        {
+            LogWarning($"Received {nameof(CommonRotateTurntablePacket)} for turntable with index {packet.index}, but there's only {controllers.Count} turntables on the map!");
+            return;
+        }
+
+        TurntableRailTrack turntable = controllers[packet.index].turntable;
+        turntable.targetYRotation = packet.rotation;
+        turntable.RotateToTargetRotation();
+        TurntableRailTrack_RotateToTargetRotation_Patch.DontSend = false;
     }
 
     #endregion
@@ -245,12 +282,20 @@ public class NetworkClient : NetworkManager
         }, DeliveryMethod.ReliableUnordered);
     }
 
-    public void SendJunctionSwitched(ushort junctionId, byte selectedBranch)
+    public void SendJunctionSwitched(ushort index, byte selectedBranch)
     {
         SendPacket(serverPeer, new CommonChangeJunctionPacket {
-            junctionId = junctionId,
+            index = index,
             selectedBranch = selectedBranch
         }, DeliveryMethod.ReliableUnordered);
+    }
+
+    public void SendTurntableRotation(byte index, float rotation)
+    {
+        SendPacket(serverPeer, new CommonRotateTurntablePacket {
+            index = index,
+            rotation = rotation
+        }, DeliveryMethod.ReliableOrdered);
     }
 
     #endregion

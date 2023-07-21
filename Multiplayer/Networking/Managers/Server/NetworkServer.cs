@@ -17,6 +17,8 @@ public class NetworkServer : NetworkManager
 {
     private readonly Dictionary<byte, ServerPlayer> serverPlayers = new();
     private readonly Dictionary<byte, NetPeer> netPeers = new();
+
+    private NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
     private readonly ModInfo[] serverMods;
 
     public NetworkServer(Settings settings) : base(settings)
@@ -36,6 +38,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
+        netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
     }
 
     public bool TryGetServerPlayer(NetPeer peer, out ServerPlayer player)
@@ -212,6 +215,11 @@ public class NetworkServer : NetworkManager
             selectedBranches = WorldData.Instance.OrderedJunctions.Select(j => (byte)j.selectedBranch).ToArray()
         }, DeliveryMethod.ReliableOrdered);
 
+        // Send turntables
+        SendPacket(peer, new ClientboundTurntableStatePacket {
+            rotations = TurntableController.allControllers.Select(c => c.turntable.currentYRotation).ToArray()
+        }, DeliveryMethod.ReliableOrdered);
+
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
     }
@@ -232,10 +240,15 @@ public class NetworkServer : NetworkManager
     {
         SendPacketToAll(new ClientboundTimeAdvancePacket {
             amountOfTimeToSkipInSeconds = packet.amountOfTimeToSkipInSeconds
-        }, DeliveryMethod.ReliableUnordered, peer);
+        }, DeliveryMethod.ReliableOrdered, peer);
     }
 
     private void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet)
+    {
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered);
+    }
+
+    private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet)
     {
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered);
     }
