@@ -23,6 +23,13 @@ public static class MovementSyncPatch
     private static void CharacterMovement(CustomFirstPersonController __instance)
     {
         frameDelay = new WaitForSeconds(targetDeltaTime);
+        CoroutineManager.Instance.StartCoroutine(WaitForClient(__instance));
+    }
+
+    private static IEnumerator WaitForClient(CustomFirstPersonController __instance)
+    {
+        while (!NetworkLifecycle.Instance.IsClientRunning)
+            yield return null;
         CoroutineManager.Instance.StartCoroutine(SendPositionCoro(__instance, NetworkLifecycle.Instance.Client));
     }
 

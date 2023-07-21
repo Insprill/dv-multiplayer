@@ -183,6 +183,7 @@ public class NetworkServer : NetworkManager
 
         Log($"Client {peer.Id} is ready. Sending world state");
 
+        // No need to sync the world state if the player is the host
         if (NetworkLifecycle.Instance.IsHost(peer))
         {
             SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
