@@ -7,8 +7,7 @@
 
     <ItemGroup>
         <PackageReference Include="Krafs.Publicizer" Version="2.2.1" />
-        <Publicize Include="Assembly-CSharp:CustomFirstPersonController.Awake" />
-        <Publicize Include="Assembly-CSharp:CustomFirstPersonController.SetJumpParameters" />
+        <Publicize Include="Assembly-CSharp" IncludeCompilerGeneratedMembers="false" />
     </ItemGroup>
 
     <!-- Derail Valley -->

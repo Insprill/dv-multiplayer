@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using DV.Utils;
+using LiteNetLib;
 using Multiplayer.Networking.Listeners;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -11,25 +12,41 @@ namespace Multiplayer.Components.Networking;
 // https://revenantx.github.io/LiteNetLib/index.html
 public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 {
-    /// <summary>
-    ///     Whether this instance is the host.
-    ///     Note that this does NOT check authority, and should only be used for client-only logic.
-    /// </summary>
-    public bool IsHost;
     public NetworkServer Server { get; private set; }
     public NetworkClient Client { get; private set; }
+
+    public bool IsClientRunning => Client?.IsRunning ?? false;
+
+    /// <summary>
+    ///     Whether the provided NetPeer is the host.
+    ///     Note that this does NOT check authority, and should only be used for client-only logic.
+    /// </summary>
+    public bool IsHost(NetPeer peer)
+    {
+        return Server?.IsRunning == true && Client?.selfPeer.Id == peer.Id;
+    }
 
     private readonly Queue<Action> mainMenuLoadedQueue = new();
 
     protected override void Awake()
     {
         base.Awake();
+        WorldStreamingInit.LoadingFinished += OnWorldLoaded;
         SceneManager.sceneLoaded += (scene, _) =>
         {
             if (scene.buildIndex != (int)DVScenes.MainMenu)
                 return;
             TriggerMainMenuEventLater();
         };
+    }
+
+    private void OnWorldLoaded()
+    {
+        // World moving is hard-disabled via the WorldMoverPatch, but we update this anyway so scripts are aware of that.
+        WorldMover.Instance.movingEnabled = false;
+
+        if (Client?.IsRunning != true)
+            StartServer(Multiplayer.Settings.Port);
     }
 
     public void TriggerMainMenuEventLater()
@@ -58,7 +75,6 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         server.Start(port);
         Server = server;
         StartClient("localhost", port, Multiplayer.Settings.Password);
-        IsHost = true;
     }
 
     public void StartClient(string address, int port, string password)
@@ -82,7 +98,6 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         Client?.Stop();
         Server = null;
         Client = null;
-        IsHost = false;
     }
 
     private void OnApplicationQuit()

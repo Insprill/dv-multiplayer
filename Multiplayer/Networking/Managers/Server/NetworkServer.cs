@@ -2,7 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using DV;
+using DV.WeatherSystem;
 using LiteNetLib;
+using LiteNetLib.Utils;
+using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Serverbound;
@@ -31,6 +34,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundClientLoginPacket, ConnectionRequest>(OnServerboundClientLoginPacket);
         netPacketProcessor.SubscribeReusable<ServerboundClientReadyPacket, NetPeer>(OnServerboundClientReadyPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
+        netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
     }
 
     public bool TryGetServerPlayer(NetPeer peer, out ServerPlayer player)
@@ -43,7 +47,7 @@ public class NetworkServer : NetworkManager
         return netPeers.TryGetValue(id, out peer);
     }
 
-    #region Common
+    #region Overrides
 
     public override void OnPeerConnected(NetPeer peer)
     { }
@@ -73,12 +77,34 @@ public class NetworkServer : NetworkManager
             Ping = latency
         };
 
-        netManager.SendToAll(WritePacket(clientboundPingUpdatePacket), DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(clientboundPingUpdatePacket, DeliveryMethod.ReliableOrdered, peer);
     }
 
     public override void OnConnectionRequest(ConnectionRequest request)
     {
         netPacketProcessor.ReadAllPackets(request.Data, request);
+    }
+
+    #endregion
+
+    #region Packet Senders
+
+    private void SendPacketToAll<T>(T packet, DeliveryMethod deliveryMethod) where T : class, new()
+    {
+        NetDataWriter writer = WritePacket(packet);
+        foreach (KeyValuePair<byte, NetPeer> kvp in netPeers)
+            kvp.Value.Send(writer, deliveryMethod);
+    }
+
+    private void SendPacketToAll<T>(T packet, DeliveryMethod deliveryMethod, NetPeer excludePeer) where T : class, new()
+    {
+        NetDataWriter writer = WritePacket(packet);
+        foreach (KeyValuePair<byte, NetPeer> kvp in netPeers)
+        {
+            if (kvp.Key == excludePeer.Id)
+                continue;
+            kvp.Value.Send(writer, deliveryMethod);
+        }
     }
 
     #endregion
@@ -130,30 +156,42 @@ public class NetworkServer : NetworkManager
             return;
         }
 
-        Log("Login accepted! Broadcasting to all clients");
-
         NetPeer peer = request.Accept();
-        byte peerId = (byte)peer.Id;
 
         ServerPlayer serverPlayer = new() {
-            Id = peerId,
+            Id = (byte)peer.Id,
             Username = packet.Username
         };
 
-        serverPlayers.Add(peerId, serverPlayer);
-        netPeers.Add(peerId, peer);
-
-        ClientboundPlayerJoinedPacket clientboundPlayerJoinedPacket = new() {
-            Id = peerId,
-            Username = packet.Username
-        };
-
-        netManager.SendToAll(WritePacket(clientboundPlayerJoinedPacket), DeliveryMethod.ReliableUnordered, peer);
+        serverPlayers.Add(serverPlayer.Id, serverPlayer);
     }
 
     private void OnServerboundClientReadyPacket(ServerboundClientReadyPacket packet, NetPeer peer)
     {
+        byte peerId = (byte)peer.Id;
+
+        // Allow the player to receive packets
+        netPeers.Add(peerId, peer);
+
+        // Send the new player to all other players
+        ServerPlayer serverPlayer = serverPlayers[peerId];
+        ClientboundPlayerJoinedPacket clientboundPlayerJoinedPacket = new() {
+            Id = peerId,
+            Username = serverPlayer.Username
+        };
+        SendPacketToAll(clientboundPlayerJoinedPacket, DeliveryMethod.ReliableOrdered, peer);
+
         Log($"Client {peer.Id} is ready. Sending world state");
+
+        if (NetworkLifecycle.Instance.IsHost(peer))
+        {
+            SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
+            return;
+        }
+
+        SendPacket(peer, new ClientboundBeginWorldSyncPacket(), DeliveryMethod.ReliableOrdered);
+
+        // Send existing players
         foreach (ServerPlayer player in serverPlayers.Values)
         {
             if (player.Id == peer.Id)
@@ -161,8 +199,14 @@ public class NetworkServer : NetworkManager
             SendPacket(peer, new ClientboundPlayerJoinedPacket {
                 Id = player.Id,
                 Username = player.Username
-            }, DeliveryMethod.ReliableUnordered);
+            }, DeliveryMethod.ReliableOrdered);
         }
+
+        // Send weather state
+        SendPacket(peer, WeatherDriver.Instance.GetSaveData().ToObject<ClientboundWeatherPacket>(), DeliveryMethod.ReliableOrdered);
+
+        // All data has been sent, allow the client to load into the world.
+        SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
     }
 
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)
@@ -174,7 +218,14 @@ public class NetworkServer : NetworkManager
             IsJumping = packet.IsJumping
         };
 
-        netManager.SendToAll(WritePacket(clientboundPacket), DeliveryMethod.Sequenced, peer);
+        SendPacketToAll(clientboundPacket, DeliveryMethod.Sequenced, peer);
+    }
+
+    private void OnServerboundTimeAdvancePacket(ServerboundTimeAdvancePacket packet, NetPeer peer)
+    {
+        SendPacketToAll(new ClientboundTimeAdvancePacket {
+            amountOfTimeToSkipInSeconds = packet.amountOfTimeToSkipInSeconds
+        }, DeliveryMethod.ReliableUnordered, peer);
     }
 
     #region Logging

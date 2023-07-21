@@ -1,14 +1,16 @@
-using System.Collections;
 using System.Net;
 using DV;
 using DV.UI;
 using DV.UIFramework;
+using DV.WeatherSystem;
 using LiteNetLib;
 using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Serverbound;
+using Multiplayer.Patches.World;
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -16,9 +18,11 @@ namespace Multiplayer.Networking.Listeners;
 
 public class NetworkClient : NetworkManager
 {
-    private NetPeer serverPeer;
+    public NetPeer selfPeer { get; private set; }
+
     // One way ping in milliseconds
     private int ping;
+    private NetPeer serverPeer;
     private readonly ClientPlayerManager playerManager;
 
     public NetworkClient(Settings settings) : base(settings)
@@ -36,7 +40,7 @@ public class NetworkClient : NetworkManager
             Mods = ModInfo.FromModEntries(UnityModManager.modEntries)
         };
         netPacketProcessor.Write(cachedWriter, serverboundClientLoginPacket);
-        netManager.Connect(address, port, cachedWriter);
+        selfPeer = netManager.Connect(address, port, cachedWriter);
     }
 
     protected override void Subscribe()
@@ -46,6 +50,10 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundPlayerDisconnectPacket>(OnClientboundPlayerDisconnectPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPlayerPositionPacket>(OnClientboundPlayerPositionPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPingUpdatePacket>(OnClientboundPingUpdatePacket);
+        netPacketProcessor.SubscribeReusable<ClientboundBeginWorldSyncPacket>(OnClientboundBeginWorldSyncPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundWeatherPacket>(OnClientboundWeatherPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundRemoveLoadingScreenPacket>(OnClientboundRemoveLoadingScreen);
+        netPacketProcessor.SubscribeReusable<ClientboundTimeAdvancePacket>(OnClientboundTimeAdvancePacket);
     }
 
     #region Common
@@ -53,22 +61,14 @@ public class NetworkClient : NetworkManager
     public override void OnPeerConnected(NetPeer peer)
     {
         serverPeer = peer;
-        if (NetworkLifecycle.Instance.IsHost)
+        if (NetworkLifecycle.Instance.IsHost(peer))
         {
             SendReadyPacket();
             return;
         }
 
         SceneSwitcher.SwitchToScene(DVScenes.Game);
-        NetworkLifecycle.Instance.StartCoroutine(WaitForWorldToLoad());
-    }
-
-    private IEnumerator WaitForWorldToLoad()
-    {
-        while (WorldMover.Instance == null || WorldMover.Instance.originShiftParent == null)
-            yield return null;
-        yield return null;
-        SendReadyPacket();
+        WorldStreamingInit.LoadingFinished += SendReadyPacket;
     }
 
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -159,7 +159,47 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundPingUpdatePacket(ClientboundPingUpdatePacket packet)
     {
-        // todo
+        // todo: update ping in ui
+    }
+
+    private void OnClientboundBeginWorldSyncPacket(ClientboundBeginWorldSyncPacket packet)
+    {
+        Log("Syncing world state");
+
+        DisplayLoadingInfo displayLoadingInfo = Object.FindObjectOfType<DisplayLoadingInfo>();
+        if (displayLoadingInfo == null)
+        {
+            LogError($"Received {nameof(ClientboundBeginWorldSyncPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
+            return;
+        }
+
+        displayLoadingInfo.OnLoadingStatusChanged("Syncing world state", false, 100);
+    }
+
+    private void OnClientboundWeatherPacket(ClientboundWeatherPacket packet)
+    {
+        WeatherDriver.Instance.LoadSaveData(JObject.FromObject(packet));
+    }
+
+    private void OnClientboundRemoveLoadingScreen(ClientboundRemoveLoadingScreenPacket packet)
+    {
+        Log("World sync finished, removing loading screen");
+
+        DisplayLoadingInfo displayLoadingInfo = Object.FindObjectOfType<DisplayLoadingInfo>();
+        if (displayLoadingInfo == null)
+        {
+            LogError($"Received {nameof(ClientboundRemoveLoadingScreenPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
+            return;
+        }
+
+        displayLoadingInfo.OnLoadingFinished();
+    }
+
+    private void OnClientboundTimeAdvancePacket(ClientboundTimeAdvancePacket packet)
+    {
+        TimeAdvance_AdvanceTime_Patch.DontSend = true;
+        TimeAdvance.AdvanceTime(packet.amountOfTimeToSkipInSeconds);
+        TimeAdvance_AdvanceTime_Patch.DontSend = false;
     }
 
     #endregion
@@ -168,7 +208,8 @@ public class NetworkClient : NetworkManager
 
     private void SendReadyPacket()
     {
-        SendPacket(serverPeer, new ServerboundClientReadyPacket(), DeliveryMethod.ReliableUnordered);
+        Log("World loaded, sending ready packet");
+        SendPacket(serverPeer, new ServerboundClientReadyPacket(), DeliveryMethod.ReliableOrdered);
     }
 
     public void SendPlayerPosition(Vector3 position, float rotationY, bool IsJumping, bool reliable = false)
@@ -180,6 +221,13 @@ public class NetworkClient : NetworkManager
         }, reliable ? DeliveryMethod.ReliableSequenced : DeliveryMethod.Sequenced);
     }
 
+    public void SendTimeAdvance(float amountOfTimeToSkipInSeconds)
+    {
+        SendPacket(serverPeer, new ServerboundTimeAdvancePacket {
+            amountOfTimeToSkipInSeconds = amountOfTimeToSkipInSeconds
+        }, DeliveryMethod.ReliableUnordered);
+    }
+
     #endregion
 
     #region Logging
@@ -187,6 +235,16 @@ public class NetworkClient : NetworkManager
     private static void Log(object msg)
     {
         Multiplayer.Log($"[Client] {msg}");
+    }
+
+    private static void LogWarning(object msg)
+    {
+        Multiplayer.LogWarning($"[Client] {msg}");
+    }
+
+    private static void LogError(object msg)
+    {
+        Multiplayer.LogError($"[Client] {msg}");
     }
 
     #endregion
