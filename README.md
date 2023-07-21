@@ -9,14 +9,14 @@
 
 <!-- PROJECT LOGO -->
 <div align="center">
-  <h1>Gauge</h1>
+  <h1>Derail Valley Multiplayer</h1>
   <p>
-    A <a href="https://store.steampowered.com/app/588030">Derail Valley</a> that allows the track gauge to be changed. 
+    A <a href="https://store.steampowered.com/app/588030">Derail Valley</a> mod that adds multiplayer.
     <br />
     <br />
-    <a href="https://github.com/Insprill/dv-gauge/issues">Report Bug</a>
+    <a href="https://github.com/Insprill/dv-multiplayer/issues">Report Bug</a>
     ·
-    <a href="https://github.com/Insprill/dv-gauge/issues">Request Feature</a>
+    <a href="https://github.com/Insprill/dv-multiplayer/issues">Request Feature</a>
   </p>
 </div>
 
@@ -30,7 +30,6 @@
     <li><a href="#about-the-project">About The Project</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#building">Building</a></li>
-    <li><a href="#building-the-asset-bundle">Building the Asset Bundle</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
   </ol>
@@ -43,10 +42,18 @@
 
 ## About The Project
 
-Gauge a Derail Valley mod that allows you to change the track gauge to anything you want.
+Multiplayer is a Derail Valley mod that adds multiplayer to the game, allowing you to play with your friends.
 
-This changes the gauge of the tracks, rolling stock bogies, and track decorations like buffer stops.
-Physics is unaffected, this mod is purely aesthetic.
+It works by having one player host a game, and then other players can join that game.
+
+
+
+
+<!-- Roadmap -->
+
+## Roadmap
+
+For a list of planned features, see the [project board][project-board-url].
 
 
 
@@ -55,24 +62,10 @@ Physics is unaffected, this mod is purely aesthetic.
 
 ## Building
 
-Gauge uses the same build system as Mapify.
-For instructions on how to build the project, please read the [Mapify building documentation][mapify-building-docs].
+Before you can build Multiplayer, you'll need to build the Unity project.  
+To do this, open the `MultiplayerAssets` folder in Unity **2019.4.40f1**, then click on the `Multiplayer` > `Build Asset Bundle and Scripts ` menu item.
 
-
-
-
-<!-- BUILDING ASSET BUNDLE -->
-
-## Building The Asset Bundle
-
-To build the AssetBundle for gauge, you'll need to install Unity **2019.4.40f1**.
-You can then open up the `GaugeBundleBuilder` project in this repo.
-
-To add the meshes to the project you'll need to export them yourself using something like [AssetStudio][asset-studio-url].
-You can find all the meshes you need to export in `GaugeBundleBuilder/Assets/Meshes/meshes.txt`.
-
-To build the bundle, go to `Gauge > Build Asset Bundle`.
-If you're missing meshes, it won't let you build the bundle.
+Once the Unity project is compiled, the rest of the mod uses the same build system as Mapify which you can read about in the [Mapify building documentation][mapify-building-docs].
 
 
 
@@ -104,17 +97,18 @@ These assets are not covered by the Apache 2.0 license and have different terms 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[contributors-shield]: https://img.shields.io/github/contributors/Insprill/dv-gauge.svg?style=for-the-badge
-[contributors-url]: https://github.com/Insprill/dv-gauge/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/Insprill/dv-gauge.svg?style=for-the-badge
-[forks-url]: https://github.com/Insprill/dv-gauge/network/members
-[stars-shield]: https://img.shields.io/github/stars/Insprill/dv-gauge.svg?style=for-the-badge
-[stars-url]: https://github.com/Insprill/dv-gauge/stargazers
-[issues-shield]: https://img.shields.io/github/issues/Insprill/dv-gauge.svg?style=for-the-badge
-[issues-url]: https://github.com/Insprill/dv-gauge/issues
-[license-shield]: https://img.shields.io/github/license/Insprill/dv-gauge.svg?style=for-the-badge
-[license-url]: https://github.com/Insprill/dv-gauge/blob/master/LICENSE
+[contributors-shield]: https://img.shields.io/github/contributors/Insprill/dv-multiplayer.svg?style=for-the-badge
+[contributors-url]: https://github.com/Insprill/dv-multiplayer/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/Insprill/dv-multiplayer.svg?style=for-the-badge
+[forks-url]: https://github.com/Insprill/dv-multiplayer/network/members
+[stars-shield]: https://img.shields.io/github/stars/Insprill/dv-multiplayer.svg?style=for-the-badge
+[stars-url]: https://github.com/Insprill/dv-multiplayer/stargazers
+[issues-shield]: https://img.shields.io/github/issues/Insprill/dv-multiplayer.svg?style=for-the-badge
+[issues-url]: https://github.com/Insprill/dv-multiplayer/issues
+[license-shield]: https://img.shields.io/github/license/Insprill/dv-multiplayer.svg?style=for-the-badge
+[license-url]: https://github.com/Insprill/dv-multiplayer/blob/master/LICENSE
 [altfuture-support-email-url]: mailto:support@altfuture.gg
 [contributing-quickstart-url]: https://docs.github.com/en/get-started/quickstart/contributing-to-projects
 [asset-studio-url]: https://github.com/Perfare/AssetStudio
 [mapify-building-docs]: https://dv-mapify.readthedocs.io/en/latest/contributing/building/
+[project-board-url]: https://github.com/users/Insprill/projects/8
