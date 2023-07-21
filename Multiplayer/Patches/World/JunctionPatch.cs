@@ -11,7 +11,7 @@ public static class Junction_Switched_Patch
     public static bool DontSend;
     private static readonly Dictionary<Junction, ushort> junctionToIndex = new();
 
-    private static void Postfix(Junction __instance)
+    private static void Postfix(Junction __instance, Junction.SwitchMode mode)
     {
         if (DontSend || !NetworkLifecycle.Instance.IsClientRunning)
             return;
@@ -19,7 +19,7 @@ public static class Junction_Switched_Patch
         if (!junctionToIndex.TryGetValue(__instance, out ushort index))
             index = CacheJunction(__instance);
 
-        NetworkLifecycle.Instance.Client.SendJunctionSwitched(index, (byte)__instance.selectedBranch);
+        NetworkLifecycle.Instance.Client.SendJunctionSwitched(index, (byte)__instance.selectedBranch, mode);
     }
 
     private static ushort CacheJunction(Junction __instance)

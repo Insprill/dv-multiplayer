@@ -2,6 +2,7 @@ namespace Multiplayer.Networking.Packets.Serverbound;
 
 public class CommonChangeJunctionPacket
 {
-    public ushort index { get; set; }
-    public byte selectedBranch { get; set; }
+    public ushort Index { get; set; }
+    public byte SelectedBranch { get; set; }
+    public byte Mode { get; set; }
 }

@@ -226,23 +226,22 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet)
     {
-        Junction_Switched_Patch.DontSend = true;
         Junction[] orderedJunctions = WorldData.Instance.OrderedJunctions;
-        if (packet.index >= orderedJunctions.Length)
+        if (packet.Index >= orderedJunctions.Length)
         {
-            LogWarning($"Received {nameof(CommonChangeJunctionPacket)} for junction with index {packet.index}, but there's only {orderedJunctions.Length} junctions on the map!");
+            LogWarning($"Received {nameof(CommonChangeJunctionPacket)} for junction with index {packet.Index}, but there's only {orderedJunctions.Length} junctions on the map!");
             return;
         }
 
-        Junction junction = orderedJunctions[packet.index];
-        junction.selectedBranch = packet.selectedBranch - 1;
-        junction.Switch(Junction.SwitchMode.REGULAR);
+        Junction junction = orderedJunctions[packet.Index];
+        Junction_Switched_Patch.DontSend = true;
+        junction.selectedBranch = packet.SelectedBranch - 1; // Junction#Switch increments this before processing
+        junction.Switch((Junction.SwitchMode)packet.Mode);
         Junction_Switched_Patch.DontSend = false;
     }
 
     private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet)
     {
-        TurntableRailTrack_RotateToTargetRotation_Patch.DontSend = true;
         List<TurntableController> controllers = TurntableController.allControllers;
         if (packet.index >= controllers.Count)
         {
@@ -252,6 +251,8 @@ public class NetworkClient : NetworkManager
 
         TurntableRailTrack turntable = controllers[packet.index].turntable;
         turntable.targetYRotation = packet.rotation;
+
+        TurntableRailTrack_RotateToTargetRotation_Patch.DontSend = true;
         turntable.RotateToTargetRotation();
         TurntableRailTrack_RotateToTargetRotation_Patch.DontSend = false;
     }
@@ -282,11 +283,12 @@ public class NetworkClient : NetworkManager
         }, DeliveryMethod.ReliableUnordered);
     }
 
-    public void SendJunctionSwitched(ushort index, byte selectedBranch)
+    public void SendJunctionSwitched(ushort index, byte selectedBranch, Junction.SwitchMode mode)
     {
         SendPacket(serverPeer, new CommonChangeJunctionPacket {
-            index = index,
-            selectedBranch = selectedBranch
+            Index = index,
+            SelectedBranch = selectedBranch,
+            Mode = (byte)mode
         }, DeliveryMethod.ReliableUnordered);
     }
 
