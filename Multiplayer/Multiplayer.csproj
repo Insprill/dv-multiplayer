@@ -58,9 +58,10 @@
 
     <!-- Unity -->
     <ItemGroup>
-        <Reference Include="UnityEngine.UI" />
         <Reference Include="Unity.TextMeshPro" />
-        <PackageReference Include="UnityEngine.Modules" Version="2019.4.40" IncludeAssets="compile" />
+        <Reference Include="UnityEngine.AssetBundleModule" />
+        <Reference Include="UnityEngine.CoreModule" />
+        <Reference Include="UnityEngine.UI" />
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
