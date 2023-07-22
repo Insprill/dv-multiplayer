@@ -35,8 +35,8 @@ public class ClientboundSpawnExistingTrainCarPacket
                 PositionAlongTrack = trainCar.Bogies[1].traveller.pointRelativeSpan,
                 IsDerailed = trainCar.Bogies[1].HasDerailed
             },
-            CouplerFCoupled = trainCar.frontCoupler.loadedCoupledState,
-            CouplerRCoupled = trainCar.rearCoupler.loadedCoupledState
+            CouplerFCoupled = trainCar.frontCoupler.IsCoupled(),
+            CouplerRCoupled = trainCar.rearCoupler.IsCoupled()
         };
     }
 }

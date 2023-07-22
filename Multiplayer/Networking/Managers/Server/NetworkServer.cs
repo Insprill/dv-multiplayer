@@ -49,6 +49,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket, NetPeer>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket, NetPeer>(OnCommonHoseConnectedPacket);
         netPacketProcessor.SubscribeReusable<CommonHoseDisconnectedPacket, NetPeer>(OnCommonHoseDisconnectedPacket);
+        netPacketProcessor.SubscribeReusable<CommonCockFiddlePacket, NetPeer>(OnCommonCockFiddlePacket);
     }
 
     public bool TryGetServerPlayer(NetPeer peer, out ServerPlayer player)
@@ -133,7 +134,7 @@ public class NetworkServer : NetworkManager
             Position = position,
             Forward = forward,
             PlayerSpawnedCar = playerSpawnedCar
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
     public void SendBogieUpdate(TrainCar trainCar)
@@ -314,6 +315,11 @@ public class NetworkServer : NetworkManager
     }
 
     private void OnCommonHoseDisconnectedPacket(CommonHoseDisconnectedPacket packet, NetPeer peer)
+    {
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+    }
+
+    private void OnCommonCockFiddlePacket(CommonCockFiddlePacket packet, NetPeer peer)
     {
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
     }

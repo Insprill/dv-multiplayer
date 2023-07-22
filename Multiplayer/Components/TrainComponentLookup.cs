@@ -17,4 +17,9 @@ public class TrainComponentLookup : SingletonBehaviour<TrainComponentLookup>
     {
         return hoseToCoupler[hose];
     }
+
+    public new static string AllowAutoCreate()
+    {
+        return $"{nameof(TrainComponentLookup)}";
+    }
 }

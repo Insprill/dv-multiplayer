@@ -73,6 +73,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
         netPacketProcessor.SubscribeReusable<CommonHoseDisconnectedPacket>(OnCommonHoseDisconnectedPacket);
+        netPacketProcessor.SubscribeReusable<CommonCockFiddlePacket>(OnCommonCockFiddlePacket);
     }
 
     #region Common
@@ -354,7 +355,7 @@ public class NetworkClient : NetworkManager
         Coupler coupler = packet.IsFrontCoupler ? trainCar.frontCoupler : trainCar.rearCoupler;
         Coupler otherCoupler = packet.OtherCarIsFrontCoupler ? otherTrainCar.frontCoupler : otherTrainCar.rearCoupler;
 
-        coupler.CoupleTo(otherCoupler, viaChainInteraction: packet.FromChainInteraction);
+        coupler.CoupleTo(otherCoupler, packet.PlayAudio, packet.ViaChainInteraction);
     }
 
     private void OnCommonTrainUncouplePacket(CommonTrainUncouplePacket packet)
@@ -369,7 +370,7 @@ public class NetworkClient : NetworkManager
 
         Coupler coupler = packet.IsFrontCoupler ? trainCar.frontCoupler : trainCar.rearCoupler;
 
-        coupler.Uncouple(viaChainInteraction: packet.FromChainInteraction, dueToBrokenCouple: packet.DueToBrokenCouple);
+        coupler.Uncouple(packet.PlayAudio, false, packet.DueToBrokenCouple, packet.ViaChainInteraction);
     }
 
     private void OnCommonHoseConnectedPacket(CommonHoseConnectedPacket packet)
@@ -402,6 +403,21 @@ public class NetworkClient : NetworkManager
         Coupler coupler = packet.IsFront ? trainCar.frontCoupler : trainCar.rearCoupler;
 
         coupler.DisconnectAirHose(packet.PlayAudio);
+    }
+
+    private void OnCommonCockFiddlePacket(CommonCockFiddlePacket packet)
+    {
+        //todo: optimize
+        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
+        if (trainCar == null)
+        {
+            LogError($"Received {nameof(CommonCockFiddlePacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        Coupler coupler = packet.IsFront ? trainCar.frontCoupler : trainCar.rearCoupler;
+
+        coupler.hoseAndCock.SetCock(packet.IsOpen);
     }
 
     #endregion
@@ -452,23 +468,25 @@ public class NetworkClient : NetworkManager
         }, DeliveryMethod.ReliableOrdered);
     }
 
-    public void SendTrainCouple(Coupler coupler, Coupler otherCoupler, bool fromChainInteraction)
+    public void SendTrainCouple(Coupler coupler, Coupler otherCoupler, bool playAudio, bool viaChainInteraction)
     {
         SendPacketToServer(new CommonTrainCouplePacket {
             CarGUID = coupler.train.CarGUID,
             IsFrontCoupler = coupler.isFrontCoupler,
             OtherCarGUID = otherCoupler.train.CarGUID,
             OtherCarIsFrontCoupler = otherCoupler.isFrontCoupler,
-            FromChainInteraction = fromChainInteraction
+            PlayAudio = playAudio,
+            ViaChainInteraction = viaChainInteraction
         }, DeliveryMethod.ReliableOrdered);
     }
 
-    public void SendTrainUncouple(Coupler coupler, bool fromChainInteraction, bool dueToBrokenCouple)
+    public void SendTrainUncouple(Coupler coupler, bool playAudio, bool dueToBrokenCouple, bool viaChainInteraction)
     {
         SendPacketToServer(new CommonTrainUncouplePacket {
             CarGUID = coupler.train.CarGUID,
             IsFrontCoupler = coupler.isFrontCoupler,
-            FromChainInteraction = fromChainInteraction,
+            PlayAudio = playAudio,
+            ViaChainInteraction = viaChainInteraction,
             DueToBrokenCouple = dueToBrokenCouple
         }, DeliveryMethod.ReliableOrdered);
     }
@@ -490,6 +508,15 @@ public class NetworkClient : NetworkManager
             CarGUID = coupler.train.CarGUID,
             IsFront = coupler.isFrontCoupler,
             PlayAudio = playAudio
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendCockState(Coupler coupler, bool isOpen)
+    {
+        SendPacketToServer(new CommonCockFiddlePacket {
+            CarGUID = coupler.train.CarGUID,
+            IsFront = coupler.isFrontCoupler,
+            IsOpen = isOpen
         }, DeliveryMethod.ReliableOrdered);
     }
 
