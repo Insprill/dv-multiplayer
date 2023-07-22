@@ -103,7 +103,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     {
         while (true)
         {
-            float startTime = Time.realtimeSinceStartup;
+            float serverStartTime = Time.realtimeSinceStartup;
 
             try
             {
@@ -114,6 +114,12 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
                 Multiplayer.Log($"Exception while polling server events: {e}");
             }
 
+            float serverElapsedTime = Time.realtimeSinceStartup - serverStartTime;
+            if (serverElapsedTime > 0.15f)
+                Multiplayer.LogWarning($"[Server] PollEvents took {serverElapsedTime * 1000f}ms");
+
+            float clientStartTime = Time.realtimeSinceStartup;
+
             try
             {
                 Client?.PollEvents();
@@ -123,8 +129,11 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
                 Multiplayer.Log($"Exception while polling client events: {e}");
             }
 
-            float elapsedTime = Time.realtimeSinceStartup - startTime;
-            float remainingTime = Mathf.Max(0f, TICK_INTERVAL - elapsedTime);
+            float clientElapsedTime = Time.realtimeSinceStartup - clientStartTime;
+            if (clientElapsedTime > 0.15f)
+                Multiplayer.LogWarning($"[Client] PollEvents took {clientElapsedTime * 1000f}ms");
+
+            float remainingTime = Mathf.Max(0f, TICK_INTERVAL - (serverElapsedTime + clientElapsedTime));
             yield return new WaitForSecondsRealtime(remainingTime);
         }
     }

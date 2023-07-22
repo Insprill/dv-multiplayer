@@ -15,7 +15,7 @@ using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
-using Multiplayer.Patches.World;
+using Multiplayer.Utils;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityModManagerNet;
@@ -282,16 +282,13 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        TrainCarLivery livery = Globals.G.Types.Liveries.Find(l => l.id == packet.Id);
-        if (livery == null)
+        if (!TrainComponentLookup.Instance.LiveryFromId(packet.LiveryId, out TrainCarLivery livery))
         {
-            LogError($"Received {nameof(ClientboundSpawnNewTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.Id}");
+            LogError($"Received {nameof(ClientboundSpawnNewTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.LiveryId}");
             return;
         }
 
-        CarSpawner_SpawnCar_Patch.DontSend = true;
-        CarSpawner.Instance.SpawnCar(livery.prefab, track, packet.Position, packet.Forward, packet.PlayerSpawnedCar);
-        CarSpawner_SpawnCar_Patch.DontSend = false;
+        CarSpawner.Instance.SpawnCar(livery.prefab, track, packet.Position, packet.Forward, packet.PlayerSpawnedCar).SetNetId(packet.NetId);
     }
 
     public void OnClientboundSpawnExistingTrainCarPacket(ClientboundSpawnExistingTrainCarPacket packet)
@@ -310,14 +307,12 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        TrainCarLivery livery = Globals.G.Types.Liveries.Find(l => l.id == packet.Id);
-        if (livery == null)
+        if (!TrainComponentLookup.Instance.LiveryFromId(packet.LiveryId, out TrainCarLivery livery))
         {
-            LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.Id}");
+            LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.LiveryId}");
             return;
         }
 
-        CarSpawner_SpawnCar_Patch.DontSend = true;
         CarSpawner.Instance.SpawnLoadedCar(
             livery.prefab,
             packet.CarId,
@@ -333,13 +328,12 @@ public class NetworkClient : NetworkManager
             packet.Bogie2.PositionAlongTrack,
             packet.CouplerFCoupled,
             packet.CouplerRCoupled
-        );
-        CarSpawner_SpawnCar_Patch.DontSend = false;
+        ).SetNetId(packet.NetId);
     }
 
     public void OnClientboundDestroyTrainCarPacket(ClientboundDestroyTrainCarPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar))
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
             LogError($"Received {nameof(ClientboundDestroyTrainCarPacket)} but couldn't the car!");
             return;
@@ -350,7 +344,7 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainCarFromGUID(packet.OtherCarGUID, out TrainCar otherTrainCar))
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
         {
             LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
             return;
@@ -364,7 +358,7 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonTrainUncouplePacket(CommonTrainUncouplePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar))
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
             LogError($"Received {nameof(CommonTrainUncouplePacket)} but couldn't find one of the cars!");
             return;
@@ -377,7 +371,7 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonHoseConnectedPacket(CommonHoseConnectedPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainCarFromGUID(packet.OtherCarGUID, out TrainCar otherTrainCar))
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
         {
             LogError($"Received {nameof(CommonHoseConnectedPacket)} but couldn't find one of the cars!");
             return;
@@ -391,7 +385,7 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonHoseDisconnectedPacket(CommonHoseDisconnectedPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar))
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
             LogError($"Received {nameof(CommonHoseDisconnectedPacket)} but couldn't find one of the cars!");
             return;
@@ -404,7 +398,7 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonCockFiddlePacket(CommonCockFiddlePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar))
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
             LogError($"Received {nameof(CommonCockFiddlePacket)} but couldn't find one of the cars!");
             return;
@@ -466,9 +460,9 @@ public class NetworkClient : NetworkManager
     public void SendTrainCouple(Coupler coupler, Coupler otherCoupler, bool playAudio, bool viaChainInteraction)
     {
         SendPacketToServer(new CommonTrainCouplePacket {
-            CarGUID = coupler.train.CarGUID,
+            NetId = coupler.train.GetNetId(),
             IsFrontCoupler = coupler.isFrontCoupler,
-            OtherCarGUID = otherCoupler.train.CarGUID,
+            OtherNetId = otherCoupler.train.GetNetId(),
             OtherCarIsFrontCoupler = otherCoupler.isFrontCoupler,
             PlayAudio = playAudio,
             ViaChainInteraction = viaChainInteraction
@@ -478,7 +472,7 @@ public class NetworkClient : NetworkManager
     public void SendTrainUncouple(Coupler coupler, bool playAudio, bool dueToBrokenCouple, bool viaChainInteraction)
     {
         SendPacketToServer(new CommonTrainUncouplePacket {
-            CarGUID = coupler.train.CarGUID,
+            NetId = coupler.train.GetNetId(),
             IsFrontCoupler = coupler.isFrontCoupler,
             PlayAudio = playAudio,
             ViaChainInteraction = viaChainInteraction,
@@ -489,9 +483,9 @@ public class NetworkClient : NetworkManager
     public void SendHoseConnected(Coupler coupler, Coupler otherCoupler, bool playAudio)
     {
         SendPacketToServer(new CommonHoseConnectedPacket {
-            CarGUID = coupler.train.CarGUID,
+            NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
-            OtherCarGUID = otherCoupler.train.CarGUID,
+            OtherNetId = otherCoupler.train.GetNetId(),
             OtherIsFront = otherCoupler.isFrontCoupler,
             PlayAudio = playAudio
         }, DeliveryMethod.ReliableOrdered);
@@ -500,7 +494,7 @@ public class NetworkClient : NetworkManager
     public void SendHoseDisconnected(Coupler coupler, bool playAudio)
     {
         SendPacketToServer(new CommonHoseDisconnectedPacket {
-            CarGUID = coupler.train.CarGUID,
+            NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
             PlayAudio = playAudio
         }, DeliveryMethod.ReliableOrdered);
@@ -509,7 +503,7 @@ public class NetworkClient : NetworkManager
     public void SendCockState(Coupler coupler, bool isOpen)
     {
         SendPacketToServer(new CommonCockFiddlePacket {
-            CarGUID = coupler.train.CarGUID,
+            NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
             IsOpen = isOpen
         }, DeliveryMethod.ReliableOrdered);

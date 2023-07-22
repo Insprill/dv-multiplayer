@@ -12,7 +12,7 @@ public static class HoseAndCock_SetCock_Patch
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket)
             return;
-        Coupler coupler = TrainComponentLookup.Instance.CouplerFromHose(__instance);
-        NetworkLifecycle.Instance.Client?.SendCockState(coupler, open);
+        if (TrainComponentLookup.Instance.CouplerFromHose(__instance, out Coupler coupler))
+            NetworkLifecycle.Instance.Client?.SendCockState(coupler, open);
     }
 }

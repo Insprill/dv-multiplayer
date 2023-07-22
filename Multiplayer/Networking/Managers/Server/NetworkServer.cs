@@ -13,6 +13,7 @@ using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
+using Multiplayer.Utils;
 using UnityEngine;
 using UnityModManagerNet;
 
@@ -127,10 +128,11 @@ public class NetworkServer : NetworkManager
         }
     }
 
-    public void SendSpawnTrainCar(TrainCarLivery carToSpawn, RailTrack track, Vector3 position, Vector3 forward, bool playerSpawnedCar)
+    public void SendSpawnTrainCar(TrainCarLivery carToSpawn, ushort netId, RailTrack track, Vector3 position, Vector3 forward, bool playerSpawnedCar)
     {
         SendPacketToAll(new ClientboundSpawnNewTrainCarPacket {
-            Id = carToSpawn.id,
+            NetId = netId,
+            LiveryId = carToSpawn.id,
             Track = track.gameObject.name,
             Position = position,
             Forward = forward,
@@ -141,7 +143,7 @@ public class NetworkServer : NetworkManager
     public void SendDestroyTrainCar(TrainCar trainCar)
     {
         SendPacketToAll(new ClientboundDestroyTrainCarPacket {
-            CarGUID = trainCar.CarGUID
+            NetId = trainCar.GetNetId()
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
@@ -269,7 +271,11 @@ public class NetworkServer : NetworkManager
 
         // Send trains
         foreach (TrainCar trainCar in CarSpawner.Instance.allCars)
+        {
+            if (!trainCar.gameObject.activeInHierarchy)
+                continue;
             SendPacket(peer, ClientboundSpawnExistingTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered);
+        }
 
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);

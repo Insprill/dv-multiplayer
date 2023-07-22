@@ -1,3 +1,4 @@
+using Multiplayer.Components.Networking.Train;
 using Multiplayer.Networking.Packets.Common;
 using UnityEngine;
 
@@ -5,7 +6,8 @@ namespace Multiplayer.Networking.Packets.Clientbound.Train;
 
 public class ClientboundSpawnExistingTrainCarPacket
 {
-    public string Id { get; set; }
+    public ushort NetId { get; set; }
+    public string LiveryId { get; set; }
     public string CarId { get; set; }
     public string CarGuid { get; set; }
     public bool PlayerSpawnedCar { get; set; }
@@ -19,7 +21,8 @@ public class ClientboundSpawnExistingTrainCarPacket
     public static ClientboundSpawnExistingTrainCarPacket FromTrainCar(TrainCar trainCar)
     {
         return new ClientboundSpawnExistingTrainCarPacket {
-            Id = trainCar.carLivery.id,
+            NetId = trainCar.GetComponent<NetworkedTrainCar>().NetId,
+            LiveryId = trainCar.carLivery.id,
             CarId = trainCar.ID,
             CarGuid = trainCar.CarGUID,
             PlayerSpawnedCar = trainCar.playerSpawnedCar,

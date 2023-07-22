@@ -10,12 +10,18 @@ public class TrainCar_Awake_Patch
 {
     private static void Postfix(TrainCar __instance)
     {
-        __instance.LogicCarInitialized += () => TrainComponentLookup.Instance.RegisterTrainCarGUID(__instance);
-
-        if (!NetworkLifecycle.Instance.IsHost())
+        if (__instance.GetComponent<NetworkedTrainCar>() != null)
             return;
-        if (__instance.GetComponent<NetworkedTrainCar>() == null)
-            __instance.gameObject.AddComponent<NetworkedTrainCar>();
+        __instance.gameObject.AddComponent<NetworkedTrainCar>();
+    }
+}
+
+[HarmonyPatch(typeof(TrainCar), nameof(TrainCar.Start))]
+public class TrainCar_Start_Patch
+{
+    private static void Prefix(TrainCar __instance)
+    {
+        TrainComponentLookup.Instance.RegisterTrainCar(__instance);
     }
 }
 
@@ -25,7 +31,7 @@ public class TrainCar_PrepareForDestroy_Patch
     private static void Postfix(TrainCar __instance)
     {
         NetworkLifecycle.Instance.Server?.SendDestroyTrainCar(__instance);
-        TrainComponentLookup.Instance.UnregisterTrainCarGUID(__instance);
+        TrainComponentLookup.Instance.UnregisterTrainCar(__instance);
     }
 }
 
@@ -37,16 +43,6 @@ public class TrainCar_OnDestroy_Patch
         if (UnloadWatcher.isUnloading)
             return;
         NetworkLifecycle.Instance.Server?.SendDestroyTrainCar(__instance);
-        TrainComponentLookup.Instance.UnregisterTrainCarGUID(__instance);
-    }
-}
-
-[HarmonyPatch(typeof(TrainCar), nameof(TrainCar.SetupCouplers))]
-public class TrainCar_SetupCouplers_Patch
-{
-    private static void Postfix(TrainCar __instance)
-    {
-        foreach (Coupler coupler in __instance.couplers)
-            TrainComponentLookup.Instance.RegisterHose(coupler.hoseAndCock, coupler);
+        TrainComponentLookup.Instance.UnregisterTrainCar(__instance);
     }
 }
