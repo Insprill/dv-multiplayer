@@ -1,6 +1,6 @@
 using Multiplayer.Networking.Packets.Common;
 
-namespace Multiplayer.Networking.Packets.Clientbound;
+namespace Multiplayer.Networking.Packets.Clientbound.Train;
 
 public class ClientboundBogieUpdatePacket
 {

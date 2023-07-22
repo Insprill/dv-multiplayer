@@ -1,17 +1,7 @@
 using HarmonyLib;
-using Multiplayer.Components;
 using Multiplayer.Components.Networking;
 
 namespace Multiplayer.Patches.World;
-
-[HarmonyPatch(typeof(Coupler), nameof(Coupler.Start))]
-public static class Coupler_Start_Patch
-{
-    private static void Prefix(Coupler __instance)
-    {
-        TrainComponentLookup.Instance.RegisterHose(__instance.hoseAndCock, __instance);
-    }
-}
 
 [HarmonyPatch(typeof(Coupler), nameof(Coupler.CoupleTo))]
 public static class Coupler_CoupleTo_Patch

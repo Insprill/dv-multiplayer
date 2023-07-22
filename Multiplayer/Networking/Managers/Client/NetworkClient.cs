@@ -7,9 +7,11 @@ using DV.UI;
 using DV.UIFramework;
 using DV.WeatherSystem;
 using LiteNetLib;
+using Multiplayer.Components;
 using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Packets.Clientbound;
+using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
@@ -343,10 +345,7 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet)
     {
-        //todo: optimize
-        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
-        TrainCar otherTrainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.OtherCarGUID);
-        if (trainCar == null || otherTrainCar == null)
+        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainCarFromGUID(packet.OtherCarGUID, out TrainCar otherTrainCar))
         {
             LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
             return;
@@ -360,11 +359,9 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonTrainUncouplePacket(CommonTrainUncouplePacket packet)
     {
-        //todo: optimize
-        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
-        if (trainCar == null)
+        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+            LogError($"Received {nameof(CommonTrainUncouplePacket)} but couldn't find one of the cars!");
             return;
         }
 
@@ -375,12 +372,9 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonHoseConnectedPacket(CommonHoseConnectedPacket packet)
     {
-        //todo: optimize
-        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
-        TrainCar otherTrainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.OtherCarGUID);
-        if (trainCar == null || otherTrainCar == null)
+        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainCarFromGUID(packet.OtherCarGUID, out TrainCar otherTrainCar))
         {
-            LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+            LogError($"Received {nameof(CommonHoseConnectedPacket)} but couldn't find one of the cars!");
             return;
         }
 
@@ -392,11 +386,9 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonHoseDisconnectedPacket(CommonHoseDisconnectedPacket packet)
     {
-        //todo: optimize
-        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
-        if (trainCar == null)
+        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+            LogError($"Received {nameof(CommonHoseDisconnectedPacket)} but couldn't find one of the cars!");
             return;
         }
 
@@ -407,9 +399,7 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonCockFiddlePacket(CommonCockFiddlePacket packet)
     {
-        //todo: optimize
-        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
-        if (trainCar == null)
+        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar))
         {
             LogError($"Received {nameof(CommonCockFiddlePacket)} but couldn't find one of the cars!");
             return;

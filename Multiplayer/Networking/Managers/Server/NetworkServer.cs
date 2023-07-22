@@ -9,6 +9,7 @@ using LiteNetLib;
 using LiteNetLib.Utils;
 using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Packets.Clientbound;
+using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;

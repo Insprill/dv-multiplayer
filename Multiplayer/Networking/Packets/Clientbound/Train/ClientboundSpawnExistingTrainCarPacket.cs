@@ -1,7 +1,7 @@
 using Multiplayer.Networking.Packets.Common;
 using UnityEngine;
 
-namespace Multiplayer.Networking.Packets.Clientbound;
+namespace Multiplayer.Networking.Packets.Clientbound.Train;
 
 public class ClientboundSpawnExistingTrainCarPacket
 {
