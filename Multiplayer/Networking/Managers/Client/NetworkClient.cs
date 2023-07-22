@@ -213,9 +213,7 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundTimeAdvancePacket(ClientboundTimeAdvancePacket packet)
     {
-        TimeAdvance_AdvanceTime_Patch.DontSend = true;
         TimeAdvance.AdvanceTime(packet.amountOfTimeToSkipInSeconds);
-        TimeAdvance_AdvanceTime_Patch.DontSend = false;
     }
 
     private void OnClientboundJunctionStatePacket(ClientboundJunctionStatePacket packet)
@@ -245,10 +243,8 @@ public class NetworkClient : NetworkManager
         }
 
         Junction junction = orderedJunctions[packet.Index];
-        Junction_Switched_Patch.DontSend = true;
         junction.selectedBranch = packet.SelectedBranch - 1; // Junction#Switch increments this before processing
         junction.Switch((Junction.SwitchMode)packet.Mode);
-        Junction_Switched_Patch.DontSend = false;
     }
 
     private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet)
@@ -262,10 +258,7 @@ public class NetworkClient : NetworkManager
 
         TurntableRailTrack turntable = controllers[packet.index].turntable;
         turntable.targetYRotation = packet.rotation;
-
-        TurntableRailTrack_RotateToTargetRotation_Patch.DontSend = true;
         turntable.RotateToTargetRotation();
-        TurntableRailTrack_RotateToTargetRotation_Patch.DontSend = false;
     }
 
     #endregion

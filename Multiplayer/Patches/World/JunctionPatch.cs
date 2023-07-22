@@ -8,12 +8,11 @@ namespace Multiplayer.Patches.World;
 [HarmonyPatch(typeof(Junction), nameof(Junction.Switch))]
 public static class Junction_Switched_Patch
 {
-    public static bool DontSend;
     private static readonly Dictionary<Junction, ushort> junctionToIndex = new();
 
     private static void Postfix(Junction __instance, Junction.SwitchMode mode)
     {
-        if (DontSend || !NetworkLifecycle.Instance.IsClientRunning)
+        if (NetworkLifecycle.Instance.IsProcessingPacket || !NetworkLifecycle.Instance.IsClientRunning)
             return;
 
         if (!junctionToIndex.TryGetValue(__instance, out ushort index))

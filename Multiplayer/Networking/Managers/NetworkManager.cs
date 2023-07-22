@@ -14,6 +14,7 @@ public abstract class NetworkManager : INetEventListener
     protected readonly NetDataWriter cachedWriter = new();
 
     public bool IsRunning => netManager.IsRunning;
+    public bool IsProcessingPacket { get; private set; }
 
     protected NetworkManager(Settings settings)
     {
@@ -73,11 +74,16 @@ public abstract class NetworkManager : INetEventListener
     {
         try
         {
+            IsProcessingPacket = true;
             netPacketProcessor.ReadAllPackets(reader, peer);
         }
         catch (ParseException e)
         {
             Multiplayer.LogWarning($"Failed to parse packet: {e.Message}");
+        }
+        finally
+        {
+            IsProcessingPacket = false;
         }
     }
 

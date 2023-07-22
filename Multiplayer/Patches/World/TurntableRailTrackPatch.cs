@@ -8,12 +8,11 @@ namespace Multiplayer.Patches.World;
 [HarmonyPatch(typeof(TurntableRailTrack), nameof(TurntableRailTrack.RotateToTargetRotation))]
 public static class TurntableRailTrack_RotateToTargetRotation_Patch
 {
-    public static bool DontSend;
     private static readonly Dictionary<TurntableRailTrack, byte> turntableToIndex = new();
 
     private static void Prefix(TurntableRailTrack __instance, bool forceConnectionRefresh)
     {
-        if (DontSend || !NetworkLifecycle.Instance.IsClientRunning)
+        if (NetworkLifecycle.Instance.IsProcessingPacket || !NetworkLifecycle.Instance.IsClientRunning)
             return;
 
         float difference = __instance.targetYRotation - __instance.currentYRotation;
