@@ -406,7 +406,7 @@ public class NetworkClient : NetworkManager
 
         Coupler coupler = packet.IsFront ? trainCar.frontCoupler : trainCar.rearCoupler;
 
-        coupler.hoseAndCock.SetCock(packet.IsOpen);
+        coupler.IsCockOpen = packet.IsOpen;
     }
 
     #endregion
