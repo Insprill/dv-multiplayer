@@ -50,13 +50,10 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         };
     }
 
-    private void OnWorldLoaded()
+    private static void OnWorldLoaded()
     {
         // World moving is hard-disabled via the WorldMoverPatch, but we update this anyway so scripts are aware of that.
         WorldMover.Instance.movingEnabled = false;
-
-        if (Client?.IsRunning != true)
-            StartServer(Multiplayer.Settings.Port);
     }
 
     public void TriggerMainMenuEventLater()
