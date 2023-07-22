@@ -12,6 +12,9 @@ namespace Multiplayer.Components.Networking;
 // https://revenantx.github.io/LiteNetLib/index.html
 public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 {
+    private const byte TICK_RATE = 60;
+    private const float TICK_INTERVAL = 1.0f / TICK_RATE;
+
     public NetworkServer Server { get; private set; }
     public NetworkClient Client { get; private set; }
 
@@ -48,6 +51,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
                 return;
             TriggerMainMenuEventLater();
         };
+        StartCoroutine(PollEvents());
     }
 
     private static void OnWorldLoaded()
@@ -93,10 +97,34 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         Client = client;
     }
 
-    private void FixedUpdate()
+    private IEnumerator PollEvents()
     {
-        Server?.PollEvents();
-        Client?.PollEvents();
+        while (true)
+        {
+            float startTime = Time.realtimeSinceStartup;
+
+            try
+            {
+                Server?.PollEvents();
+            }
+            catch (Exception e)
+            {
+                Multiplayer.Log($"Exception while polling server events: {e}");
+            }
+
+            try
+            {
+                Client?.PollEvents();
+            }
+            catch (Exception e)
+            {
+                Multiplayer.Log($"Exception while polling client events: {e}");
+            }
+
+            float elapsedTime = Time.realtimeSinceStartup - startTime;
+            float remainingTime = Mathf.Max(0f, TICK_INTERVAL - elapsedTime);
+            yield return new WaitForSecondsRealtime(remainingTime);
+        }
     }
 
     public void Stop()
