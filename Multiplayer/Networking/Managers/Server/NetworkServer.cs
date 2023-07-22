@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using DV;
+using DV.ThingTypes;
 using DV.WeatherSystem;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
+using UnityEngine;
 using UnityModManagerNet;
 
 namespace Multiplayer.Networking.Listeners;
@@ -18,6 +21,8 @@ public class NetworkServer : NetworkManager
 {
     private readonly Dictionary<byte, ServerPlayer> serverPlayers = new();
     private readonly Dictionary<byte, NetPeer> netPeers = new();
+
+    public IReadOnlyCollection<ServerPlayer> ServerPlayers => serverPlayers.Values;
 
     private NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
     private readonly ModInfo[] serverMods;
@@ -40,6 +45,10 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
+        netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket, NetPeer>(OnCommonTrainCouplePacket);
+        netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket, NetPeer>(OnCommonTrainUncouplePacket);
+        netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket, NetPeer>(OnCommonHoseConnectedPacket);
+        netPacketProcessor.SubscribeReusable<CommonHoseDisconnectedPacket, NetPeer>(OnCommonHoseDisconnectedPacket);
     }
 
     public bool TryGetServerPlayer(NetPeer peer, out ServerPlayer player)
@@ -116,7 +125,29 @@ public class NetworkServer : NetworkManager
         }
     }
 
+    public void SendSpawnTrainCar(TrainCarLivery carToSpawn, RailTrack track, Vector3 position, Vector3 forward, bool playerSpawnedCar)
+    {
+        SendPacketToAll(new ClientboundSpawnNewTrainCarPacket {
+            Id = carToSpawn.id,
+            Track = track.gameObject.name,
+            Position = position,
+            Forward = forward,
+            PlayerSpawnedCar = playerSpawnedCar
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendBogieUpdate(TrainCar trainCar)
+    {
+        SendPacketToAll(new ClientboundBogieUpdatePacket {
+            CarGUID = trainCar.CarGUID,
+            Bogie1 = BogieData.FromBogie(trainCar.Bogies[0]),
+            Bogie2 = BogieData.FromBogie(trainCar.Bogies[1])
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
     #endregion
+
+    #region Listeners
 
     private void OnServerboundClientLoginPacket(ServerboundClientLoginPacket packet, ConnectionRequest request)
     {
@@ -227,12 +258,19 @@ public class NetworkServer : NetworkManager
             rotations = TurntableController.allControllers.Select(c => c.turntable.currentYRotation).ToArray()
         }, DeliveryMethod.ReliableOrdered);
 
+        // Send trains
+        foreach (TrainCar trainCar in CarSpawner.Instance.allCars)
+            SendPacket(peer, ClientboundSpawnExistingTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered);
+
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
     }
 
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)
     {
+        if (TryGetServerPlayer(peer, out ServerPlayer player))
+            player.Position = packet.Position;
+
         ClientboundPlayerPositionPacket clientboundPacket = new() {
             Id = (byte)peer.Id,
             Position = packet.Position,
@@ -259,6 +297,28 @@ public class NetworkServer : NetworkManager
     {
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered);
     }
+
+    private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet, NetPeer peer)
+    {
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+    }
+
+    private void OnCommonTrainUncouplePacket(CommonTrainUncouplePacket packet, NetPeer peer)
+    {
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+    }
+
+    private void OnCommonHoseConnectedPacket(CommonHoseConnectedPacket packet, NetPeer peer)
+    {
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+    }
+
+    private void OnCommonHoseDisconnectedPacket(CommonHoseDisconnectedPacket packet, NetPeer peer)
+    {
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+    }
+
+    #endregion
 
     #region Logging
 

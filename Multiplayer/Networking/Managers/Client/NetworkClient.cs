@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using DV;
+using DV.ThingTypes;
 using DV.UI;
 using DV.UIFramework;
 using DV.WeatherSystem;
@@ -10,6 +11,7 @@ using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
 using Multiplayer.Patches.World;
 using Newtonsoft.Json.Linq;
@@ -65,6 +67,12 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundTurntableStatePacket>(OnClientboundTurntableStatePacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
+        netPacketProcessor.SubscribeReusable<ClientboundSpawnNewTrainCarPacket>(OnClientboundSpawnNewTrainCarPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundSpawnExistingTrainCarPacket>(OnClientboundSpawnExistingTrainCarPacket);
+        netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket>(OnCommonTrainCouplePacket);
+        netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket>(OnCommonTrainUncouplePacket);
+        netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
+        netPacketProcessor.SubscribeReusable<CommonHoseDisconnectedPacket>(OnCommonHoseDisconnectedPacket);
     }
 
     #region Common
@@ -268,19 +276,152 @@ public class NetworkClient : NetworkManager
         TurntableRailTrack_RotateToTargetRotation_Patch.DontSend = false;
     }
 
+    public void OnClientboundSpawnNewTrainCarPacket(ClientboundSpawnNewTrainCarPacket packet)
+    {
+        RailTrack track = RailTrackRegistry.Instance.GetTrackWithName(packet.Track);
+        if (track == null)
+        {
+            LogError($"Received {nameof(ClientboundSpawnNewTrainCarPacket)} but couldn't find track with name {packet.Track}");
+            return;
+        }
+
+        TrainCarLivery livery = Globals.G.Types.Liveries.Find(l => l.id == packet.Id);
+        if (livery == null)
+        {
+            LogError($"Received {nameof(ClientboundSpawnNewTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.Id}");
+            return;
+        }
+
+        CarSpawner_SpawnCar_Patch.DontSend = true;
+        CarSpawner.Instance.SpawnCar(livery.prefab, track, packet.Position, packet.Forward, packet.PlayerSpawnedCar);
+        CarSpawner_SpawnCar_Patch.DontSend = false;
+    }
+
+    public void OnClientboundSpawnExistingTrainCarPacket(ClientboundSpawnExistingTrainCarPacket packet)
+    {
+        RailTrack bogie1Track = RailTrackRegistry.Instance.GetTrackWithName(packet.Bogie1.Track);
+        if (bogie1Track == null)
+        {
+            LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find track with name {packet.Bogie1.Track}");
+            return;
+        }
+
+        RailTrack bogie2Track = RailTrackRegistry.Instance.GetTrackWithName(packet.Bogie2.Track);
+        if (bogie2Track == null)
+        {
+            LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find track with name {packet.Bogie2.Track}");
+            return;
+        }
+
+        TrainCarLivery livery = Globals.G.Types.Liveries.Find(l => l.id == packet.Id);
+        if (livery == null)
+        {
+            LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.Id}");
+            return;
+        }
+
+        CarSpawner_SpawnCar_Patch.DontSend = true;
+        CarSpawner.Instance.SpawnLoadedCar(
+            livery.prefab,
+            packet.CarId,
+            packet.CarGuid,
+            packet.PlayerSpawnedCar,
+            packet.Position,
+            Quaternion.Euler(packet.Rotation),
+            packet.Bogie1.IsDerailed,
+            bogie1Track,
+            packet.Bogie1.PositionAlongTrack,
+            packet.Bogie2.IsDerailed,
+            bogie2Track,
+            packet.Bogie2.PositionAlongTrack,
+            packet.CouplerFCoupled,
+            packet.CouplerRCoupled
+        );
+        CarSpawner_SpawnCar_Patch.DontSend = false;
+    }
+
+    private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet)
+    {
+        //todo: optimize
+        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
+        TrainCar otherTrainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.OtherCarGUID);
+        if (trainCar == null || otherTrainCar == null)
+        {
+            LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        Coupler coupler = packet.IsFrontCoupler ? trainCar.frontCoupler : trainCar.rearCoupler;
+        Coupler otherCoupler = packet.OtherCarIsFrontCoupler ? otherTrainCar.frontCoupler : otherTrainCar.rearCoupler;
+
+        coupler.CoupleTo(otherCoupler, viaChainInteraction: packet.FromChainInteraction);
+    }
+
+    private void OnCommonTrainUncouplePacket(CommonTrainUncouplePacket packet)
+    {
+        //todo: optimize
+        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
+        if (trainCar == null)
+        {
+            LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        Coupler coupler = packet.IsFrontCoupler ? trainCar.frontCoupler : trainCar.rearCoupler;
+
+        coupler.Uncouple(viaChainInteraction: packet.FromChainInteraction, dueToBrokenCouple: packet.DueToBrokenCouple);
+    }
+
+    private void OnCommonHoseConnectedPacket(CommonHoseConnectedPacket packet)
+    {
+        //todo: optimize
+        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
+        TrainCar otherTrainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.OtherCarGUID);
+        if (trainCar == null || otherTrainCar == null)
+        {
+            LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        Coupler coupler = packet.IsFront ? trainCar.frontCoupler : trainCar.rearCoupler;
+        Coupler otherCoupler = packet.OtherIsFront ? otherTrainCar.frontCoupler : otherTrainCar.rearCoupler;
+
+        coupler.ConnectAirHose(otherCoupler, packet.PlayAudio);
+    }
+
+    private void OnCommonHoseDisconnectedPacket(CommonHoseDisconnectedPacket packet)
+    {
+        //todo: optimize
+        TrainCar trainCar = CarSpawner.Instance.AllCars.Find(car => car.CarGUID == packet.CarGUID);
+        if (trainCar == null)
+        {
+            LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        Coupler coupler = packet.IsFront ? trainCar.frontCoupler : trainCar.rearCoupler;
+
+        coupler.DisconnectAirHose(packet.PlayAudio);
+    }
+
     #endregion
 
     #region Senders
 
+    private void SendPacketToServer<T>(T packet, DeliveryMethod deliveryMethod) where T : class, new()
+    {
+        SendPacket(serverPeer, packet, deliveryMethod);
+    }
+
     private void SendReadyPacket()
     {
         Log("World loaded, sending ready packet");
-        SendPacket(serverPeer, new ServerboundClientReadyPacket(), DeliveryMethod.ReliableOrdered);
+        SendPacketToServer(new ServerboundClientReadyPacket(), DeliveryMethod.ReliableOrdered);
     }
 
     public void SendPlayerPosition(Vector3 position, float rotationY, bool IsJumping, bool reliable = false)
     {
-        SendPacket(serverPeer, new ServerboundPlayerPositionPacket {
+        SendPacketToServer(new ServerboundPlayerPositionPacket {
             Position = position,
             RotationY = rotationY,
             IsJumping = IsJumping
@@ -289,14 +430,14 @@ public class NetworkClient : NetworkManager
 
     public void SendTimeAdvance(float amountOfTimeToSkipInSeconds)
     {
-        SendPacket(serverPeer, new ServerboundTimeAdvancePacket {
+        SendPacketToServer(new ServerboundTimeAdvancePacket {
             amountOfTimeToSkipInSeconds = amountOfTimeToSkipInSeconds
         }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendJunctionSwitched(ushort index, byte selectedBranch, Junction.SwitchMode mode)
     {
-        SendPacket(serverPeer, new CommonChangeJunctionPacket {
+        SendPacketToServer(new CommonChangeJunctionPacket {
             Index = index,
             SelectedBranch = selectedBranch,
             Mode = (byte)mode
@@ -305,9 +446,50 @@ public class NetworkClient : NetworkManager
 
     public void SendTurntableRotation(byte index, float rotation)
     {
-        SendPacket(serverPeer, new CommonRotateTurntablePacket {
+        SendPacketToServer(new CommonRotateTurntablePacket {
             index = index,
             rotation = rotation
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendTrainCouple(Coupler coupler, Coupler otherCoupler, bool fromChainInteraction)
+    {
+        SendPacketToServer(new CommonTrainCouplePacket {
+            CarGUID = coupler.train.CarGUID,
+            IsFrontCoupler = coupler.isFrontCoupler,
+            OtherCarGUID = otherCoupler.train.CarGUID,
+            OtherCarIsFrontCoupler = otherCoupler.isFrontCoupler,
+            FromChainInteraction = fromChainInteraction
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendTrainUncouple(Coupler coupler, bool fromChainInteraction, bool dueToBrokenCouple)
+    {
+        SendPacketToServer(new CommonTrainUncouplePacket {
+            CarGUID = coupler.train.CarGUID,
+            IsFrontCoupler = coupler.isFrontCoupler,
+            FromChainInteraction = fromChainInteraction,
+            DueToBrokenCouple = dueToBrokenCouple
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendHoseConnected(Coupler coupler, Coupler otherCoupler, bool playAudio)
+    {
+        SendPacketToServer(new CommonHoseConnectedPacket {
+            CarGUID = coupler.train.CarGUID,
+            IsFront = coupler.isFrontCoupler,
+            OtherCarGUID = otherCoupler.train.CarGUID,
+            OtherIsFront = otherCoupler.isFrontCoupler,
+            PlayAudio = playAudio
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendHoseDisconnected(Coupler coupler, bool playAudio)
+    {
+        SendPacketToServer(new CommonHoseDisconnectedPacket {
+            CarGUID = coupler.train.CarGUID,
+            IsFront = coupler.isFrontCoupler,
+            PlayAudio = playAudio
         }, DeliveryMethod.ReliableOrdered);
     }
 

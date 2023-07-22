@@ -18,6 +18,8 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     public bool IsServerRunning => Server?.IsRunning ?? false;
     public bool IsClientRunning => Client?.IsRunning ?? false;
 
+    public bool IsProcessingPacket => Client.IsProcessingPacket;
+
     /// <summary>
     ///     Whether the provided NetPeer is the host.
     ///     Note that this does NOT check authority, and should only be used for client-only logic.

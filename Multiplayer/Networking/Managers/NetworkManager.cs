@@ -14,6 +14,7 @@ public abstract class NetworkManager : INetEventListener
     protected readonly NetDataWriter cachedWriter = new();
 
     public bool IsRunning => netManager.IsRunning;
+    public bool IsProcessingPacket { get; private set; }
 
     protected NetworkManager(Settings settings)
     {
@@ -29,6 +30,7 @@ public abstract class NetworkManager : INetEventListener
     private void RegisterNestedTypes()
     {
         netPacketProcessor.RegisterNestedType(ModInfo.Serialize, ModInfo.Deserialize);
+        netPacketProcessor.RegisterNestedType(BogieData.Serialize, BogieData.Deserialize);
         netPacketProcessor.RegisterNestedType(Vector2Serializer.Serialize, Vector2Serializer.Deserialize);
         netPacketProcessor.RegisterNestedType(Vector3Serializer.Serialize, Vector3Serializer.Deserialize);
     }
@@ -73,11 +75,16 @@ public abstract class NetworkManager : INetEventListener
     {
         try
         {
+            IsProcessingPacket = true;
             netPacketProcessor.ReadAllPackets(reader, peer);
         }
         catch (ParseException e)
         {
             Multiplayer.LogWarning($"Failed to parse packet: {e.Message}");
+        }
+        finally
+        {
+            IsProcessingPacket = false;
         }
     }
 
