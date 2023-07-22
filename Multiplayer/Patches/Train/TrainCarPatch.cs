@@ -24,6 +24,7 @@ public class TrainCar_PrepareForDestroy_Patch
 {
     private static void Postfix(TrainCar __instance)
     {
+        NetworkLifecycle.Instance.Server?.SendDestroyTrainCar(__instance);
         TrainComponentLookup.Instance.UnregisterTrainCarGUID(__instance);
     }
 }
@@ -35,6 +36,7 @@ public class TrainCar_OnDestroy_Patch
     {
         if (UnloadWatcher.isUnloading)
             return;
+        NetworkLifecycle.Instance.Server?.SendDestroyTrainCar(__instance);
         TrainComponentLookup.Instance.UnregisterTrainCarGUID(__instance);
     }
 }

@@ -71,6 +71,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
         netPacketProcessor.SubscribeReusable<ClientboundSpawnNewTrainCarPacket>(OnClientboundSpawnNewTrainCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundSpawnExistingTrainCarPacket>(OnClientboundSpawnExistingTrainCarPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundDestroyTrainCarPacket>(OnClientboundDestroyTrainCarPacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket>(OnCommonTrainCouplePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
@@ -341,6 +342,17 @@ public class NetworkClient : NetworkManager
             packet.CouplerRCoupled
         );
         CarSpawner_SpawnCar_Patch.DontSend = false;
+    }
+
+    public void OnClientboundDestroyTrainCarPacket(ClientboundDestroyTrainCarPacket packet)
+    {
+        if (!TrainComponentLookup.Instance.TrainCarFromGUID(packet.CarGUID, out TrainCar trainCar))
+        {
+            LogError($"Received {nameof(ClientboundDestroyTrainCarPacket)} but couldn't the car!");
+            return;
+        }
+
+        trainCar.ReturnCarToPool();
     }
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet)

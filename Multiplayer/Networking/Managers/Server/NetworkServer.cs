@@ -138,6 +138,13 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
+    public void SendDestroyTrainCar(TrainCar trainCar)
+    {
+        SendPacketToAll(new ClientboundDestroyTrainCarPacket {
+            CarGUID = trainCar.CarGUID
+        }, DeliveryMethod.ReliableOrdered, selfPeer);
+    }
+
     public void SendBogieUpdate(TrainCar trainCar)
     {
         SendPacketToAll(new ClientboundBogieUpdatePacket {
