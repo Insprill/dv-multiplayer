@@ -19,6 +19,8 @@ public class NetworkServer : NetworkManager
     private readonly Dictionary<byte, ServerPlayer> serverPlayers = new();
     private readonly Dictionary<byte, NetPeer> netPeers = new();
 
+    public IReadOnlyCollection<ServerPlayer> ServerPlayers => serverPlayers.Values;
+
     private NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
     private readonly ModInfo[] serverMods;
 
@@ -233,6 +235,9 @@ public class NetworkServer : NetworkManager
 
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)
     {
+        if (TryGetServerPlayer(peer, out ServerPlayer player))
+            player.Position = packet.Position;
+
         ClientboundPlayerPositionPacket clientboundPacket = new() {
             Id = (byte)peer.Id,
             Position = packet.Position,
