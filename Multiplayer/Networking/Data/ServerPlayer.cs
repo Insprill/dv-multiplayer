@@ -9,8 +9,6 @@ public class ServerPlayer
     public int Ping { get; set; }
     public Vector3 Position { get; set; }
 
-    public Vector3 Position { get; set; }
-
     public override string ToString()
     {
         return $"{Id} ({Username})";
