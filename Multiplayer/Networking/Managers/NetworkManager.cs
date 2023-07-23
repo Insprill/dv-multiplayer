@@ -13,6 +13,8 @@ public abstract class NetworkManager : INetEventListener
     protected readonly NetManager netManager;
     protected readonly NetDataWriter cachedWriter = new();
 
+    protected abstract string LogPrefix { get; }
+
     public bool IsRunning => netManager.IsRunning;
     public bool IsProcessingPacket { get; private set; }
 
@@ -98,6 +100,25 @@ public abstract class NetworkManager : INetEventListener
     public abstract void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType);
     public abstract void OnNetworkLatencyUpdate(NetPeer peer, int latency);
     public abstract void OnConnectionRequest(ConnectionRequest request);
+
+    #endregion
+
+    #region Logging
+
+    public void Log(object msg)
+    {
+        Multiplayer.Log($"{LogPrefix} {msg}");
+    }
+
+    public void LogWarning(object msg)
+    {
+        Multiplayer.LogWarning($"{LogPrefix} {msg}");
+    }
+
+    public void LogError(object msg)
+    {
+        Multiplayer.LogError($"{LogPrefix} {msg}");
+    }
 
     #endregion
 }

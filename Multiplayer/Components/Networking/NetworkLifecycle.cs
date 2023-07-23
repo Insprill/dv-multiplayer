@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DV.Utils;
 using LiteNetLib;
 using Multiplayer.Networking.Listeners;
+using Multiplayer.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -18,10 +19,15 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     public NetworkServer Server { get; private set; }
     public NetworkClient Client { get; private set; }
 
+    public Action OnTick;
+
     public bool IsServerRunning => Server?.IsRunning ?? false;
     public bool IsClientRunning => Client?.IsRunning ?? false;
 
     public bool IsProcessingPacket => Client.IsProcessingPacket;
+
+    private readonly ExecutionTimer tickTimer = new();
+    private readonly ExecutionTimer tickWatchdog = new(0.25f);
 
     /// <summary>
     ///     Whether the provided NetPeer is the host.
@@ -101,40 +107,49 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 
     private IEnumerator PollEvents()
     {
-        while (true)
+        while (!UnloadWatcher.isQuitting)
         {
-            float serverStartTime = Time.realtimeSinceStartup;
+            tickTimer.Start();
 
+            tickWatchdog.Start();
             try
             {
-                Server?.PollEvents();
+                OnTick?.Invoke();
             }
             catch (Exception e)
             {
-                Multiplayer.Log($"Exception while polling server events: {e}");
+                Multiplayer.Log($"Exception while processing OnTick: {e}");
             }
-
-            float serverElapsedTime = Time.realtimeSinceStartup - serverStartTime;
-            if (serverElapsedTime > 0.15f)
-                Multiplayer.LogWarning($"[Server] PollEvents took {serverElapsedTime * 1000f}ms");
-
-            float clientStartTime = Time.realtimeSinceStartup;
-
-            try
+            finally
             {
-                Client?.PollEvents();
-            }
-            catch (Exception e)
-            {
-                Multiplayer.Log($"Exception while polling client events: {e}");
+                tickWatchdog.Stop(time => Multiplayer.LogWarning($"OnTick took {time} ms!"));
             }
 
-            float clientElapsedTime = Time.realtimeSinceStartup - clientStartTime;
-            if (clientElapsedTime > 0.15f)
-                Multiplayer.LogWarning($"[Client] PollEvents took {clientElapsedTime * 1000f}ms");
+            TickManager(Client);
+            TickManager(Server);
 
-            float remainingTime = Mathf.Max(0f, TICK_INTERVAL - (serverElapsedTime + clientElapsedTime));
+            float elapsedTime = tickTimer.Stop();
+            float remainingTime = Mathf.Max(0f, TICK_INTERVAL - elapsedTime);
             yield return new WaitForSecondsRealtime(remainingTime);
+        }
+    }
+
+    private void TickManager(NetworkManager manager)
+    {
+        if (manager == null)
+            return;
+        tickWatchdog.Start();
+        try
+        {
+            manager.PollEvents();
+        }
+        catch (Exception e)
+        {
+            manager.Log($"Exception while polling events: {e}");
+        }
+        finally
+        {
+            tickWatchdog.Stop(time => manager.LogWarning($"[Server] PollEvents took {time} ms!"));
         }
     }
 

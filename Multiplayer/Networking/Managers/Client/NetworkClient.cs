@@ -25,6 +25,8 @@ namespace Multiplayer.Networking.Listeners;
 
 public class NetworkClient : NetworkManager
 {
+    protected override string LogPrefix => "[Server]";
+
     public NetPeer selfPeer { get; private set; }
 
     // One way ping in milliseconds
@@ -507,25 +509,6 @@ public class NetworkClient : NetworkManager
             IsFront = coupler.isFrontCoupler,
             IsOpen = isOpen
         }, DeliveryMethod.ReliableOrdered);
-    }
-
-    #endregion
-
-    #region Logging
-
-    private static void Log(object msg)
-    {
-        Multiplayer.Log($"[Client] {msg}");
-    }
-
-    private static void LogWarning(object msg)
-    {
-        Multiplayer.LogWarning($"[Client] {msg}");
-    }
-
-    private static void LogError(object msg)
-    {
-        Multiplayer.LogError($"[Client] {msg}");
     }
 
     #endregion

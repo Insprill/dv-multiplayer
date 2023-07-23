@@ -21,6 +21,8 @@ namespace Multiplayer.Networking.Listeners;
 
 public class NetworkServer : NetworkManager
 {
+    protected override string LogPrefix => "[Server]";
+
     private readonly Dictionary<byte, ServerPlayer> serverPlayers = new();
     private readonly Dictionary<byte, NetPeer> netPeers = new();
 
@@ -336,20 +338,6 @@ public class NetworkServer : NetworkManager
     private void OnCommonCockFiddlePacket(CommonCockFiddlePacket packet, NetPeer peer)
     {
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
-    }
-
-    #endregion
-
-    #region Logging
-
-    private static void Log(object msg)
-    {
-        Multiplayer.Log($"[Server] {msg}");
-    }
-
-    private static void LogWarning(object msg)
-    {
-        Multiplayer.LogWarning($"[Server] {msg}");
     }
 
     #endregion
