@@ -45,8 +45,8 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundClientReadyPacket, NetPeer>(OnServerboundClientReadyPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
-        netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
-        netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
+        netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket, NetPeer>(OnCommonChangeJunctionPacket);
+        netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket, NetPeer>(OnCommonRotateTurntablePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket, NetPeer>(OnCommonTrainCouplePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket, NetPeer>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket, NetPeer>(OnCommonHoseConnectedPacket);
@@ -303,14 +303,14 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, peer);
     }
 
-    private void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet)
+    private void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered);
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
     }
 
-    private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet)
+    private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered);
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
     }
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet, NetPeer peer)
