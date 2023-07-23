@@ -1,8 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using DV.Utils;
 using LiteNetLib;
+using LiteNetLib.Utils;
 using Multiplayer.Networking.Listeners;
 using Multiplayer.Utils;
 using UnityEngine;
@@ -52,6 +54,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     protected override void Awake()
     {
         base.Awake();
+        RegisterPackets();
         WorldStreamingInit.LoadingFinished += OnWorldLoaded;
         SceneManager.sceneLoaded += (scene, _) =>
         {
@@ -60,6 +63,18 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
             TriggerMainMenuEventLater();
         };
         StartCoroutine(PollEvents());
+    }
+
+    private static void RegisterPackets()
+    {
+        IReadOnlyDictionary<Type, byte> packetMappings = NetPacketProcessor.RegisterPacketTypes();
+        Multiplayer.LogDebug(() =>
+        {
+            StringBuilder stringBuilder = new($"Registered {packetMappings.Count} packets. Mappings:\n");
+            foreach (KeyValuePair<Type, byte> kvp in packetMappings)
+                stringBuilder.AppendLine($"{kvp.Value}: {kvp.Key}");
+            return stringBuilder;
+        });
     }
 
     private static void OnWorldLoaded()

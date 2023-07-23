@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 namespace LiteNetLib.Utils
 {
     public class NetPacketProcessor
     {
-        private static readonly IReadOnlyDictionary<Type, byte> PacketIdDict;
+        private static IReadOnlyDictionary<Type, byte> PacketIdDict;
 
-        static NetPacketProcessor()
+        public static IReadOnlyDictionary<Type, byte> RegisterPacketTypes()
         {
             Type[] packetTypes = AppDomain.CurrentDomain
                 .GetAssemblies()
@@ -25,7 +24,7 @@ namespace LiteNetLib.Utils
                 .Select((t, i) => new { Key = t, Value = (byte)i })
                 .ToDictionary(x => x.Key, x => x.Value);
 
-            Debug.Log($"Registered {packetTypes.Length} packets");
+            return PacketIdDict;
         }
 
         protected delegate void SubscribeDelegate(NetDataReader reader, object userData);
@@ -54,7 +53,7 @@ namespace LiteNetLib.Utils
             byte id = reader.GetByte();
             if (!_callbacks.TryGetValue(id, out var action))
             {
-                throw new ParseException("Undefined packet in NetDataReader");
+                throw new ParseException($"Undefined packet {id} in NetDataReader");
             }
             return action;
         }
