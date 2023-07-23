@@ -74,6 +74,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundSpawnNewTrainCarPacket>(OnClientboundSpawnNewTrainCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundSpawnExistingTrainCarPacket>(OnClientboundSpawnExistingTrainCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundDestroyTrainCarPacket>(OnClientboundDestroyTrainCarPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundTrainRigidbodyPacket>(OnClientboundTrainRigidbodyPacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket>(OnCommonTrainCouplePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
@@ -94,6 +95,8 @@ public class NetworkClient : NetworkManager
 
         SceneSwitcher.SwitchToScene(DVScenes.Game);
         WorldStreamingInit.LoadingFinished += SendReadyPacket;
+
+        TrainStress.globalIgnoreStressCalculation = true;
     }
 
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
@@ -337,11 +340,23 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(ClientboundDestroyTrainCarPacket)} but couldn't the car!");
+            LogError($"Received {nameof(ClientboundDestroyTrainCarPacket)} but couldn't find the car!");
             return;
         }
 
         trainCar.ReturnCarToPool();
+    }
+
+    public void OnClientboundTrainRigidbodyPacket(ClientboundTrainRigidbodyPacket packet)
+    {
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
+            // LogError($"Received {nameof(ClientboundBogiePhysicPacket)} but couldn't find the car!");
+            return;
+
+        trainCar.ForceOptimizationState(false);
+        packet.Car.Apply(trainCar.rb);
+        packet.Bogie1.Apply(trainCar.Bogies[0].rb);
+        packet.Bogie2.Apply(trainCar.Bogies[1].rb);
     }
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet)

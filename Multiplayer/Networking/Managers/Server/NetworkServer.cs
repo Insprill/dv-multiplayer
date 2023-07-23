@@ -27,6 +27,7 @@ public class NetworkServer : NetworkManager
     private readonly Dictionary<byte, NetPeer> netPeers = new();
 
     public IReadOnlyCollection<ServerPlayer> ServerPlayers => serverPlayers.Values;
+    public int PlayerCount => netManager.ConnectedPeersCount;
 
     private NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
     private readonly ModInfo[] serverMods;
@@ -149,13 +150,14 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendBogieUpdate(TrainCar trainCar)
+    public void SendPhysicsUpdate(TrainCar trainCar)
     {
-        SendPacketToAll(new ClientboundBogieUpdatePacket {
-            CarGUID = trainCar.CarGUID,
-            Bogie1 = BogieData.FromBogie(trainCar.Bogies[0]),
-            Bogie2 = BogieData.FromBogie(trainCar.Bogies[1])
-        }, DeliveryMethod.ReliableOrdered);
+        SendPacketToAll(new ClientboundTrainRigidbodyPacket {
+            NetId = trainCar.GetNetId(),
+            Car = RigidBodyData.From(trainCar.rb),
+            Bogie1 = RigidBodyData.From(trainCar.Bogies[0].rb),
+            Bogie2 = RigidBodyData.From(trainCar.Bogies[1].rb)
+        }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
     #endregion

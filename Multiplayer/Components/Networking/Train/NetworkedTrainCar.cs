@@ -9,6 +9,7 @@ public class NetworkedTrainCar : MonoBehaviour
 
     [NonSerialized]
     public ushort NetId;
+
     private TrainCar trainCar;
 
     private void Awake()
@@ -18,8 +19,26 @@ public class NetworkedTrainCar : MonoBehaviour
             NetId = NextNetId++;
     }
 
+    private void Start()
+    {
+        if (!NetworkLifecycle.Instance.IsHost())
+            return;
+        NetworkLifecycle.Instance.OnTick += SendBogieUpdate;
+    }
+
+    private void OnDestroy()
+    {
+        if (UnloadWatcher.isUnloading)
+            return;
+        NetworkLifecycle.Instance.OnTick -= SendBogieUpdate;
+    }
+
     private void SendBogieUpdate()
     {
-        NetworkLifecycle.Instance.Server.SendBogieUpdate(trainCar);
+        foreach (Bogie bogie in trainCar.Bogies)
+            if (!bogie.fullyInitialized || bogie.HasDerailed || bogie.rb == null || bogie.rb.IsSleeping() || bogie.rb.isKinematic)
+                return;
+
+        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(trainCar);
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DV;
 using Multiplayer.Components.Networking.Player;
 using Multiplayer.Networking.Packets.Clientbound;
 using UnityEngine;
@@ -19,6 +20,7 @@ public class ClientPlayerManager
     public void AddPlayer(byte id, string username)
     {
         GameObject go = Object.Instantiate(playerPrefab, WorldMover.Instance.originShiftParent);
+        go.layer = LayerMask.NameToLayer(Layers.Player);
         NetworkedPlayer networkedPlayer = go.AddComponent<NetworkedPlayer>();
         networkedPlayer.username = username;
         playerMap.Add(id, networkedPlayer);

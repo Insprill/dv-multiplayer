@@ -61,6 +61,7 @@
         <Reference Include="Unity.TextMeshPro" />
         <Reference Include="UnityEngine.AssetBundleModule" />
         <Reference Include="UnityEngine.CoreModule" />
+        <Reference Include="UnityEngine.PhysicsModule" />
         <Reference Include="UnityEngine.UI" />
     </ItemGroup>
 
