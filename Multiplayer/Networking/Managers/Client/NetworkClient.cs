@@ -25,7 +25,7 @@ namespace Multiplayer.Networking.Listeners;
 
 public class NetworkClient : NetworkManager
 {
-    protected override string LogPrefix => "[Server]";
+    protected override string LogPrefix => "[Client]";
 
     public NetPeer selfPeer { get; private set; }
 
