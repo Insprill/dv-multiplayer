@@ -225,6 +225,10 @@ public class NetworkServer : NetworkManager
     {
         byte peerId = (byte)peer.Id;
 
+        // Unpause physics
+        if (AppUtil.Instance.IsTimePaused)
+            AppUtil.Instance.RequestSystemOnValueChanged(0.0f);
+
         // Allow the player to receive packets
         netPeers.Add(peerId, peer);
 
