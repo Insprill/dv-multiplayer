@@ -1,15 +1,16 @@
 using HarmonyLib;
 using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.World;
+using Multiplayer.Utils;
 
 namespace Multiplayer.Patches.World;
 
-[HarmonyPatch(typeof(Bogie), nameof(Bogie.FixedUpdate))]
-public static class Bogie_FixedUpdate_Patch
+[HarmonyPatch(typeof(Bogie), nameof(Bogie.SetupPhysics))]
+public static class Bogie_SetupPhysics_Patch
 {
     private static void Postfix(Bogie __instance)
     {
-        if (__instance.carSpawner.PoolSetupInProgress || __instance.HasDerailed || __instance.rb.IsSleeping() || __instance.rb.isKinematic)
-            return;
-        NetworkLifecycle.Instance.Server?.SendPhysicsUpdate(__instance.Car);
+        if (!NetworkLifecycle.Instance.IsHost())
+            __instance.gameObject.GetOrAddComponent<NetworkedRigidbody>();
     }
 }

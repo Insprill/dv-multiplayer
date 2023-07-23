@@ -2,6 +2,8 @@ using HarmonyLib;
 using Multiplayer.Components;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
+using Multiplayer.Components.Networking.World;
+using Multiplayer.Utils;
 
 namespace Multiplayer.Patches.World;
 
@@ -10,9 +12,17 @@ public class TrainCar_Awake_Patch
 {
     private static void Postfix(TrainCar __instance)
     {
-        if (__instance.GetComponent<NetworkedTrainCar>() != null)
-            return;
-        __instance.gameObject.AddComponent<NetworkedTrainCar>();
+        __instance.gameObject.GetOrAddComponent<NetworkedTrainCar>();
+    }
+}
+
+[HarmonyPatch(typeof(TrainCar), nameof(TrainCar.SetupRigidbody))]
+public class TrainCar_SetupRigidbody_Patch
+{
+    private static void Postfix(TrainCar __instance)
+    {
+        if (!NetworkLifecycle.Instance.IsHost())
+            __instance.gameObject.GetOrAddComponent<NetworkedRigidbody>();
     }
 }
 

@@ -13,6 +13,7 @@ public class TrainComponentLookup : SingletonBehaviour<TrainComponentLookup>
     private readonly Dictionary<string, TrainCarLivery> liveryIdToLivery = new();
     private readonly Dictionary<HoseAndCock, Coupler> hoseToCoupler = new();
     private readonly Dictionary<TrainCar, NetworkedTrainCar> trainToNetworkedTrain = new();
+    private readonly Dictionary<ushort, NetworkedTrainCar> netIdToNetworkedTrain = new();
     private readonly Dictionary<ushort, TrainCar> netIdToTrainCar = new();
 
     public bool LiveryFromId(string liveryId, out TrainCarLivery livery)
@@ -32,6 +33,7 @@ public class TrainComponentLookup : SingletonBehaviour<TrainComponentLookup>
         NetworkedTrainCar networkedTrainCar = trainCar.GetComponent<NetworkedTrainCar>();
         trainToNetworkedTrain[trainCar] = networkedTrainCar;
         netIdToTrainCar[networkedTrainCar.NetId] = trainCar;
+        netIdToNetworkedTrain[networkedTrainCar.NetId] = networkedTrainCar;
         foreach (Coupler coupler in trainCar.couplers)
             hoseToCoupler[coupler.hoseAndCock] = coupler;
     }
@@ -40,6 +42,7 @@ public class TrainComponentLookup : SingletonBehaviour<TrainComponentLookup>
     {
         NetworkedTrainCar networkedTrainCar = trainToNetworkedTrain[trainCar];
         trainToNetworkedTrain.Remove(trainCar);
+        netIdToNetworkedTrain.Remove(networkedTrainCar.NetId);
         netIdToTrainCar.Remove(networkedTrainCar.NetId);
         foreach (Coupler coupler in trainCar.couplers)
             hoseToCoupler.Remove(coupler.hoseAndCock);
@@ -53,6 +56,11 @@ public class TrainComponentLookup : SingletonBehaviour<TrainComponentLookup>
     public bool TrainFromNetId(ushort netId, out TrainCar trainCar)
     {
         return netIdToTrainCar.TryGetValue(netId, out trainCar);
+    }
+
+    public bool NetworkedTrainFromNetId(ushort netId, out NetworkedTrainCar networkedTrainCar)
+    {
+        return netIdToNetworkedTrain.TryGetValue(netId, out networkedTrainCar);
     }
 
     public bool NetworkedTrainFromTrain(TrainCar trainCar, out NetworkedTrainCar networkedTrainCar)

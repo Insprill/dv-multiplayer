@@ -10,6 +10,7 @@ using LiteNetLib;
 using Multiplayer.Components;
 using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.Train;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
@@ -74,7 +75,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundSpawnNewTrainCarPacket>(OnClientboundSpawnNewTrainCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundSpawnExistingTrainCarPacket>(OnClientboundSpawnExistingTrainCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundDestroyTrainCarPacket>(OnClientboundDestroyTrainCarPacket);
-        netPacketProcessor.SubscribeReusable<ClientboundTrainRigidbodyPacket>(OnClientboundTrainRigidbodyPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundTrainPhysicsPacket>(OnClientboundTrainRigidbodyPacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket>(OnCommonTrainCouplePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
@@ -347,16 +348,12 @@ public class NetworkClient : NetworkManager
         trainCar.ReturnCarToPool();
     }
 
-    public void OnClientboundTrainRigidbodyPacket(ClientboundTrainRigidbodyPacket packet)
+    public void OnClientboundTrainRigidbodyPacket(ClientboundTrainPhysicsPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-            // LogError($"Received {nameof(ClientboundBogiePhysicPacket)} but couldn't find the car!");
+        if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             return;
 
-        trainCar.ForceOptimizationState(false);
-        packet.Car.Apply(trainCar.rb);
-        packet.Bogie1.Apply(trainCar.Bogies[0].rb);
-        packet.Bogie2.Apply(trainCar.Bogies[1].rb);
+        networkedTrainCar.Client_ReceiveTrainPhysicsUpdate(packet);
     }
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet)

@@ -152,12 +152,13 @@ public class NetworkServer : NetworkManager
 
     public void SendPhysicsUpdate(TrainCar trainCar)
     {
-        SendPacketToAll(new ClientboundTrainRigidbodyPacket {
+        SendPacketToAll(new ClientboundTrainPhysicsPacket {
             NetId = trainCar.GetNetId(),
-            Car = RigidBodyData.From(trainCar.rb),
-            Bogie1 = RigidBodyData.From(trainCar.Bogies[0].rb),
-            Bogie2 = RigidBodyData.From(trainCar.Bogies[1].rb)
-        }, DeliveryMethod.ReliableOrdered, selfPeer);
+            Timestamp = DateTime.UtcNow.Millisecond,
+            Car = RigidbodySnapshot.From(trainCar.rb),
+            Bogie1 = RigidbodySnapshot.From(trainCar.Bogies[0].rb),
+            Bogie2 = RigidbodySnapshot.From(trainCar.Bogies[1].rb)
+        }, DeliveryMethod.Unreliable, selfPeer);
     }
 
     #endregion
