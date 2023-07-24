@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using DV.Simulation.Brake;
 using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Packets.Clientbound.Train;
 using UnityEngine;
@@ -16,17 +17,25 @@ public class NetworkedTrainCar : MonoBehaviour
     private TrainCar trainCar;
     private Bogie bogie1;
     private Bogie bogie2;
+    private BrakeSystem brakeSystem;
 
-    private bool clientInitialized;
-    private NetworkedRigidbody trainCarNetworkedRigidbody;
-    private NetworkedRigidbody bogie1NetworkedRigidbody;
-    private NetworkedRigidbody bogie2NetworkedRigidbody;
+    private bool handbrakeDirty;
+
+    #region Client
+
+    private bool client_Initialized;
+    private NetworkedRigidbody client_trainCarNetworkedRigidbody;
+    private NetworkedRigidbody client_bogie1NetworkedRigidbody;
+    private NetworkedRigidbody client_bogie2NetworkedRigidbody;
+
+    #endregion
 
     private void Awake()
     {
         trainCar = GetComponent<TrainCar>();
         bogie1 = trainCar.Bogies[0];
         bogie2 = trainCar.Bogies[1];
+        brakeSystem = trainCar.brakeSystem;
         if (NetworkLifecycle.Instance.IsHost())
             NetId = NextNetId++;
         else
@@ -35,6 +44,9 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void OnEnable()
     {
+        brakeSystem.HandbrakePositionChanged += OnHandbrakePositionChanged;
+        brakeSystem.BrakeCylinderReleased += OnBrakeCylinderReleased;
+        NetworkLifecycle.Instance.OnTick += Common_OnTick;
         if (NetworkLifecycle.Instance.IsHost())
             NetworkLifecycle.Instance.OnTick += Server_OnTick;
     }
@@ -43,6 +55,9 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if (UnloadWatcher.isQuitting)
             return;
+        brakeSystem.HandbrakePositionChanged -= OnHandbrakePositionChanged;
+        brakeSystem.BrakeCylinderReleased -= OnBrakeCylinderReleased;
+        NetworkLifecycle.Instance.OnTick -= Common_OnTick;
         if (NetworkLifecycle.Instance.IsHost())
             NetworkLifecycle.Instance.OnTick -= Server_OnTick;
     }
@@ -68,27 +83,48 @@ public class NetworkedTrainCar : MonoBehaviour
 
     #endregion
 
+    #region Common
+
+    private void Common_OnTick()
+    {
+        if (!trainCar.brakeSystem.hasHandbrake || !handbrakeDirty)
+            return;
+        NetworkLifecycle.Instance.Client.SendHandbrakePositionChanged(trainCar);
+    }
+
+    private void OnHandbrakePositionChanged((float, bool) data)
+    {
+        handbrakeDirty = !NetworkLifecycle.Instance.IsProcessingPacket;
+    }
+
+    private void OnBrakeCylinderReleased()
+    {
+        NetworkLifecycle.Instance.Client.SendBrakeCylinderReleased(trainCar);
+    }
+
+    #endregion
+
     #region Client
 
     private IEnumerator WaitForPhysicSetup()
     {
-        while ((trainCarNetworkedRigidbody = trainCar.GetComponent<NetworkedRigidbody>()) == null)
+        while ((client_trainCarNetworkedRigidbody = trainCar.GetComponent<NetworkedRigidbody>()) == null)
             yield return null;
-        while ((bogie1NetworkedRigidbody = trainCar.Bogies[0].GetComponent<NetworkedRigidbody>()) == null)
+        while ((client_bogie1NetworkedRigidbody = trainCar.Bogies[0].GetComponent<NetworkedRigidbody>()) == null)
             yield return null;
-        while ((bogie2NetworkedRigidbody = trainCar.Bogies[1].GetComponent<NetworkedRigidbody>()) == null)
+        while ((client_bogie2NetworkedRigidbody = trainCar.Bogies[1].GetComponent<NetworkedRigidbody>()) == null)
             yield return null;
-        clientInitialized = true;
+        client_Initialized = true;
     }
 
     public void Client_ReceiveTrainPhysicsUpdate(ClientboundTrainPhysicsPacket packet)
     {
-        if (!clientInitialized)
+        if (!client_Initialized)
             return;
         trainCar.ForceOptimizationState(false);
-        trainCarNetworkedRigidbody.ReceiveSnapshot(packet.Car, packet.Timestamp);
-        bogie1NetworkedRigidbody.ReceiveSnapshot(packet.Bogie1, packet.Timestamp);
-        bogie2NetworkedRigidbody.ReceiveSnapshot(packet.Bogie2, packet.Timestamp);
+        client_trainCarNetworkedRigidbody.ReceiveSnapshot(packet.Car, packet.Timestamp);
+        client_bogie1NetworkedRigidbody.ReceiveSnapshot(packet.Bogie1, packet.Timestamp);
+        client_bogie2NetworkedRigidbody.ReceiveSnapshot(packet.Bogie2, packet.Timestamp);
     }
 
     #endregion

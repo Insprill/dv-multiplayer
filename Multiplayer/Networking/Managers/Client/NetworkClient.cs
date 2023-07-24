@@ -81,6 +81,8 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
         netPacketProcessor.SubscribeReusable<CommonHoseDisconnectedPacket>(OnCommonHoseDisconnectedPacket);
         netPacketProcessor.SubscribeReusable<CommonCockFiddlePacket>(OnCommonCockFiddlePacket);
+        netPacketProcessor.SubscribeReusable<CommonBrakeCylinderReleasePacket>(OnCommonBrakeCylinderReleasePacket);
+        netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket>(OnCommonHandbrakePositionPacket);
     }
 
     #region Common
@@ -423,6 +425,28 @@ public class NetworkClient : NetworkManager
         coupler.IsCockOpen = packet.IsOpen;
     }
 
+    private void OnCommonBrakeCylinderReleasePacket(CommonBrakeCylinderReleasePacket packet)
+    {
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
+        {
+            LogError($"Received {nameof(CommonCockFiddlePacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        trainCar.brakeSystem.ReleaseBrakeCylinderPressure();
+    }
+
+    private void OnCommonHandbrakePositionPacket(CommonHandbrakePositionPacket packet)
+    {
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
+        {
+            LogError($"Received {nameof(CommonCockFiddlePacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        trainCar.brakeSystem.SetHandbrakePosition(packet.Position);
+    }
+
     #endregion
 
     #region Senders
@@ -520,6 +544,21 @@ public class NetworkClient : NetworkManager
             NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
             IsOpen = isOpen
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendBrakeCylinderReleased(TrainCar trainCar)
+    {
+        SendPacketToServer(new CommonBrakeCylinderReleasePacket {
+            NetId = trainCar.GetNetId(),
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendHandbrakePositionChanged(TrainCar trainCar)
+    {
+        SendPacketToServer(new CommonHandbrakePositionPacket {
+            NetId = trainCar.GetNetId(),
+            Position = trainCar.brakeSystem.handbrakePosition
         }, DeliveryMethod.ReliableOrdered);
     }
 
