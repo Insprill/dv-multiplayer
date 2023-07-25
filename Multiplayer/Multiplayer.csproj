@@ -8,6 +8,7 @@
     <ItemGroup>
         <PackageReference Include="Krafs.Publicizer" Version="2.2.1" />
         <Publicize Include="Assembly-CSharp" IncludeCompilerGeneratedMembers="false" />
+        <Publicize Include="DV.Simulation" IncludeCompilerGeneratedMembers="false" />
     </ItemGroup>
 
     <!-- Derail Valley -->

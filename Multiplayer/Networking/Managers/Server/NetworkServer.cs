@@ -8,6 +8,7 @@ using DV.WeatherSystem;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.Train;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
@@ -57,6 +58,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonCockFiddlePacket, NetPeer>(OnCommonCockFiddlePacket);
         netPacketProcessor.SubscribeReusable<CommonBrakeCylinderReleasePacket, NetPeer>(OnCommonBrakeCylinderReleasePacket);
         netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket, NetPeer>(OnCommonHandbrakePositionPacket);
+        netPacketProcessor.SubscribeReusable<CommonSimFlowPacket, NetPeer>(OnCommonSimFlowPacket);
     }
 
     public bool TryGetServerPlayer(NetPeer peer, out ServerPlayer player)
@@ -152,14 +154,14 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendPhysicsUpdate(TrainCar trainCar)
+    public void SendPhysicsUpdate(TrainCar trainCar, ushort netId, Bogie bogie1, Bogie bogie2)
     {
         SendPacketToAll(new ClientboundTrainPhysicsPacket {
-            NetId = trainCar.GetNetId(),
+            NetId = netId,
             Timestamp = DateTime.UtcNow.Millisecond,
-            Car = RigidbodySnapshot.From(trainCar.rb),
-            Bogie1 = RigidbodySnapshot.From(trainCar.Bogies[0].rb),
-            Bogie2 = RigidbodySnapshot.From(trainCar.Bogies[1].rb)
+            Car = RigidbodySnapshot.From(trainCar.rb, RigidbodySnapshot.IncludedData.All),
+            Bogie1 = BogieMovementData.FromBogie(bogie1, true),
+            Bogie2 = BogieMovementData.FromBogie(bogie2, true)
         }, DeliveryMethod.Unreliable, selfPeer);
     }
 
@@ -286,6 +288,7 @@ public class NetworkServer : NetworkManager
             if (!trainCar.gameObject.activeInHierarchy)
                 continue;
             SendPacket(peer, ClientboundSpawnExistingTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered);
+            trainCar.GetComponent<NetworkedTrainCar>().Server_DirtyAllState();
         }
 
         // All data has been sent, allow the client to load into the world.
@@ -355,6 +358,11 @@ public class NetworkServer : NetworkManager
     }
 
     private void OnCommonHandbrakePositionPacket(CommonHandbrakePositionPacket packet, NetPeer peer)
+    {
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+    }
+
+    private void OnCommonSimFlowPacket(CommonSimFlowPacket packet, NetPeer peer)
     {
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
     }

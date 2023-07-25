@@ -83,6 +83,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonCockFiddlePacket>(OnCommonCockFiddlePacket);
         netPacketProcessor.SubscribeReusable<CommonBrakeCylinderReleasePacket>(OnCommonBrakeCylinderReleasePacket);
         netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket>(OnCommonHandbrakePositionPacket);
+        netPacketProcessor.SubscribeReusable<CommonSimFlowPacket>(OnCommonSimFlowPacket);
     }
 
     #region Common
@@ -302,14 +303,14 @@ public class NetworkClient : NetworkManager
     public void OnClientboundSpawnExistingTrainCarPacket(ClientboundSpawnExistingTrainCarPacket packet)
     {
         RailTrack bogie1Track = RailTrackRegistry.Instance.GetTrackWithName(packet.Bogie1.Track);
-        if (bogie1Track == null)
+        if (!string.IsNullOrEmpty(packet.Bogie1.Track) && bogie1Track == null)
         {
             LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find track with name {packet.Bogie1.Track}");
             return;
         }
 
         RailTrack bogie2Track = RailTrackRegistry.Instance.GetTrackWithName(packet.Bogie2.Track);
-        if (bogie2Track == null)
+        if (!string.IsNullOrEmpty(packet.Bogie1.Track) && bogie2Track == null)
         {
             LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find track with name {packet.Bogie2.Track}");
             return;
@@ -447,6 +448,17 @@ public class NetworkClient : NetworkManager
         trainCar.brakeSystem.SetHandbrakePosition(packet.Position);
     }
 
+    private void OnCommonSimFlowPacket(CommonSimFlowPacket packet)
+    {
+        if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
+        {
+            LogError($"Received {nameof(CommonSimFlowPacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        networkedTrainCar.Common_UpdateSimFlow(packet);
+    }
+
     #endregion
 
     #region Senders
@@ -559,6 +571,17 @@ public class NetworkClient : NetworkManager
         SendPacketToServer(new CommonHandbrakePositionPacket {
             NetId = trainCar.GetNetId(),
             Position = trainCar.brakeSystem.handbrakePosition
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendSimFlow(ushort netId, string[] portIds, float[] portValues, string[] fuseIds, bool[] fuseValues)
+    {
+        SendPacketToServer(new CommonSimFlowPacket {
+            NetId = netId,
+            PortIds = portIds,
+            PortValues = portValues,
+            FuseIds = fuseIds,
+            FuseValues = fuseValues
         }, DeliveryMethod.ReliableOrdered);
     }
 

@@ -1,6 +1,6 @@
 using HarmonyLib;
 using Multiplayer.Components.Networking;
-using Multiplayer.Components.Networking.World;
+using Multiplayer.Components.Networking.Train;
 using Multiplayer.Utils;
 
 namespace Multiplayer.Patches.World;
@@ -11,6 +11,6 @@ public static class Bogie_SetupPhysics_Patch
     private static void Postfix(Bogie __instance)
     {
         if (!NetworkLifecycle.Instance.IsHost())
-            __instance.gameObject.GetOrAddComponent<NetworkedRigidbody>();
+            __instance.gameObject.GetOrAddComponent<NetworkedBogie>();
     }
 }

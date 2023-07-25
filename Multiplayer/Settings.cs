@@ -27,6 +27,8 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public bool ShowAdvancedSettings;
     [Draw("Verbose Logging", Tooltip = "Whether to log extra information. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
     public bool VerboseLogging;
+    [Draw("Enable Log File", Tooltip = "Whether to create a separate file for logs. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
+    public bool EnableLogFile;
     [Draw("Enable NAT Punch", VisibleOn = "ShowAdvancedSettings|true")]
     public bool EnableNatPunch = true;
     [Draw("Reuse NetPacketReaders", VisibleOn = "ShowAdvancedSettings|true")]

@@ -3,6 +3,7 @@ using System.IO;
 using HarmonyLib;
 using Multiplayer.Components.Networking;
 using Multiplayer.Editor;
+using Multiplayer.Patches.World;
 using UnityChan;
 using UnityEngine;
 using UnityModManagerNet;
@@ -11,6 +12,8 @@ namespace Multiplayer;
 
 public static class Multiplayer
 {
+    private const string LOG_FILE = "multiplayer.log";
+
     private static UnityModManager.ModEntry ModEntry;
     public static Settings Settings;
 
@@ -27,9 +30,12 @@ public static class Multiplayer
 
         try
         {
+            File.Delete(LOG_FILE);
+
             Log("Patching...");
             harmony = new Harmony(ModEntry.Info.Id);
             harmony.PatchAll();
+            SimComponent_Tick_Patch.Patch(harmony);
 
             if (!LoadAssets())
                 return false;
@@ -78,28 +84,36 @@ public static class Multiplayer
 
     public static void LogDebug(Func<object> resolver)
     {
-        if (Settings.VerboseLogging)
-            ModEntry.Logger.Log($"[Debug] {resolver.Invoke()}");
+        if (!Settings.VerboseLogging)
+            return;
+        WriteLog($"[Debug] {resolver.Invoke()}");
     }
 
     public static void Log(object msg)
     {
-        ModEntry.Logger.Log($"[Info] {msg}");
+        WriteLog($"[Info] {msg}");
     }
 
     public static void LogWarning(object msg)
     {
-        ModEntry.Logger.Warning($"{msg}");
+        WriteLog($"[Warning] {msg}");
     }
 
     public static void LogError(object msg)
     {
-        ModEntry.Logger.Error($"{msg}");
+        WriteLog($"[Error] {msg}");
     }
 
     public static void LogException(object msg, Exception e)
     {
         ModEntry.Logger.LogException($"{msg}", e);
+    }
+
+    private static void WriteLog(string msg)
+    {
+        if (Settings.EnableLogFile)
+            File.AppendAllLines(LOG_FILE, new[] { msg });
+        ModEntry.Logger.Log(msg);
     }
 
     #endregion

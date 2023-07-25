@@ -1,5 +1,5 @@
-using Multiplayer.Components.Networking.Train;
 using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Utils;
 using UnityEngine;
 
 namespace Multiplayer.Networking.Packets.Clientbound.Train;
@@ -13,31 +13,23 @@ public class ClientboundSpawnExistingTrainCarPacket
     public bool PlayerSpawnedCar { get; set; }
     public Vector3 Position { get; set; }
     public Vector3 Rotation { get; set; }
-    public BogieData Bogie1 { get; set; }
-    public BogieData Bogie2 { get; set; }
+    public InitialBogieData Bogie1 { get; set; }
+    public InitialBogieData Bogie2 { get; set; }
     public bool CouplerFCoupled { get; set; }
     public bool CouplerRCoupled { get; set; }
 
     public static ClientboundSpawnExistingTrainCarPacket FromTrainCar(TrainCar trainCar)
     {
         return new ClientboundSpawnExistingTrainCarPacket {
-            NetId = trainCar.GetComponent<NetworkedTrainCar>().NetId,
+            NetId = trainCar.GetNetId(),
             LiveryId = trainCar.carLivery.id,
             CarId = trainCar.ID,
             CarGuid = trainCar.CarGUID,
             PlayerSpawnedCar = trainCar.playerSpawnedCar,
             Position = trainCar.transform.position,
             Rotation = trainCar.transform.eulerAngles,
-            Bogie1 = new BogieData {
-                Track = trainCar.Bogies[0].track.gameObject.name,
-                PositionAlongTrack = trainCar.Bogies[0].traveller.pointRelativeSpan,
-                IsDerailed = trainCar.Bogies[0].HasDerailed
-            },
-            Bogie2 = new BogieData {
-                Track = trainCar.Bogies[1].track.gameObject.name,
-                PositionAlongTrack = trainCar.Bogies[1].traveller.pointRelativeSpan,
-                IsDerailed = trainCar.Bogies[1].HasDerailed
-            },
+            Bogie1 = InitialBogieData.FromBogie(trainCar.Bogies[0]),
+            Bogie2 = InitialBogieData.FromBogie(trainCar.Bogies[1]),
             CouplerFCoupled = trainCar.frontCoupler.IsCoupled(),
             CouplerRCoupled = trainCar.rearCoupler.IsCoupled()
         };

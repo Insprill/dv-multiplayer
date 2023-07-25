@@ -29,7 +29,7 @@ public class ExecutionTimer
     {
         float elapsedTime = Stop();
         if (elapsedTime > warnLimit)
-            Multiplayer.LogWarning(Mathf.CeilToInt(elapsedTime * 1000));
+            message.Invoke(Mathf.CeilToInt(elapsedTime * 1000));
     }
 
     public float Stop()

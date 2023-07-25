@@ -133,7 +133,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
             }
             catch (Exception e)
             {
-                Multiplayer.Log($"Exception while processing OnTick: {e}");
+                Multiplayer.LogError($"Exception while processing OnTick: {e}");
             }
             finally
             {
@@ -145,7 +145,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 
             float elapsedTime = tickTimer.Stop();
             float remainingTime = Mathf.Max(0f, TICK_INTERVAL - elapsedTime);
-            yield return new WaitForSecondsRealtime(remainingTime);
+            yield return remainingTime < 0.001f ? null : new WaitForSecondsRealtime(remainingTime);
         }
     }
 
@@ -160,7 +160,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         }
         catch (Exception e)
         {
-            manager.Log($"Exception while polling events: {e}");
+            manager.LogError($"Exception while polling events: {e}");
         }
         finally
         {
