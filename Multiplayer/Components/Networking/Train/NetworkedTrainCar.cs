@@ -46,33 +46,34 @@ public class NetworkedTrainCar : MonoBehaviour
         trainCar = GetComponent<TrainCar>();
         bogie1 = trainCar.Bogies[0];
         bogie2 = trainCar.Bogies[1];
+        brakeSystem = trainCar.brakeSystem;
 
         if (NetworkLifecycle.Instance.IsHost())
             NetId = NextNetId++;
         else
             StartCoroutine(WaitForPhysicSetup());
 
-        brakeSystem = trainCar.brakeSystem;
         SimController simController = GetComponent<SimController>();
         if (simController == null)
             return;
+
         hasSimFlow = true;
         simulationFlow = simController.SimulationFlow;
 
         dirtyPorts = new HashSet<string>(simulationFlow.fullPortIdToPort.Count);
         foreach (KeyValuePair<string, Port> kvp in simulationFlow.fullPortIdToPort)
             if (kvp.Value.valueType == PortValueType.CONTROL || NetworkLifecycle.Instance.IsHost())
-                kvp.Value.ValueUpdatedInternally += _ => { OnPortUpdated(kvp.Key); }; // todo: secure this
+                kvp.Value.ValueUpdatedInternally += _ => { Common_OnPortUpdated(kvp.Key); }; // todo: secure this
 
         dirtyFuses = new HashSet<string>(simulationFlow.fullFuseIdToFuse.Count);
         foreach (KeyValuePair<string, Fuse> kvp in simulationFlow.fullFuseIdToFuse)
-            kvp.Value.StateUpdated += _ => { OnFuseUpdated(kvp.Key); };
+            kvp.Value.StateUpdated += _ => { Common_OnFuseUpdated(kvp.Key); };
     }
 
     private void OnEnable()
     {
-        brakeSystem.HandbrakePositionChanged += OnHandbrakePositionChanged;
-        brakeSystem.BrakeCylinderReleased += OnBrakeCylinderReleased;
+        brakeSystem.HandbrakePositionChanged += Common_OnHandbrakePositionChanged;
+        brakeSystem.BrakeCylinderReleased += Common_OnBrakeCylinderReleased;
         NetworkLifecycle.Instance.OnTick += Common_OnTick;
         if (NetworkLifecycle.Instance.IsHost())
             NetworkLifecycle.Instance.OnTick += Server_OnTick;
@@ -82,8 +83,8 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if (UnloadWatcher.isQuitting)
             return;
-        brakeSystem.HandbrakePositionChanged -= OnHandbrakePositionChanged;
-        brakeSystem.BrakeCylinderReleased -= OnBrakeCylinderReleased;
+        brakeSystem.HandbrakePositionChanged -= Common_OnHandbrakePositionChanged;
+        brakeSystem.BrakeCylinderReleased -= Common_OnBrakeCylinderReleased;
         NetworkLifecycle.Instance.OnTick -= Common_OnTick;
         if (NetworkLifecycle.Instance.IsHost())
             NetworkLifecycle.Instance.OnTick -= Server_OnTick;
@@ -109,7 +110,7 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void Server_SendPhysicsUpdate()
     {
-        if (trainCar.isStationary || !bogie1.fullyInitialized || !bogie2.fullyInitialized)
+        if (trainCar.isStationary || !bogie1.fullyInitialized || bogie1.rb == null || !bogie2.fullyInitialized || bogie2.rb == null)
             return;
         NetworkLifecycle.Instance.Server.SendPhysicsUpdate(trainCar, NetId, bogie1, bogie2);
     }
@@ -157,28 +158,28 @@ public class NetworkedTrainCar : MonoBehaviour
         NetworkLifecycle.Instance.Client.SendSimFlow(NetId, portIds, portValues, fuseIds, fuseValues);
     }
 
-    private void OnHandbrakePositionChanged((float, bool) data)
+    private void Common_OnHandbrakePositionChanged((float, bool) data)
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket)
             return;
         handbrakeDirty = true;
     }
 
-    private void OnBrakeCylinderReleased()
+    private void Common_OnBrakeCylinderReleased()
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket)
             return;
         NetworkLifecycle.Instance.Client.SendBrakeCylinderReleased(trainCar);
     }
 
-    private void OnPortUpdated(string portId)
+    private void Common_OnPortUpdated(string portId)
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket)
             return;
         dirtyPorts.Add(portId);
     }
 
-    private void OnFuseUpdated(string portId)
+    private void Common_OnFuseUpdated(string portId)
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket)
             return;

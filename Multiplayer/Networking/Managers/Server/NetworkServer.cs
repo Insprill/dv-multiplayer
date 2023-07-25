@@ -159,7 +159,7 @@ public class NetworkServer : NetworkManager
         SendPacketToAll(new ClientboundTrainPhysicsPacket {
             NetId = netId,
             Timestamp = DateTime.UtcNow.Millisecond,
-            Car = RigidbodySnapshot.From(trainCar.rb, RigidbodySnapshot.IncludedData.All),
+            Car = RigidbodySnapshot.From(trainCar.rb),
             Bogie1 = BogieMovementData.FromBogie(bogie1, true),
             Bogie2 = BogieMovementData.FromBogie(bogie2, true)
         }, DeliveryMethod.Unreliable, selfPeer);

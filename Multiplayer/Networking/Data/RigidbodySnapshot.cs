@@ -44,7 +44,7 @@ public class RigidbodySnapshot
         return snapshot;
     }
 
-    public static RigidbodySnapshot From(Rigidbody rb, IncludedData includedDataFlags)
+    public static RigidbodySnapshot From(Rigidbody rb, IncludedData includedDataFlags = IncludedData.All)
     {
         RigidbodySnapshot snapshot = new() {
             IncludedDataFlags = (byte)includedDataFlags

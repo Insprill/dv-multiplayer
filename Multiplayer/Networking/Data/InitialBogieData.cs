@@ -12,7 +12,7 @@ public struct InitialBogieData
     {
         return new InitialBogieData {
             Track = !bogie.track ? string.Empty : bogie.track.gameObject.name,
-            PositionAlongTrack = bogie.traveller?.pointRelativeSpan ?? -1.0,
+            PositionAlongTrack = bogie.traveller?.Span ?? -1.0,
             IsDerailed = bogie.HasDerailed
         };
     }

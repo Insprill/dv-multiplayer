@@ -164,7 +164,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         }
         finally
         {
-            tickWatchdog.Stop(time => manager.LogWarning($"[Server] PollEvents took {time} ms!"));
+            tickWatchdog.Stop(time => manager.LogWarning($"PollEvents took {time} ms!"));
         }
     }
 

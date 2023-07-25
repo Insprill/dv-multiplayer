@@ -53,6 +53,7 @@
         <Reference Include="UnityChan">
             <HintPath>../build/UnityChan.dll</HintPath>
         </Reference>
+        <Reference Include="net.smkd.vector3d" />
         <Reference Include="Newtonsoft.Json" />
         <Reference Include="UniTask" />
     </ItemGroup>
