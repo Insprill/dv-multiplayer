@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityModManagerNet;
+using Console = DV.Console;
 
 namespace Multiplayer;
 
@@ -39,6 +40,14 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public bool UseNativeSockets = true;
     [Draw("Log Full IPs", Tooltip = "Whether to log the full IP address of clients. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
     public bool LogIps = true;
+
+    public void Draw(UnityModManager.ModEntry modEntry)
+    {
+        Settings self = this;
+        UnityModManager.UI.DrawFields(ref self, modEntry, DrawFieldMask.OnlyDrawAttr, OnChange);
+        if (ShowAdvancedSettings && GUILayout.Button("Enable Developer Commands"))
+            Console.RegisterDevCommands();
+    }
 
     public override void Save(UnityModManager.ModEntry modEntry)
     {
