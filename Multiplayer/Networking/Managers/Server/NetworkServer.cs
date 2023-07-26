@@ -32,6 +32,8 @@ public class NetworkServer : NetworkManager
     private NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
     private readonly ModInfo[] serverMods;
 
+    private bool IsLoaded;
+
     public NetworkServer(Settings settings) : base(settings)
     {
         serverMods = ModInfo.FromModEntries(UnityModManager.modEntries);
@@ -39,6 +41,7 @@ public class NetworkServer : NetworkManager
 
     public void Start(int port)
     {
+        WorldStreamingInit.LoadingFinished += () => IsLoaded = true;
         netManager.Start(port);
     }
 
@@ -212,6 +215,16 @@ public class NetworkServer : NetworkManager
                 Reason = "Mod mismatch!",
                 Missing = missing,
                 Extra = extra
+            };
+            request.Reject(WritePacket(denyPacket));
+            return;
+        }
+
+        if (!IPAddress.IsLoopback(request.RemoteEndPoint.Address) && !IsLoaded)
+        {
+            LogWarning("Denied login due to the server not being loaded yet!");
+            ClientboundServerDenyPacket denyPacket = new() {
+                Reason = "The server is still starting!"
             };
             request.Reject(WritePacket(denyPacket));
             return;
