@@ -6,7 +6,6 @@ using DV.Simulation.Brake;
 using DV.Simulation.Cars;
 using LocoSim.Definitions;
 using LocoSim.Implementations;
-using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
@@ -31,11 +30,14 @@ public class NetworkedTrainCar : MonoBehaviour
     private HashSet<string> dirtyPorts;
     private HashSet<string> dirtyFuses;
     private bool handbrakeDirty;
+    private bool bogie1TrackDirty;
+    private bool bogie2TrackDirty;
 
     #region Client
 
     private bool client_Initialized;
-    private TickedQueue<RigidbodySnapshot> client_trainCarNetworkedRigidbody;
+    // private TickedQueue<RigidbodySnapshot> client_trainCarNetworkedRigidbody;
+    private TickedQueue<float> client_trainSpeedQueue;
     private TickedQueue<BogieMovementData> client_bogie1Queue;
     private TickedQueue<BogieMovementData> client_bogie2Queue;
 
@@ -76,18 +78,24 @@ public class NetworkedTrainCar : MonoBehaviour
         brakeSystem.BrakeCylinderReleased += Common_OnBrakeCylinderReleased;
         NetworkLifecycle.Instance.OnTick += Common_OnTick;
         if (NetworkLifecycle.Instance.IsHost())
+        {
             NetworkLifecycle.Instance.OnTick += Server_OnTick;
+            bogie1.TrackChanged += Server_BogieTrackChanged;
+        }
     }
 
     private void OnDisable()
     {
-        if (UnloadWatcher.isQuitting)
+        if (UnloadWatcher.isUnloading)
             return;
         brakeSystem.HandbrakePositionChanged -= Common_OnHandbrakePositionChanged;
         brakeSystem.BrakeCylinderReleased -= Common_OnBrakeCylinderReleased;
         NetworkLifecycle.Instance.OnTick -= Common_OnTick;
         if (NetworkLifecycle.Instance.IsHost())
+        {
             NetworkLifecycle.Instance.OnTick -= Server_OnTick;
+            bogie1.TrackChanged -= Server_BogieTrackChanged;
+        }
     }
 
     #region Server
@@ -103,6 +111,14 @@ public class NetworkedTrainCar : MonoBehaviour
             dirtyFuses.Add(fuseId);
     }
 
+    private void Server_BogieTrackChanged(RailTrack arg1, Bogie arg2)
+    {
+        if (arg2 == bogie1)
+            bogie1TrackDirty = true;
+        else if (arg2 == bogie2)
+            bogie2TrackDirty = true;
+    }
+
     private void Server_OnTick()
     {
         Server_SendPhysicsUpdate();
@@ -112,7 +128,9 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if (trainCar.isStationary || !bogie1.fullyInitialized || bogie1.rb == null || !bogie2.fullyInitialized || bogie2.rb == null)
             return;
-        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(trainCar, NetId, bogie1, bogie2);
+        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(trainCar, NetId, bogie1, bogie1TrackDirty, bogie2, bogie2TrackDirty);
+        bogie1TrackDirty = false;
+        bogie2TrackDirty = false;
     }
 
     #endregion
@@ -208,7 +226,9 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private IEnumerator WaitForPhysicSetup()
     {
-        while ((client_trainCarNetworkedRigidbody = trainCar.GetComponent<NetworkedRigidbody>()) == null)
+        // while ((client_trainCarNetworkedRigidbody = trainCar.GetComponent<NetworkedRigidbody>()) == null)
+        //     yield return null;
+        while ((client_trainSpeedQueue = trainCar.GetComponent<TrainSpeedQueue>()) == null)
             yield return null;
         while ((client_bogie1Queue = bogie1.GetComponent<NetworkedBogie>()) == null)
             yield return null;
@@ -223,7 +243,8 @@ public class NetworkedTrainCar : MonoBehaviour
             return;
         if (trainCar.isEligibleForSleep)
             trainCar.ForceOptimizationState(false);
-        client_trainCarNetworkedRigidbody.ReceiveSnapshot(packet.Car, packet.Timestamp);
+
+        client_trainSpeedQueue.ReceiveSnapshot(packet.Speed, packet.Timestamp);
         client_bogie1Queue.ReceiveSnapshot(packet.Bogie1, packet.Timestamp);
         client_bogie2Queue.ReceiveSnapshot(packet.Bogie2, packet.Timestamp);
     }

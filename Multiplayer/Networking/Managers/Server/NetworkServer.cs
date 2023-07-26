@@ -154,14 +154,14 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendPhysicsUpdate(TrainCar trainCar, ushort netId, Bogie bogie1, Bogie bogie2)
+    public void SendPhysicsUpdate(TrainCar trainCar, ushort netId, Bogie bogie1, bool sendBogie1Track, Bogie bogie2, bool sendBogie2Track)
     {
         SendPacketToAll(new ClientboundTrainPhysicsPacket {
             NetId = netId,
-            Timestamp = DateTime.UtcNow.Millisecond,
-            Car = RigidbodySnapshot.From(trainCar.rb),
-            Bogie1 = BogieMovementData.FromBogie(bogie1, true),
-            Bogie2 = BogieMovementData.FromBogie(bogie2, true)
+            Timestamp = Environment.TickCount,
+            Speed = trainCar.GetForwardSpeed(),
+            Bogie1 = BogieMovementData.FromBogie(bogie1, sendBogie1Track),
+            Bogie2 = BogieMovementData.FromBogie(bogie2, sendBogie2Track)
         }, DeliveryMethod.Unreliable, selfPeer);
     }
 

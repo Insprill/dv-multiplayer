@@ -20,10 +20,22 @@ public class NetworkedBogie : TickedQueue<BogieMovementData>
 
     protected override void Process(BogieMovementData snapshot)
     {
-        if (snapshot.NewTrack != bogie.track.gameObject.name)
-            bogie.SetTrack(RailTrackRegistry.Instance.GetTrackWithName(snapshot.NewTrack), snapshot.PositionAlongTrack, snapshot.TrackDirection);
+        if (bogie.HasDerailed)
+            return;
+
+        if (snapshot.TrackIndex != ushort.MaxValue)
+        {
+            if (WorldComponentLookup.Instance.TrackFromIndex(snapshot.TrackIndex, out RailTrack track))
+                bogie.SetTrack(track, snapshot.PositionAlongTrack);
+            else
+                Multiplayer.LogError($"Could not find track with index {snapshot.TrackIndex}! Skipping update and waiting for next snapshot.");
+        }
         else
-            bogie.traveller.MoveToSpan(snapshot.PositionAlongTrack);
-        bogie.rb.velocity = snapshot.Velocity;
+        {
+            // Vector3d worldPos = bogie.traveller.worldPosition;
+            // bogie.traveller.MoveToSpan(snapshot.PositionAlongTrack);
+            // Vector3d newWorldPos = bogie.traveller.worldPosition;
+            // Multiplayer.LogDebug(() => $"Difference: {Vector3d.Distance(worldPos, newWorldPos)}");
+        }
     }
 }

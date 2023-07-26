@@ -1,6 +1,6 @@
 using HarmonyLib;
 using Multiplayer.Components.Networking;
-using Multiplayer.Components.Networking.Train;
+using Multiplayer.Utils;
 using UnityEngine;
 
 namespace Multiplayer.Patches.World;
@@ -12,7 +12,6 @@ public static class CarSpawner_SpawnCar_Patch
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket || !NetworkLifecycle.Instance.IsHost())
             return;
-        NetworkedTrainCar networkedTrainCar = __result.GetComponent<NetworkedTrainCar>();
-        NetworkLifecycle.Instance.Server.SendSpawnTrainCar(__result.carLivery, networkedTrainCar.NetId, track, position, forward, playerSpawnedCar);
+        NetworkLifecycle.Instance.Server.SendSpawnTrainCar(__result.carLivery, __result.GetNetId(), track, position, forward, playerSpawnedCar);
     }
 }
