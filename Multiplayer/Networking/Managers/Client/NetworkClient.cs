@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Net;
 using DV;
+using DV.MultipleUnit;
 using DV.ThingTypes;
 using DV.UI;
 using DV.UIFramework;
@@ -75,6 +76,8 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
         netPacketProcessor.SubscribeReusable<CommonHoseDisconnectedPacket>(OnCommonHoseDisconnectedPacket);
+        netPacketProcessor.SubscribeReusable<CommonMuConnectedPacket>(OnCommonMuConnectedPacket);
+        netPacketProcessor.SubscribeReusable<CommonMuDisconnectedPacket>(OnCommonMuDisconnectedPacket);
         netPacketProcessor.SubscribeReusable<CommonCockFiddlePacket>(OnCommonCockFiddlePacket);
         netPacketProcessor.SubscribeReusable<CommonBrakeCylinderReleasePacket>(OnCommonBrakeCylinderReleasePacket);
         netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket>(OnCommonHandbrakePositionPacket);
@@ -408,6 +411,33 @@ public class NetworkClient : NetworkManager
         coupler.DisconnectAirHose(packet.PlayAudio);
     }
 
+    private void OnCommonMuConnectedPacket(CommonMuConnectedPacket packet)
+    {
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
+        {
+            LogError($"Received {nameof(CommonMuConnectedPacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        MultipleUnitCable cable = packet.IsFront ? trainCar.muModule.frontCable : trainCar.muModule.rearCable;
+        MultipleUnitCable otherCable = packet.IsFront ? otherTrainCar.muModule.frontCable : otherTrainCar.muModule.rearCable;
+
+        cable.Connect(otherCable, packet.PlayAudio);
+    }
+
+    private void OnCommonMuDisconnectedPacket(CommonMuDisconnectedPacket packet)
+    {
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
+        {
+            LogError($"Received {nameof(CommonMuDisconnectedPacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        MultipleUnitCable cable = packet.IsFront ? trainCar.muModule.frontCable : trainCar.muModule.rearCable;
+
+        cable.Disconnect(packet.PlayAudio);
+    }
+
     private void OnCommonCockFiddlePacket(CommonCockFiddlePacket packet)
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
@@ -541,6 +571,26 @@ public class NetworkClient : NetworkManager
         SendPacketToServer(new CommonHoseDisconnectedPacket {
             NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
+            PlayAudio = playAudio
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendMuConnected(MultipleUnitCable cable, MultipleUnitCable otherCable, bool playAudio)
+    {
+        SendPacketToServer(new CommonMuConnectedPacket {
+            NetId = cable.muModule.train.GetNetId(),
+            IsFront = cable.isFront,
+            OtherNetId = otherCable.muModule.train.GetNetId(),
+            OtherIsFront = otherCable.isFront,
+            PlayAudio = playAudio
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendMuDisconnected(MultipleUnitCable cable, bool playAudio)
+    {
+        SendPacketToServer(new CommonMuDisconnectedPacket {
+            NetId = cable.muModule.train.GetNetId(),
+            IsFront = cable.isFront,
             PlayAudio = playAudio
         }, DeliveryMethod.ReliableOrdered);
     }
