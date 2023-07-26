@@ -28,6 +28,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 
     public bool IsProcessingPacket => Client.IsProcessingPacket;
 
+    private NetworkStatsGui Stats;
     private readonly ExecutionTimer tickTimer = new();
     private readonly ExecutionTimer tickWatchdog = new(0.25f);
 
@@ -54,7 +55,9 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     protected override void Awake()
     {
         base.Awake();
+        Stats = gameObject.AddComponent<NetworkStatsGui>();
         RegisterPackets();
+        Settings.OnSettingsUpdated += OnSettingsUpdated;
         WorldStreamingInit.LoadingFinished += OnWorldLoaded;
         SceneManager.sceneLoaded += (scene, _) =>
         {
@@ -75,6 +78,16 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
                 stringBuilder.AppendLine($"{kvp.Value}: {kvp.Key}");
             return stringBuilder;
         });
+    }
+
+    private void OnSettingsUpdated(Settings settings)
+    {
+        if (!IsClientRunning && !IsServerRunning)
+            return;
+        if (settings.ShowStats)
+            Stats.Show(Client.Statistics, Server?.Statistics);
+        else
+            Stats.Hide();
     }
 
     private static void OnWorldLoaded()
@@ -118,6 +131,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         NetworkClient client = new(Multiplayer.Settings);
         client.Start(address, port, password);
         Client = client;
+        OnSettingsUpdated(Multiplayer.Settings); // Show stats if enabled
     }
 
     private IEnumerator PollEvents()
@@ -170,6 +184,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 
     public void Stop()
     {
+        if (Stats != null) Stats.Hide();
         Server?.Stop();
         Client?.Stop();
         Server = null;

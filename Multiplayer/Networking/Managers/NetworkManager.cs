@@ -15,6 +15,7 @@ public abstract class NetworkManager : INetEventListener
 
     protected abstract string LogPrefix { get; }
 
+    public NetStatistics Statistics => netManager.Statistics;
     public bool IsRunning => netManager.IsRunning;
     public bool IsProcessingPacket { get; private set; }
 
@@ -46,6 +47,7 @@ public abstract class NetworkManager : INetEventListener
         netManager.NatPunchEnabled = settings.EnableNatPunch;
         netManager.AutoRecycle = settings.ReuseNetPacketReaders;
         netManager.UseNativeSockets = settings.UseNativeSockets;
+        netManager.EnableStatistics = settings.ShowStats;
     }
 
     public void PollEvents()

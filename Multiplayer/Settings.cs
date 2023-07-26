@@ -25,6 +25,8 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     [Header("Advanced Settings")]
     [Draw("Show Advanced Settings", Tooltip = "You probably don't need to change these.")]
     public bool ShowAdvancedSettings;
+    [Draw("Show Stats", Tooltip = "Whether to show network statistics.", VisibleOn = "ShowAdvancedSettings|true")]
+    public bool ShowStats;
     [Draw("Verbose Logging", Tooltip = "Whether to log extra information. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
     public bool VerboseLogging;
     [Draw("Enable Log File", Tooltip = "Whether to create a separate file for logs. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]

@@ -44,6 +44,7 @@
 
     <!-- Third-Party -->
     <ItemGroup>
+        <PackageReference Include="Humanizer.Core" Version="2.14.1" />
         <Reference Include="MultiplayerEditor">
             <HintPath>../build/MultiplayerEditor.dll</HintPath>
         </Reference>
@@ -61,15 +62,17 @@
     <!-- Unity -->
     <ItemGroup>
         <Reference Include="Unity.TextMeshPro" />
+        <Reference Include="UnityEngine" />
         <Reference Include="UnityEngine.AssetBundleModule" />
         <Reference Include="UnityEngine.CoreModule" />
+        <Reference Include="UnityEngine.IMGUIModule" />
         <Reference Include="UnityEngine.PhysicsModule" />
         <Reference Include="UnityEngine.UI" />
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <!-- Copy to build folder -->
-        <Copy SourceFiles="$(TargetPath)" DestinationFolder="../build/" />
+        <Copy SourceFiles="$(TargetPath);$(OutDir)/Humanizer.dll" DestinationFolder="../build/" />
 
         <!-- Copy to game install folder -->
         <Exec Condition="Exists('$(DvInstallDir)') And '$(OS)' == 'Windows_NT'" Command="powershell -executionpolicy bypass -Command &quot;(../package.ps1 -NoArchive -OutputDirectory '$(DvInstallDir)\Mods')&quot;" />
