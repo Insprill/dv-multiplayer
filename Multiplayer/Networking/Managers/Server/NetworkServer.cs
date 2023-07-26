@@ -297,13 +297,17 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered);
 
         // Send trains
+        List<TrainCar> trainCars = new();
         foreach (TrainCar trainCar in CarSpawner.Instance.allCars)
         {
             if (!trainCar.gameObject.activeInHierarchy)
                 continue;
+            trainCars.Add(trainCar);
             SendPacket(peer, ClientboundSpawnExistingTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered);
-            trainCar.GetComponent<NetworkedTrainCar>().Server_DirtyAllState();
         }
+
+        foreach (TrainCar trainCar in trainCars)
+            trainCar.GetComponent<NetworkedTrainCar>().Server_DirtyAllState();
 
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
