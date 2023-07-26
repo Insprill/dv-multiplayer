@@ -111,9 +111,10 @@ public static class Multiplayer
 
     private static void WriteLog(string msg)
     {
+        string str = $"[{DateTime.Now:HH:mm:ss.fff}] {msg}";
         if (Settings.EnableLogFile)
-            File.AppendAllLines(LOG_FILE, new[] { msg });
-        ModEntry.Logger.Log(msg);
+            File.AppendAllLines(LOG_FILE, new[] { str });
+        ModEntry.Logger.Log(str);
     }
 
     #endregion
