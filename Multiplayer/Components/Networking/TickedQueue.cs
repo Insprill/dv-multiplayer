@@ -7,7 +7,7 @@ public abstract class TickedQueue<T> : MonoBehaviour
 {
     private const byte MAX_SNAPSHOTS = 5;
 
-    private int lastTimestamp = int.MinValue;
+    private uint lastTick;
     private readonly Queue<T> snapshots = new(MAX_SNAPSHOTS);
 
     protected virtual void OnEnable()
@@ -20,21 +20,21 @@ public abstract class TickedQueue<T> : MonoBehaviour
         if (UnloadWatcher.isQuitting)
             return;
         NetworkLifecycle.Instance.OnTick -= OnTick;
-        lastTimestamp = int.MinValue;
+        lastTick = 0;
         snapshots.Clear();
     }
 
-    public void ReceiveSnapshot(T snapshot, int timestamp)
+    public void ReceiveSnapshot(T snapshot, uint tick)
     {
-        if (timestamp <= lastTimestamp)
+        if (tick <= lastTick)
             return;
-        lastTimestamp = timestamp;
+        lastTick = tick;
         if (snapshots.Count == MAX_SNAPSHOTS)
             snapshots.Dequeue();
         snapshots.Enqueue(snapshot);
     }
 
-    private void OnTick()
+    private void OnTick(uint tick)
     {
         if (snapshots.Count == 0)
             return;

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Net;
 using DV;
@@ -20,7 +19,6 @@ using Multiplayer.Utils;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityModManagerNet;
-using Object = UnityEngine.Object;
 
 namespace Multiplayer.Networking.Listeners;
 
@@ -34,9 +32,6 @@ public class NetworkClient : NetworkManager
     private int ping;
     private NetPeer serverPeer;
     private readonly ClientPlayerManager playerManager;
-
-    private int timeDifference;
-    private int timestamp => DateTime.UtcNow.Millisecond - timeDifference;
 
     public NetworkClient(Settings settings) : base(settings)
     {
@@ -63,7 +58,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundPlayerDisconnectPacket>(OnClientboundPlayerDisconnectPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPlayerPositionPacket>(OnClientboundPlayerPositionPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPingUpdatePacket>(OnClientboundPingUpdatePacket);
-        netPacketProcessor.SubscribeReusable<ClientboundTimeSyncPacket>(OnClientboundTimeSyncPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundTickSyncPacket>(OnClientboundTickSyncPacket);
         netPacketProcessor.SubscribeReusable<ClientboundBeginWorldSyncPacket>(OnClientboundBeginWorldSyncPacket);
         netPacketProcessor.SubscribeReusable<ClientboundWeatherPacket>(OnClientboundWeatherPacket);
         netPacketProcessor.SubscribeReusable<ClientboundRemoveLoadingScreenPacket>(OnClientboundRemoveLoadingScreen);
@@ -194,9 +189,9 @@ public class NetworkClient : NetworkManager
         // todo: update ping in ui
     }
 
-    private void OnClientboundTimeSyncPacket(ClientboundTimeSyncPacket packet)
+    private void OnClientboundTickSyncPacket(ClientboundTickSyncPacket packet)
     {
-        timeDifference = DateTime.UtcNow.Millisecond - (packet.ServerTime + ping);
+        NetworkLifecycle.Instance.Tick = (uint)(packet.ServerTick + ping / 2.0f * (1f / NetworkLifecycle.TICK_RATE));
     }
 
     private void OnClientboundBeginWorldSyncPacket(ClientboundBeginWorldSyncPacket packet)
@@ -562,7 +557,7 @@ public class NetworkClient : NetworkManager
     public void SendBrakeCylinderReleased(TrainCar trainCar)
     {
         SendPacketToServer(new CommonBrakeCylinderReleasePacket {
-            NetId = trainCar.GetNetId(),
+            NetId = trainCar.GetNetId()
         }, DeliveryMethod.ReliableOrdered);
     }
 

@@ -119,7 +119,7 @@ public class NetworkedTrainCar : MonoBehaviour
             bogie2TrackDirty = true;
     }
 
-    private void Server_OnTick()
+    private void Server_OnTick(uint tick)
     {
         Server_SendPhysicsUpdate();
     }
@@ -137,7 +137,7 @@ public class NetworkedTrainCar : MonoBehaviour
 
     #region Common
 
-    private void Common_OnTick()
+    private void Common_OnTick(uint tick)
     {
         Common_SendHandbrakePosition();
         Common_SendSimFlow();
@@ -244,9 +244,9 @@ public class NetworkedTrainCar : MonoBehaviour
         if (trainCar.isEligibleForSleep)
             trainCar.ForceOptimizationState(false);
 
-        client_trainSpeedQueue.ReceiveSnapshot(packet.Speed, packet.Timestamp);
-        client_bogie1Queue.ReceiveSnapshot(packet.Bogie1, packet.Timestamp);
-        client_bogie2Queue.ReceiveSnapshot(packet.Bogie2, packet.Timestamp);
+        client_trainSpeedQueue.ReceiveSnapshot(packet.Speed, packet.Tick);
+        client_bogie1Queue.ReceiveSnapshot(packet.Bogie1, packet.Tick);
+        client_bogie2Queue.ReceiveSnapshot(packet.Bogie2, packet.Tick);
     }
 
     #endregion

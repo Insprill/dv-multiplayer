@@ -15,13 +15,14 @@ namespace Multiplayer.Components.Networking;
 // https://revenantx.github.io/LiteNetLib/index.html
 public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 {
-    private const byte TICK_RATE = 30;
+    public const byte TICK_RATE = 30;
     private const float TICK_INTERVAL = 1.0f / TICK_RATE;
 
     public NetworkServer Server { get; private set; }
     public NetworkClient Client { get; private set; }
 
-    public Action OnTick;
+    public uint Tick { get; internal set; }
+    public Action<uint> OnTick;
 
     public bool IsServerRunning => Server?.IsRunning ?? false;
     public bool IsClientRunning => Client?.IsRunning ?? false;
@@ -138,12 +139,13 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     {
         while (!UnloadWatcher.isQuitting)
         {
+            Tick++;
             tickTimer.Start();
 
             tickWatchdog.Start();
             try
             {
-                OnTick?.Invoke();
+                OnTick?.Invoke(Tick);
             }
             catch (Exception e)
             {

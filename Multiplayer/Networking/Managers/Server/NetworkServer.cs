@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -103,8 +102,8 @@ public class NetworkServer : NetworkManager
 
         SendPacketToAll(clientboundPingUpdatePacket, DeliveryMethod.ReliableOrdered, peer);
 
-        SendPacket(peer, new ClientboundTimeSyncPacket {
-            ServerTime = DateTime.UtcNow.Millisecond
+        SendPacket(peer, new ClientboundTickSyncPacket {
+            ServerTick = NetworkLifecycle.Instance.Tick
         }, DeliveryMethod.ReliableOrdered);
     }
 
@@ -158,7 +157,7 @@ public class NetworkServer : NetworkManager
     {
         SendPacketToAll(new ClientboundTrainPhysicsPacket {
             NetId = netId,
-            Timestamp = Environment.TickCount,
+            Tick = NetworkLifecycle.Instance.Tick,
             Speed = trainCar.GetForwardSpeed(),
             Bogie1 = BogieMovementData.FromBogie(bogie1, sendBogie1Track),
             Bogie2 = BogieMovementData.FromBogie(bogie2, sendBogie2Track)
