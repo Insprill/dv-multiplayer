@@ -160,6 +160,8 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void Server_OnTick(uint tick)
     {
+        if (UnloadWatcher.isUnloading)
+            return;
         Server_SendCargoState();
         Server_SendHealthState();
         Server_SendPhysicsUpdate();
@@ -197,6 +199,8 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void Common_OnTick(uint tick)
     {
+        if (UnloadWatcher.isUnloading)
+            return;
         Common_SendHandbrakePosition();
         Common_SendSimFlow();
     }

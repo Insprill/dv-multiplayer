@@ -9,7 +9,7 @@ public static class MultipleUnitCable_Connect_Patch
 {
     private static void Postfix(MultipleUnitCable __instance, MultipleUnitCable other, bool playAudio)
     {
-        if (NetworkLifecycle.Instance.IsProcessingPacket)
+        if (NetworkLifecycle.Instance.IsProcessingPacket || UnloadWatcher.isUnloading)
             return;
         NetworkLifecycle.Instance.Client?.SendMuConnected(__instance, other, playAudio);
     }
@@ -20,7 +20,7 @@ public static class MultipleUnitCable_Disconnect_Patch
 {
     private static void Postfix(MultipleUnitCable __instance, bool playAudio)
     {
-        if (NetworkLifecycle.Instance.IsProcessingPacket)
+        if (NetworkLifecycle.Instance.IsProcessingPacket || UnloadWatcher.isUnloading)
             return;
         NetworkLifecycle.Instance.Client?.SendMuDisconnected(__instance, playAudio);
     }

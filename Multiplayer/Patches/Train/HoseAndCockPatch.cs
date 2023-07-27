@@ -10,7 +10,7 @@ public static class HoseAndCock_SetCock_Patch
 {
     private static void Prefix(HoseAndCock __instance, bool open)
     {
-        if (NetworkLifecycle.Instance.IsProcessingPacket)
+        if (NetworkLifecycle.Instance.IsProcessingPacket || UnloadWatcher.isUnloading)
             return;
         if (TrainComponentLookup.Instance.CouplerFromHose(__instance, out Coupler coupler))
             NetworkLifecycle.Instance.Client?.SendCockState(coupler, open);
