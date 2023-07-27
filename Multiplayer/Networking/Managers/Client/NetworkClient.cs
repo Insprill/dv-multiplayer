@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Net;
 using DV;
+using DV.Damage;
 using DV.Logic.Job;
 using DV.MultipleUnit;
 using DV.ThingTypes;
@@ -84,6 +85,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket>(OnCommonHandbrakePositionPacket);
         netPacketProcessor.SubscribeReusable<CommonSimFlowPacket>(OnCommonSimFlowPacket);
         netPacketProcessor.SubscribeReusable<ClientboundCargoStatePacket>(OnClientboundCargoStatePacket);
+        netPacketProcessor.SubscribeReusable<ClientboundCarHealthUpdatePacket>(OnClientboundCarHealthUpdatePacket);
     }
 
     #region Common
@@ -490,7 +492,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonSimFlowPacket)} but couldn't find one of the cars!");
+            LogError($"Received {nameof(ClientboundCargoStatePacket)} but couldn't find one of the cars!");
             return;
         }
 
@@ -503,6 +505,25 @@ public class NetworkClient : NetworkManager
             trainCar.logicCar.LoadCargo(packet.CargoAmount, (CargoType)packet.CargoType, warehouse);
         else
             trainCar.logicCar.UnloadCargo(packet.CargoAmount, (CargoType)packet.CargoType, warehouse);
+    }
+
+    private void OnClientboundCarHealthUpdatePacket(ClientboundCarHealthUpdatePacket packet)
+    {
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
+        {
+            LogError($"Received {nameof(ClientboundCarHealthUpdatePacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        CarDamageModel carDamage = trainCar.CarDamage;
+        float difference = Mathf.Abs(packet.Health - carDamage.currentHealth);
+        if (difference < 0.0001)
+            return;
+
+        if (packet.Health < carDamage.currentHealth)
+            carDamage.DamageCar(difference);
+        else
+            carDamage.RepairCar(difference);
     }
 
     #endregion

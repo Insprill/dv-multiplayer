@@ -184,6 +184,14 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
+    public void SendCarHealthUpdate(ushort netId, float health)
+    {
+        SendPacketToAll(new ClientboundCarHealthUpdatePacket {
+            NetId = netId,
+            Health = health
+        }, DeliveryMethod.ReliableOrdered, selfPeer);
+    }
+
     #endregion
 
     #region Listeners

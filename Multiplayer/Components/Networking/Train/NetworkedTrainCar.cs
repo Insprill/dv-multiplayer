@@ -35,6 +35,7 @@ public class NetworkedTrainCar : MonoBehaviour
     private bool bogie2TrackDirty;
     private bool cargoDirty;
     private bool cargoIsLoading;
+    private bool healthDirty;
 
     #region Client
 
@@ -84,6 +85,7 @@ public class NetworkedTrainCar : MonoBehaviour
         {
             NetworkLifecycle.Instance.OnTick += Server_OnTick;
             bogie1.TrackChanged += Server_BogieTrackChanged;
+            trainCar.CarDamage.CarEffectiveHealthStateUpdate += Server_CarHealthUpdate;
             StartCoroutine(WaitForLogicCar());
         }
     }
@@ -122,6 +124,7 @@ public class NetworkedTrainCar : MonoBehaviour
         handbrakeDirty = true;
         cargoDirty = true;
         cargoIsLoading = true;
+        healthDirty = true;
         if (!hasSimFlow)
             return;
         foreach (string portId in simulationFlow.fullPortIdToPort.Keys)
@@ -150,9 +153,15 @@ public class NetworkedTrainCar : MonoBehaviour
         cargoIsLoading = false;
     }
 
+    private void Server_CarHealthUpdate(float obj)
+    {
+        healthDirty = true;
+    }
+
     private void Server_OnTick(uint tick)
     {
         Server_SendCargoState();
+        Server_SendHealthState();
         Server_SendPhysicsUpdate();
     }
 
@@ -164,6 +173,13 @@ public class NetworkedTrainCar : MonoBehaviour
         if (cargoIsLoading && trainCar.logicCar.CurrentCargoTypeInCar == CargoType.None)
             return;
         NetworkLifecycle.Instance.Server.SendCargoState(trainCar, NetId, cargoIsLoading);
+    }
+
+    private void Server_SendHealthState()
+    {
+        if (!healthDirty)
+            return;
+        NetworkLifecycle.Instance.Server.SendCarHealthUpdate(NetId, trainCar.CarDamage.currentHealth);
     }
 
     private void Server_SendPhysicsUpdate()
