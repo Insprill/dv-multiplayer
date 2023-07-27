@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Net;
 using DV;
 using DV.Damage;
 using DV.Logic.Job;
@@ -90,7 +89,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundCarHealthUpdatePacket>(OnClientboundCarHealthUpdatePacket);
     }
 
-    #region Common
+    #region Net Events
 
     public override void OnPeerConnected(NetPeer peer)
     {
@@ -141,11 +140,6 @@ public class NetworkClient : NetworkManager
                 return;
             popup.labelTMPro.text = text;
         });
-    }
-
-    public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
-    {
-        // todo
     }
 
     public override void OnNetworkLatencyUpdate(NetPeer peer, int latency)

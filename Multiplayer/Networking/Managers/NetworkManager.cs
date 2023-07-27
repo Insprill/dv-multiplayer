@@ -75,7 +75,7 @@ public abstract class NetworkManager : INetEventListener
 
     protected abstract void Subscribe();
 
-    #region Events
+    #region Net Events
 
     public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
     {
@@ -99,9 +99,13 @@ public abstract class NetworkManager : INetEventListener
         Multiplayer.LogError($"Network error from {endPoint}: {socketError}");
     }
 
+    public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
+    {
+        // todo
+    }
+
     public abstract void OnPeerConnected(NetPeer peer);
     public abstract void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo);
-    public abstract void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType);
     public abstract void OnNetworkLatencyUpdate(NetPeer peer, int latency);
     public abstract void OnConnectionRequest(ConnectionRequest request);
 

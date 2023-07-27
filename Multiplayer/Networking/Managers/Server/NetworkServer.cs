@@ -78,7 +78,7 @@ public class NetworkServer : NetworkManager
         return netPeers.TryGetValue(id, out peer);
     }
 
-    #region Overrides
+    #region Net Events
 
     public override void OnPeerConnected(NetPeer peer)
     { }
@@ -91,11 +91,6 @@ public class NetworkServer : NetworkManager
         netManager.SendToAll(WritePacket(new ClientboundPlayerDisconnectPacket {
             Id = id
         }), DeliveryMethod.ReliableUnordered);
-    }
-
-    public override void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
-    {
-        // todo
     }
 
     public override void OnNetworkLatencyUpdate(NetPeer peer, int latency)
