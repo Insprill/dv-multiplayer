@@ -12,6 +12,7 @@ using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Clientbound.Train;
+using Multiplayer.Networking.Packets.Clientbound.World;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
@@ -141,6 +142,11 @@ public class NetworkServer : NetworkManager
         }
     }
 
+    public void SendGameParams(GameParams gameParams)
+    {
+        SendPacketToAll(ClientboundGameParamsPacket.FromGameParams(gameParams), DeliveryMethod.ReliableOrdered, selfPeer);
+    }
+
     public void SendSpawnTrainCar(TrainCarLivery carToSpawn, ushort netId, RailTrack track, Vector3 position, Vector3 forward, bool playerSpawnedCar)
     {
         SendPacketToAll(new ClientboundSpawnNewTrainCarPacket {
@@ -263,6 +269,8 @@ public class NetworkServer : NetworkManager
         };
 
         serverPlayers.Add(serverPlayer.Id, serverPlayer);
+
+        SendPacket(peer, ClientboundGameParamsPacket.FromGameParams(Globals.G.GameParams), DeliveryMethod.ReliableOrdered);
     }
 
     private void OnServerboundClientReadyPacket(ServerboundClientReadyPacket packet, NetPeer peer)
