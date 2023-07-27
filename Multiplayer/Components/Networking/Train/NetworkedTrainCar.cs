@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DV.Simulation.Brake;
 using DV.Simulation.Cars;
+using DV.ThingTypes;
 using LocoSim.Definitions;
 using LocoSim.Implementations;
 using Multiplayer.Networking.Packets.Clientbound.Train;
@@ -32,6 +33,8 @@ public class NetworkedTrainCar : MonoBehaviour
     private bool handbrakeDirty;
     private bool bogie1TrackDirty;
     private bool bogie2TrackDirty;
+    private bool cargoDirty;
+    private bool cargoIsLoading;
 
     #region Client
 
@@ -81,7 +84,16 @@ public class NetworkedTrainCar : MonoBehaviour
         {
             NetworkLifecycle.Instance.OnTick += Server_OnTick;
             bogie1.TrackChanged += Server_BogieTrackChanged;
+            StartCoroutine(WaitForLogicCar());
         }
+    }
+
+    private IEnumerator WaitForLogicCar()
+    {
+        while (trainCar.logicCar == null)
+            yield return null;
+        trainCar.logicCar.CargoLoaded += Server_OnCargoLoaded;
+        trainCar.logicCar.CargoUnloaded += Server_OnCargoUnloaded;
     }
 
     private void OnDisable()
@@ -95,6 +107,11 @@ public class NetworkedTrainCar : MonoBehaviour
         {
             NetworkLifecycle.Instance.OnTick -= Server_OnTick;
             bogie1.TrackChanged -= Server_BogieTrackChanged;
+            if (trainCar.logicCar != null)
+            {
+                trainCar.logicCar.CargoLoaded -= Server_OnCargoLoaded;
+                trainCar.logicCar.CargoUnloaded -= Server_OnCargoUnloaded;
+            }
         }
     }
 
@@ -103,6 +120,8 @@ public class NetworkedTrainCar : MonoBehaviour
     public void Server_DirtyAllState()
     {
         handbrakeDirty = true;
+        cargoDirty = true;
+        cargoIsLoading = true;
         if (!hasSimFlow)
             return;
         foreach (string portId in simulationFlow.fullPortIdToPort.Keys)
@@ -119,9 +138,32 @@ public class NetworkedTrainCar : MonoBehaviour
             bogie2TrackDirty = true;
     }
 
+    private void Server_OnCargoLoaded(CargoType obj)
+    {
+        cargoDirty = true;
+        cargoIsLoading = true;
+    }
+
+    private void Server_OnCargoUnloaded()
+    {
+        cargoDirty = true;
+        cargoIsLoading = false;
+    }
+
     private void Server_OnTick(uint tick)
     {
+        Server_SendCargoState();
         Server_SendPhysicsUpdate();
+    }
+
+    private void Server_SendCargoState()
+    {
+        if (!cargoDirty)
+            return;
+        cargoDirty = false;
+        if (cargoIsLoading && trainCar.logicCar.CurrentCargoTypeInCar == CargoType.None)
+            return;
+        NetworkLifecycle.Instance.Server.SendCargoState(trainCar, NetId, cargoIsLoading);
     }
 
     private void Server_SendPhysicsUpdate()

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Net;
 using DV;
+using DV.Logic.Job;
 using DV.MultipleUnit;
 using DV.ThingTypes;
 using DV.UI;
@@ -82,6 +83,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonBrakeCylinderReleasePacket>(OnCommonBrakeCylinderReleasePacket);
         netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket>(OnCommonHandbrakePositionPacket);
         netPacketProcessor.SubscribeReusable<CommonSimFlowPacket>(OnCommonSimFlowPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundCargoStatePacket>(OnClientboundCargoStatePacket);
     }
 
     #region Common
@@ -482,6 +484,25 @@ public class NetworkClient : NetworkManager
         }
 
         networkedTrainCar.Common_UpdateSimFlow(packet);
+    }
+
+    private void OnClientboundCargoStatePacket(ClientboundCargoStatePacket packet)
+    {
+        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
+        {
+            LogError($"Received {nameof(CommonSimFlowPacket)} but couldn't find one of the cars!");
+            return;
+        }
+
+        if (packet.CargoType == (ushort)CargoType.None && trainCar.logicCar.CurrentCargoTypeInCar == CargoType.None)
+            return;
+
+        // todo: cache warehouse machine
+        WarehouseMachine warehouse = string.IsNullOrEmpty(packet.WarehouseMachineId) ? null : JobSaveManager.Instance.GetWarehouseMachineWithId(packet.WarehouseMachineId);
+        if (packet.IsLoading)
+            trainCar.logicCar.LoadCargo(packet.CargoAmount, (CargoType)packet.CargoType, warehouse);
+        else
+            trainCar.logicCar.UnloadCargo(packet.CargoAmount, (CargoType)packet.CargoType, warehouse);
     }
 
     #endregion

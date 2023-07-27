@@ -2,10 +2,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using DV;
+using DV.Logic.Job;
 using DV.ThingTypes;
 using DV.WeatherSystem;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using Multiplayer.Components;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
 using Multiplayer.Networking.Packets.Clientbound;
@@ -166,7 +168,20 @@ public class NetworkServer : NetworkManager
             Speed = trainCar.GetForwardSpeed(),
             Bogie1 = BogieMovementData.FromBogie(bogie1, sendBogie1Track),
             Bogie2 = BogieMovementData.FromBogie(bogie2, sendBogie2Track)
-        }, DeliveryMethod.Unreliable, selfPeer);
+        }, DeliveryMethod.ReliableOrdered, selfPeer);
+    }
+
+    public void SendCargoState(TrainCar trainCar, ushort netId, bool isLoading)
+    {
+        Car logicCar = trainCar.logicCar;
+        CargoType cargoType = isLoading ? logicCar.CurrentCargoTypeInCar : logicCar.LastUnloadedCargoType;
+        SendPacketToAll(new ClientboundCargoStatePacket {
+            NetId = netId,
+            IsLoading = isLoading,
+            CargoType = (ushort)cargoType,
+            CargoAmount = logicCar.LoadedCargoAmount,
+            WarehouseMachineId = logicCar.CargoOriginWarehouse?.ID
+        }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
     #endregion
@@ -307,7 +322,8 @@ public class NetworkServer : NetworkManager
         }
 
         foreach (TrainCar trainCar in trainCars)
-            trainCar.GetComponent<NetworkedTrainCar>().Server_DirtyAllState();
+            if (TrainComponentLookup.Instance.NetworkedTrainFromTrain(trainCar, out NetworkedTrainCar networkedTrainCar))
+                networkedTrainCar.Server_DirtyAllState();
 
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
