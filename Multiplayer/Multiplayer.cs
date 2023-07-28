@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using HarmonyLib;
+using JetBrains.Annotations;
 using Multiplayer.Components.Networking;
 using Multiplayer.Editor;
 using Multiplayer.Patches.World;
@@ -17,8 +18,10 @@ public static class Multiplayer
     private static UnityModManager.ModEntry ModEntry;
     public static Settings Settings;
 
+    private static AssetBundle assetBundle;
     public static AssetIndex AssetIndex { get; private set; }
 
+    [UsedImplicitly]
     private static bool Load(UnityModManager.ModEntry modEntry)
     {
         ModEntry = modEntry;
@@ -58,8 +61,14 @@ public static class Multiplayer
         return true;
     }
 
-    private static bool LoadAssets()
+    public static bool LoadAssets()
     {
+        if (assetBundle != null)
+        {
+            LogDebug(() => "Asset Bundle is still loaded, skipping loading it again.");
+            return true;
+        }
+
         Log("Loading AssetBundle...");
         string assetBundlePath = Path.Combine(ModEntry.Path, "multiplayer.assetbundle");
         if (!File.Exists(assetBundlePath))
@@ -68,7 +77,7 @@ public static class Multiplayer
             return false;
         }
 
-        AssetBundle assetBundle = AssetBundle.LoadFromFile(assetBundlePath);
+        assetBundle = AssetBundle.LoadFromFile(assetBundlePath);
         AssetIndex[] indices = assetBundle.LoadAllAssets<AssetIndex>();
         if (indices.Length != 1)
         {
