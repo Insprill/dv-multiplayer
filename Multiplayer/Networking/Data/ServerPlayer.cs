@@ -8,6 +8,7 @@ public class ServerPlayer
     public string Username { get; set; }
     public int Ping { get; set; }
     public Vector3 Position { get; set; }
+    public TrainCar Car { get; set; }
 
     public override string ToString()
     {

@@ -1,7 +1,6 @@
-using System.Collections;
 using HarmonyLib;
 using Multiplayer.Components.Networking;
-using Multiplayer.Networking.Listeners;
+using Multiplayer.Utils;
 using UnityEngine;
 
 namespace Multiplayer.Patches.Player;
@@ -9,67 +8,59 @@ namespace Multiplayer.Patches.Player;
 [HarmonyPatch(typeof(CustomFirstPersonController))]
 public static class MovementSyncPatch
 {
-    private const byte UPDATE_RATE = 20;
-    private const float targetDeltaTime = 1.0f / UPDATE_RATE;
+    private static CustomFirstPersonController fps;
 
     private static Vector3 lastPosition;
     private static float lastRotationY;
     private static bool sentFinalPosition;
 
-    private static WaitForSeconds frameDelay;
+    private static bool isJumping;
 
     [HarmonyPostfix]
     [HarmonyPatch(nameof(CustomFirstPersonController.Awake))]
     private static void CharacterMovement(CustomFirstPersonController __instance)
     {
-        frameDelay = new WaitForSeconds(targetDeltaTime);
-        CoroutineManager.Instance.StartCoroutine(WaitForClient(__instance));
+        fps = __instance;
+        NetworkLifecycle.Instance.OnTick += OnTick;
+        PlayerManager.CarChanged += OnCarChanged;
     }
 
-    private static IEnumerator WaitForClient(CustomFirstPersonController __instance)
+    [HarmonyPostfix]
+    [HarmonyPatch(nameof(CustomFirstPersonController.OnDestroy))]
+    private static void OnDestroy()
     {
-        while (!NetworkLifecycle.Instance.IsClientRunning)
-            yield return null;
-        CoroutineManager.Instance.StartCoroutine(SendPositionCoro(__instance, NetworkLifecycle.Instance.Client));
+        if (UnloadWatcher.isQuitting)
+            return;
+        NetworkLifecycle.Instance.OnTick -= OnTick;
+        PlayerManager.CarChanged -= OnCarChanged;
     }
 
-    private static IEnumerator SendPositionCoro(CustomFirstPersonController __instance, NetworkClient client)
+    private static void OnCarChanged(TrainCar trainCar)
     {
-        // ReSharper disable once LoopVariableIsNeverChangedInsideLoop
-        while (__instance != null)
-        {
-            if (client is not { IsRunning: true })
-            {
-                yield return null;
-                continue;
-            }
+        NetworkLifecycle.Instance.Client.SendPlayerCar(trainCar == null ? ushort.MaxValue : trainCar.GetNetId());
+    }
 
-            Transform t = __instance.transform;
-            Vector3 position = t.position;
-            float rotationY = t.eulerAngles.y;
+    private static void OnTick(uint obj)
+    {
+        Transform t = fps.transform;
+        bool isOnCar = PlayerManager.Car != null;
+        Vector3 position = isOnCar ? t.localPosition : t.position;
+        float rotationY = (isOnCar ? t.localEulerAngles : t.eulerAngles).y;
 
-            bool positionOrRotationChanged = lastPosition != position || !Mathf.Approximately(lastRotationY, rotationY);
-            if (positionOrRotationChanged || !sentFinalPosition)
-            {
-                lastPosition = position;
-                lastRotationY = rotationY;
-                sentFinalPosition = !positionOrRotationChanged;
-                client.SendPlayerPosition(position, lastRotationY, false, sentFinalPosition);
-            }
+        bool positionOrRotationChanged = lastPosition != position || !Mathf.Approximately(lastRotationY, rotationY);
+        if (!positionOrRotationChanged && sentFinalPosition)
+            return;
 
-            yield return frameDelay;
-        }
+        lastPosition = position;
+        lastRotationY = rotationY;
+        sentFinalPosition = !positionOrRotationChanged;
+        NetworkLifecycle.Instance.Client.SendPlayerPosition(lastPosition, lastRotationY, isJumping, sentFinalPosition);
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(nameof(CustomFirstPersonController.SetJumpParameters))]
-    private static void SetJumpParameters(CustomFirstPersonController __instance)
+    private static void SetJumpParameters()
     {
-        if (NetworkLifecycle.Instance.Client is not { } client)
-            return;
-        Transform t = __instance.transform;
-        lastPosition = t.position;
-        lastRotationY = t.eulerAngles.y;
-        client.SendPlayerPosition(lastPosition, lastRotationY, true, true);
+        isJumping = true;
     }
 }

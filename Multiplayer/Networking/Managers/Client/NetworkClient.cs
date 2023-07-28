@@ -60,6 +60,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundPlayerJoinedPacket>(OnClientboundPlayerJoinedPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPlayerDisconnectPacket>(OnClientboundPlayerDisconnectPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPlayerPositionPacket>(OnClientboundPlayerPositionPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundPlayerCarPacket>(OnClientboundPlayerCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPingUpdatePacket>(OnClientboundPingUpdatePacket);
         netPacketProcessor.SubscribeReusable<ClientboundTickSyncPacket>(OnClientboundTickSyncPacket);
         netPacketProcessor.SubscribeReusable<ClientboundBeginWorldSyncPacket>(OnClientboundBeginWorldSyncPacket);
@@ -185,6 +186,11 @@ public class NetworkClient : NetworkManager
     private void OnClientboundPlayerPositionPacket(ClientboundPlayerPositionPacket packet)
     {
         playerManager.UpdatePosition(packet);
+    }
+
+    private void OnClientboundPlayerCarPacket(ClientboundPlayerCarPacket packet)
+    {
+        playerManager.UpdateCar(packet.Id, packet.CarId);
     }
 
     private void OnClientboundPingUpdatePacket(ClientboundPingUpdatePacket packet)
@@ -546,13 +552,20 @@ public class NetworkClient : NetworkManager
         SendPacketToServer(new ServerboundClientReadyPacket(), DeliveryMethod.ReliableOrdered);
     }
 
-    public void SendPlayerPosition(Vector3 position, float rotationY, bool IsJumping, bool reliable = false)
+    public void SendPlayerPosition(Vector3 position, float rotationY, bool isJumping, bool reliable = false)
     {
         SendPacketToServer(new ServerboundPlayerPositionPacket {
             Position = position,
             RotationY = rotationY,
-            IsJumping = IsJumping
-        }, reliable ? DeliveryMethod.ReliableSequenced : DeliveryMethod.Sequenced);
+            IsJumping = isJumping
+        }, reliable ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Sequenced);
+    }
+
+    public void SendPlayerCar(ushort carId)
+    {
+        SendPacketToServer(new ServerboundPlayerCarPacket {
+            CarId = carId
+        }, DeliveryMethod.ReliableOrdered);
     }
 
     public void SendTimeAdvance(float amountOfTimeToSkipInSeconds)

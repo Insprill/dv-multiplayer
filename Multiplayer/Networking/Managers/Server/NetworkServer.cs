@@ -53,6 +53,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundClientLoginPacket, ConnectionRequest>(OnServerboundClientLoginPacket);
         netPacketProcessor.SubscribeReusable<ServerboundClientReadyPacket, NetPeer>(OnServerboundClientReadyPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
+        netPacketProcessor.SubscribeReusable<ServerboundPlayerCarPacket, NetPeer>(OnServerboundPlayerCarPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket, NetPeer>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket, NetPeer>(OnCommonRotateTurntablePacket);
@@ -307,6 +308,10 @@ public class NetworkServer : NetworkManager
                 Id = player.Id,
                 Username = player.Username
             }, DeliveryMethod.ReliableOrdered);
+            SendPacket(peer, new ClientboundPlayerCarPacket {
+                Id = player.Id,
+                CarId = player.Car == null ? ushort.MaxValue : player.Car.GetNetId()
+            }, DeliveryMethod.ReliableOrdered);
         }
 
         // Send weather state
@@ -353,6 +358,22 @@ public class NetworkServer : NetworkManager
         };
 
         SendPacketToAll(clientboundPacket, DeliveryMethod.Sequenced, peer);
+    }
+
+    private void OnServerboundPlayerCarPacket(ServerboundPlayerCarPacket packet, NetPeer peer)
+    {
+        if (TryGetServerPlayer(peer, out ServerPlayer player))
+        {
+            TrainComponentLookup.Instance.TrainFromNetId(packet.CarId, out TrainCar trainCar);
+            player.Car = trainCar;
+        }
+
+        ClientboundPlayerCarPacket clientboundPacket = new() {
+            Id = (byte)peer.Id,
+            CarId = packet.CarId
+        };
+
+        SendPacketToAll(clientboundPacket, DeliveryMethod.ReliableOrdered, peer);
     }
 
     private void OnServerboundTimeAdvancePacket(ServerboundTimeAdvancePacket packet, NetPeer peer)

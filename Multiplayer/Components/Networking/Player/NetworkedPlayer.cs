@@ -7,6 +7,7 @@ public class NetworkedPlayer : MonoBehaviour
 {
     public string username;
     private AnimationHandler animationHandler;
+    private bool isOnCar;
 
     private void Awake()
     {
@@ -15,12 +16,27 @@ public class NetworkedPlayer : MonoBehaviour
 
     public void UpdatePosition(Vector3 position, float rotation, bool isJumping)
     {
-        transform.position = position;
-        transform.rotation = Quaternion.Euler(0, rotation, 0);
+        if (isOnCar)
+        {
+            transform.localPosition = position;
+            transform.localRotation = Quaternion.Euler(0, rotation, 0);
+        }
+        else
+        {
+            transform.position = position;
+            transform.rotation = Quaternion.Euler(0, rotation, 0);
+        }
 
         // animationHandler.SetSpeed(?);
 
         if (isJumping)
             animationHandler.Jump();
+    }
+
+    public void UpdateCar(ushort netId)
+    {
+        TrainComponentLookup.Instance.TrainFromNetId(netId, out TrainCar trainCar);
+        isOnCar = trainCar != null;
+        transform.SetParent(isOnCar ? trainCar.transform : null, true);
     }
 }
