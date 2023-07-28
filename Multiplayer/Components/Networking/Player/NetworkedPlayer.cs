@@ -23,7 +23,7 @@ public class NetworkedPlayer : MonoBehaviour
         }
         else
         {
-            transform.position = position;
+            transform.position = position - WorldMover.currentMove;
             transform.rotation = Quaternion.Euler(0, rotation, 0);
         }
 

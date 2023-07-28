@@ -348,7 +348,7 @@ public class NetworkServer : NetworkManager
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)
     {
         if (TryGetServerPlayer(peer, out ServerPlayer player))
-            player.Position = packet.Position;
+            player.Position = packet.Position - WorldMover.currentMove;
 
         ClientboundPlayerPositionPacket clientboundPacket = new() {
             Id = (byte)peer.Id,

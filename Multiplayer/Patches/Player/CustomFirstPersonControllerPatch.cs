@@ -44,7 +44,7 @@ public static class MovementSyncPatch
     {
         Transform t = fps.transform;
         bool isOnCar = PlayerManager.Car != null;
-        Vector3 position = isOnCar ? t.localPosition : t.position;
+        Vector3 position = isOnCar ? t.localPosition : t.position + WorldMover.currentMove;
         float rotationY = (isOnCar ? t.localEulerAngles : t.eulerAngles).y;
 
         bool positionOrRotationChanged = lastPosition != position || !Mathf.Approximately(lastRotationY, rotationY);

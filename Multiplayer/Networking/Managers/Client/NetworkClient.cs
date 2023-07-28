@@ -310,7 +310,7 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        CarSpawner.Instance.SpawnCar(livery.prefab, track, packet.Position, packet.Forward, packet.PlayerSpawnedCar).SetNetId(packet.NetId);
+        CarSpawner.Instance.SpawnCar(livery.prefab, track, packet.Position - WorldMover.currentMove, packet.Forward, packet.PlayerSpawnedCar).SetNetId(packet.NetId);
     }
 
     public void OnClientboundSpawnExistingTrainCarPacket(ClientboundSpawnExistingTrainCarPacket packet)
@@ -340,7 +340,7 @@ public class NetworkClient : NetworkManager
             packet.CarId,
             packet.CarGuid,
             packet.PlayerSpawnedCar,
-            packet.Position,
+            packet.Position - WorldMover.currentMove,
             Quaternion.Euler(packet.Rotation),
             packet.Bogie1.IsDerailed,
             bogie1Track,

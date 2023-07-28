@@ -59,7 +59,6 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         Stats = gameObject.AddComponent<NetworkStatsGui>();
         RegisterPackets();
         Settings.OnSettingsUpdated += OnSettingsUpdated;
-        WorldStreamingInit.LoadingFinished += OnWorldLoaded;
         SceneManager.sceneLoaded += (scene, _) =>
         {
             if (scene.buildIndex != (int)DVScenes.MainMenu)
@@ -89,12 +88,6 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
             Stats.Show(Client.Statistics, Server?.Statistics);
         else
             Stats.Hide();
-    }
-
-    private static void OnWorldLoaded()
-    {
-        // World moving is hard-disabled via the WorldMoverPatch, but we update this anyway so scripts are aware of that.
-        WorldMover.Instance.movingEnabled = false;
     }
 
     public void TriggerMainMenuEventLater()

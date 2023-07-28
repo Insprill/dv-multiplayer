@@ -71,6 +71,6 @@ public class TrainComponentLookup : SingletonBehaviour<TrainComponentLookup>
     [UsedImplicitly]
     public new static string AllowAutoCreate()
     {
-        return $"{nameof(TrainComponentLookup)}";
+        return $"[{nameof(TrainComponentLookup)}]";
     }
 }

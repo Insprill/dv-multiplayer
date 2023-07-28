@@ -26,7 +26,7 @@ public class ClientboundSpawnExistingTrainCarPacket
             CarId = trainCar.ID,
             CarGuid = trainCar.CarGUID,
             PlayerSpawnedCar = trainCar.playerSpawnedCar,
-            Position = trainCar.transform.position,
+            Position = trainCar.transform.position + WorldMover.currentMove,
             Rotation = trainCar.transform.eulerAngles,
             Bogie1 = InitialBogieData.FromBogie(trainCar.Bogies[0]),
             Bogie2 = InitialBogieData.FromBogie(trainCar.Bogies[1]),
