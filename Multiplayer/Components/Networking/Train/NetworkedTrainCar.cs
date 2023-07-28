@@ -31,8 +31,7 @@ public class NetworkedTrainCar : MonoBehaviour
     private HashSet<string> dirtyPorts;
     private HashSet<string> dirtyFuses;
     private bool handbrakeDirty;
-    private bool bogie1TrackDirty;
-    private bool bogie2TrackDirty;
+    private bool bogieTracksDirty;
     private bool cargoDirty;
     private bool cargoIsLoading;
     private bool healthDirty;
@@ -85,6 +84,7 @@ public class NetworkedTrainCar : MonoBehaviour
         {
             NetworkLifecycle.Instance.OnTick += Server_OnTick;
             bogie1.TrackChanged += Server_BogieTrackChanged;
+            bogie2.TrackChanged += Server_BogieTrackChanged;
             trainCar.CarDamage.CarEffectiveHealthStateUpdate += Server_CarHealthUpdate;
             StartCoroutine(WaitForLogicCar());
         }
@@ -109,6 +109,8 @@ public class NetworkedTrainCar : MonoBehaviour
         {
             NetworkLifecycle.Instance.OnTick -= Server_OnTick;
             bogie1.TrackChanged -= Server_BogieTrackChanged;
+            bogie2.TrackChanged -= Server_BogieTrackChanged;
+            trainCar.CarDamage.CarEffectiveHealthStateUpdate -= Server_CarHealthUpdate;
             if (trainCar.logicCar != null)
             {
                 trainCar.logicCar.CargoLoaded -= Server_OnCargoLoaded;
@@ -135,10 +137,7 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void Server_BogieTrackChanged(RailTrack arg1, Bogie arg2)
     {
-        if (arg2 == bogie1)
-            bogie1TrackDirty = true;
-        else if (arg2 == bogie2)
-            bogie2TrackDirty = true;
+        bogieTracksDirty = true;
     }
 
     private void Server_OnCargoLoaded(CargoType obj)
@@ -153,7 +152,7 @@ public class NetworkedTrainCar : MonoBehaviour
         cargoIsLoading = false;
     }
 
-    private void Server_CarHealthUpdate(float obj)
+    private void Server_CarHealthUpdate(float health)
     {
         healthDirty = true;
     }
@@ -187,11 +186,10 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void Server_SendPhysicsUpdate()
     {
-        if (trainCar.isStationary || !bogie1.fullyInitialized || bogie1.rb == null || !bogie2.fullyInitialized || bogie2.rb == null)
+        if (trainCar.isStationary || !bogie1.fullyInitialized || !bogie2.fullyInitialized || bogie1.rb == null || bogie2.rb == null)
             return;
-        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(trainCar, NetId, bogie1, bogie1TrackDirty, bogie2, bogie2TrackDirty);
-        bogie1TrackDirty = false;
-        bogie2TrackDirty = false;
+        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(trainCar, NetId, bogie1, bogie2, bogieTracksDirty);
+        bogieTracksDirty = false;
     }
 
     #endregion

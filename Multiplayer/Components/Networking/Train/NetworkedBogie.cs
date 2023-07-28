@@ -1,4 +1,5 @@
 using Multiplayer.Networking.Packets.Common;
+using UnityEngine;
 
 namespace Multiplayer.Components.Networking.Train;
 
@@ -18,7 +19,7 @@ public class NetworkedBogie : TickedQueue<BogieMovementData>
         base.OnEnable();
     }
 
-    protected override void Process(BogieMovementData snapshot)
+    protected override void Process(BogieMovementData snapshot, uint snapshotTick)
     {
         if (bogie.HasDerailed)
             return;
@@ -26,16 +27,22 @@ public class NetworkedBogie : TickedQueue<BogieMovementData>
         if (snapshot.TrackIndex != ushort.MaxValue)
         {
             if (WorldComponentLookup.Instance.TrackFromIndex(snapshot.TrackIndex, out RailTrack track))
+            {
                 bogie.SetTrack(track, snapshot.PositionAlongTrack);
+            }
             else
-                Multiplayer.LogError($"Could not find track with index {snapshot.TrackIndex}! Skipping update and waiting for next snapshot.");
+            {
+                Multiplayer.LogError($"Could not find track with index {snapshot.TrackIndex}! Skipping update and waiting for the next snapshot.");
+                return;
+            }
         }
         else
         {
-            // Vector3d worldPos = bogie.traveller.worldPosition;
-            // bogie.traveller.MoveToSpan(snapshot.PositionAlongTrack);
-            // Vector3d newWorldPos = bogie.traveller.worldPosition;
-            // Multiplayer.LogDebug(() => $"Difference: {Vector3d.Distance(worldPos, newWorldPos)}");
+            bogie.traveller.MoveToSpan(snapshot.PositionAlongTrack);
         }
+
+        int physicsSteps = Mathf.FloorToInt((NetworkLifecycle.Instance.Tick - (float)snapshotTick) / NetworkLifecycle.TICK_RATE / Time.fixedDeltaTime) + 1;
+        for (int i = 0; i < physicsSteps; i++)
+            bogie.FixedUpdate(); // 💀
     }
 }

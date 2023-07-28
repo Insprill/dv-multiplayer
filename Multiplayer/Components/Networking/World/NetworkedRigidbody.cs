@@ -19,7 +19,7 @@ public class NetworkedRigidbody : TickedQueue<RigidbodySnapshot>
         base.OnEnable();
     }
 
-    protected override void Process(RigidbodySnapshot snapshot)
+    protected override void Process(RigidbodySnapshot snapshot, uint snapshotTick)
     {
         snapshot.Apply(rigidbody);
     }

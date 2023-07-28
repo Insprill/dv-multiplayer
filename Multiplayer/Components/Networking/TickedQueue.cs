@@ -5,10 +5,8 @@ namespace Multiplayer.Components.Networking;
 
 public abstract class TickedQueue<T> : MonoBehaviour
 {
-    private const byte MAX_SNAPSHOTS = 5;
-
     private uint lastTick;
-    private readonly Queue<T> snapshots = new(MAX_SNAPSHOTS);
+    private readonly Queue<(uint, T)> snapshots = new();
 
     protected virtual void OnEnable()
     {
@@ -29,17 +27,19 @@ public abstract class TickedQueue<T> : MonoBehaviour
         if (tick <= lastTick)
             return;
         lastTick = tick;
-        if (snapshots.Count == MAX_SNAPSHOTS)
-            snapshots.Dequeue();
-        snapshots.Enqueue(snapshot);
+        snapshots.Enqueue((tick, snapshot));
     }
 
     private void OnTick(uint tick)
     {
         if (snapshots.Count == 0)
             return;
-        Process(snapshots.Dequeue());
+        while (snapshots.Count > 0)
+        {
+            (uint snapshotTick, T snapshot) = snapshots.Dequeue();
+            Process(snapshot, snapshotTick);
+        }
     }
 
-    protected abstract void Process(T snapshot);
+    protected abstract void Process(T snapshot, uint snapshotTick);
 }

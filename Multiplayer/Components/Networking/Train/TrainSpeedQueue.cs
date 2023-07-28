@@ -16,7 +16,7 @@ public class TrainSpeedQueue : TickedQueue<float>
         base.OnEnable();
     }
 
-    protected override void Process(float snapshot)
+    protected override void Process(float snapshot, uint snapshotTick)
     {
         // TrainCar#SetForwardSpeed doesn't check for derailed bogies
         trainCar.rb.velocity = trainCar.transform.forward * snapshot;
