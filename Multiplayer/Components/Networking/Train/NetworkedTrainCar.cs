@@ -181,6 +181,7 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if (!healthDirty)
             return;
+        healthDirty = false;
         NetworkLifecycle.Instance.Server.SendCarHealthUpdate(NetId, trainCar.CarDamage.currentHealth);
     }
 
