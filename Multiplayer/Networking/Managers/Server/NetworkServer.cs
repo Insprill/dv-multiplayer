@@ -32,7 +32,7 @@ public class NetworkServer : NetworkManager
     public IReadOnlyCollection<ServerPlayer> ServerPlayers => serverPlayers.Values;
     public int PlayerCount => netManager.ConnectedPeersCount;
 
-    private NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
+    private static NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
     private readonly ModInfo[] serverMods;
 
     private bool IsLoaded;
@@ -365,7 +365,7 @@ public class NetworkServer : NetworkManager
             Position = packet.Position,
             MoveDir = packet.MoveDir,
             RotationY = packet.RotationY,
-            IsJumping = packet.IsJumping
+            IsJumpingIsOnCar = packet.IsJumpingIsOnCar
         };
 
         SendPacketToAll(clientboundPacket, DeliveryMethod.Sequenced, peer);

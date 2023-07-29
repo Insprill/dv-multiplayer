@@ -55,7 +55,7 @@ public static class MovementSyncPatch
         lastPosition = position;
         lastRotationY = rotationY;
         sentFinalPosition = !positionOrRotationChanged;
-        NetworkLifecycle.Instance.Client.SendPlayerPosition(lastPosition, fpsTransform.InverseTransformDirection(fps.m_MoveDir), lastRotationY, isJumping, isJumping || sentFinalPosition);
+        NetworkLifecycle.Instance.Client.SendPlayerPosition(lastPosition, fpsTransform.InverseTransformDirection(fps.m_MoveDir), lastRotationY, isJumping, isOnCar, isJumping || sentFinalPosition);
         isJumping = false;
     }
 

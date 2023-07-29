@@ -567,13 +567,13 @@ public class NetworkClient : NetworkManager
         SendPacketToServer(new ServerboundClientReadyPacket(), DeliveryMethod.ReliableOrdered);
     }
 
-    public void SendPlayerPosition(Vector3 position, Vector3 moveDir, float rotationY, bool isJumping, bool reliable = false)
+    public void SendPlayerPosition(Vector3 position, Vector3 moveDir, float rotationY, bool isJumping, bool isOnCar, bool reliable)
     {
         SendPacketToServer(new ServerboundPlayerPositionPacket {
             Position = position,
             MoveDir = new Vector2(moveDir.x, moveDir.z),
             RotationY = rotationY,
-            IsJumping = isJumping
+            IsJumpingIsOnCar = (byte)((isJumping ? 1 : 0) | (isOnCar ? 2 : 0))
         }, reliable ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Sequenced);
     }
 

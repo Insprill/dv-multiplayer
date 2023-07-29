@@ -14,7 +14,7 @@ public class NetworkedPlayer : MonoBehaviour
     private bool isOnCar;
 
     private Transform selfTransform;
-    private Vector3 trueTargetPos;
+    private Vector3 targetPos;
     private Quaternion targetRotation;
     private Vector2 moveDir;
     private Vector2 targetMoveDir;
@@ -30,7 +30,7 @@ public class NetworkedPlayer : MonoBehaviour
         Settings.OnSettingsUpdated += OnSettingsUpdated;
 
         selfTransform = transform;
-        trueTargetPos = selfTransform.position;
+        targetPos = selfTransform.position;
         targetRotation = selfTransform.rotation;
         moveDir = Vector2.zero;
         targetMoveDir = Vector2.zero;
@@ -57,8 +57,8 @@ public class NetworkedPlayer : MonoBehaviour
     {
         float t = Time.deltaTime * LERP_SPEED;
 
-        Vector3 position = Vector3.Lerp(selfTransform.position, trueTargetPos - WorldMover.currentMove, t);
-        Quaternion rotation = Quaternion.Lerp(selfTransform.rotation, targetRotation, t);
+        Vector3 position = Vector3.Lerp(isOnCar ? selfTransform.localPosition : selfTransform.position, isOnCar ? targetPos : targetPos - WorldMover.currentMove, t);
+        Quaternion rotation = Quaternion.Lerp(isOnCar ? selfTransform.localRotation : selfTransform.rotation, targetRotation, t);
 
         moveDir = Vector2.Lerp(moveDir, targetMoveDir, t);
         animationHandler.SetMoveDir(moveDir);
@@ -75,13 +75,16 @@ public class NetworkedPlayer : MonoBehaviour
         }
     }
 
-    public void UpdatePosition(Vector3 position, Vector2 moveDir, float rotation, bool isJumping)
+    public void UpdatePosition(Vector3 position, Vector2 moveDir, float rotation, bool isJumping, bool movePacketIsOnCar)
     {
-        trueTargetPos = position;
-        targetRotation = Quaternion.Euler(0, rotation, 0);
         targetMoveDir = moveDir;
-
         animationHandler.SetIsJumping(isJumping);
+
+        if (isOnCar != movePacketIsOnCar)
+            return;
+
+        targetPos = position;
+        targetRotation = Quaternion.Euler(0, rotation, 0);
     }
 
     public void UpdateCar(ushort netId)
@@ -89,5 +92,7 @@ public class NetworkedPlayer : MonoBehaviour
         TrainComponentLookup.Instance.TrainFromNetId(netId, out TrainCar trainCar);
         isOnCar = trainCar != null;
         selfTransform.SetParent(isOnCar ? trainCar.transform : null, true);
+        targetPos = isOnCar ? transform.localPosition : selfTransform.position;
+        targetRotation = isOnCar ? transform.localRotation : selfTransform.rotation;
     }
 }
