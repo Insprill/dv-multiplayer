@@ -14,3 +14,12 @@ public static class Bogie_SetupPhysics_Patch
             __instance.gameObject.GetOrAddComponent<NetworkedBogie>();
     }
 }
+
+[HarmonyPatch(typeof(Bogie), nameof(Bogie.SwitchJunctionIfNeeded))]
+public static class Bogie_SwitchJunctionIfNeeded_Patch
+{
+    private static bool Prefix()
+    {
+        return NetworkLifecycle.Instance.IsHost();
+    }
+}
