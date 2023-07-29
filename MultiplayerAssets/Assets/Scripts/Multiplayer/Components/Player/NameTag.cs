@@ -10,6 +10,8 @@ namespace Multiplayer.Editor.Components.Player
         private static TMP_FontAsset font;
 
         [SerializeField]
+        private Transform canvas;
+        [SerializeField]
         private GameObject usernameObject;
         [SerializeField]
         private GameObject pingObject;
@@ -43,7 +45,7 @@ namespace Multiplayer.Editor.Components.Player
         {
             if (LookTarget == null)
                 return;
-            transform.rotation = Quaternion.LookRotation(transform.position - LookTarget.position);
+            canvas.rotation = Quaternion.LookRotation(canvas.position - LookTarget.position);
         }
 
         [UsedImplicitly]

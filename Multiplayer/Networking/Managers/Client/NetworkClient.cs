@@ -567,10 +567,11 @@ public class NetworkClient : NetworkManager
         SendPacketToServer(new ServerboundClientReadyPacket(), DeliveryMethod.ReliableOrdered);
     }
 
-    public void SendPlayerPosition(Vector3 position, float rotationY, bool isJumping, bool reliable = false)
+    public void SendPlayerPosition(Vector3 position, Vector3 moveDir, float rotationY, bool isJumping, bool reliable = false)
     {
         SendPacketToServer(new ServerboundPlayerPositionPacket {
             Position = position,
+            MoveDir = new Vector2(moveDir.x, moveDir.z),
             RotationY = rotationY,
             IsJumping = isJumping
         }, reliable ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Sequenced);

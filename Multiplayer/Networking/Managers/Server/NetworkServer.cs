@@ -363,6 +363,7 @@ public class NetworkServer : NetworkManager
         ClientboundPlayerPositionPacket clientboundPacket = new() {
             Id = (byte)peer.Id,
             Position = packet.Position,
+            MoveDir = packet.MoveDir,
             RotationY = packet.RotationY,
             IsJumping = packet.IsJumping
         };

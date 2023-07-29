@@ -45,7 +45,7 @@ public class ClientPlayerManager
     {
         if (!playerMap.TryGetValue(packet.Id, out NetworkedPlayer player))
             return;
-        player.UpdatePosition(packet.Position, packet.RotationY, packet.IsJumping);
+        player.UpdatePosition(packet.Position, packet.MoveDir, packet.RotationY, packet.IsJumping);
     }
 
     public void UpdateCar(byte playerId, ushort carId)

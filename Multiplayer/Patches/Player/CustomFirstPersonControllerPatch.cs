@@ -9,6 +9,7 @@ namespace Multiplayer.Patches.Player;
 public static class MovementSyncPatch
 {
     private static CustomFirstPersonController fps;
+    private static Transform fpsTransform;
 
     private static Vector3 lastPosition;
     private static float lastRotationY;
@@ -21,6 +22,7 @@ public static class MovementSyncPatch
     private static void CharacterMovement(CustomFirstPersonController __instance)
     {
         fps = __instance;
+        fpsTransform = fps.transform;
         NetworkLifecycle.Instance.OnTick += OnTick;
         PlayerManager.CarChanged += OnCarChanged;
     }
@@ -42,10 +44,9 @@ public static class MovementSyncPatch
 
     private static void OnTick(uint obj)
     {
-        Transform t = fps.transform;
         bool isOnCar = PlayerManager.Car != null;
-        Vector3 position = isOnCar ? t.localPosition : t.position + WorldMover.currentMove;
-        float rotationY = (isOnCar ? t.localEulerAngles : t.eulerAngles).y;
+        Vector3 position = isOnCar ? fpsTransform.localPosition : fpsTransform.position + WorldMover.currentMove;
+        float rotationY = (isOnCar ? fpsTransform.localEulerAngles : fpsTransform.eulerAngles).y;
 
         bool positionOrRotationChanged = lastPosition != position || !Mathf.Approximately(lastRotationY, rotationY);
         if (!positionOrRotationChanged && sentFinalPosition)
@@ -54,7 +55,8 @@ public static class MovementSyncPatch
         lastPosition = position;
         lastRotationY = rotationY;
         sentFinalPosition = !positionOrRotationChanged;
-        NetworkLifecycle.Instance.Client.SendPlayerPosition(lastPosition, lastRotationY, isJumping, sentFinalPosition);
+        NetworkLifecycle.Instance.Client.SendPlayerPosition(lastPosition, fpsTransform.InverseTransformDirection(fps.m_MoveDir), lastRotationY, isJumping, isJumping || sentFinalPosition);
+        isJumping = false;
     }
 
     [HarmonyPostfix]
