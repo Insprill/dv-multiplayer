@@ -67,7 +67,8 @@ public class Settings : UnityModManager.ModSettings, IDrawable
         Port = Mathf.Clamp(Port, 1024, 49151);
         MaxPlayers = Mathf.Clamp(MaxPlayers, 1, byte.MaxValue);
         Password = Password?.Trim();
-        OnSettingsUpdated?.Invoke(this);
+        if (!UnloadWatcher.isQuitting)
+            OnSettingsUpdated?.Invoke(this);
         Save(this, modEntry);
     }
 
