@@ -253,14 +253,14 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void Common_OnPortUpdated(string portId)
     {
-        if (NetworkLifecycle.Instance.IsProcessingPacket)
+        if (UnloadWatcher.isUnloading || NetworkLifecycle.Instance.IsProcessingPacket)
             return;
         dirtyPorts.Add(portId);
     }
 
     private void Common_OnFuseUpdated(string portId)
     {
-        if (NetworkLifecycle.Instance.IsProcessingPacket)
+        if (UnloadWatcher.isUnloading || NetworkLifecycle.Instance.IsProcessingPacket)
             return;
         dirtyFuses.Add(portId);
     }
