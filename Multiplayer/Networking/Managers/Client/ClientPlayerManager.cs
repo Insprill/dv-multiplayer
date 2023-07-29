@@ -22,7 +22,7 @@ public class ClientPlayerManager
         GameObject go = Object.Instantiate(playerPrefab, WorldMover.Instance.originShiftParent);
         go.layer = LayerMask.NameToLayer(Layers.Player);
         NetworkedPlayer networkedPlayer = go.AddComponent<NetworkedPlayer>();
-        networkedPlayer.username = username;
+        networkedPlayer.SetUsername(username);
         playerMap.Add(id, networkedPlayer);
     }
 
@@ -32,6 +32,13 @@ public class ClientPlayerManager
             return;
         Object.Destroy(player.gameObject);
         playerMap.Remove(id);
+    }
+
+    public void UpdatePing(byte id, int ping)
+    {
+        if (!playerMap.TryGetValue(id, out NetworkedPlayer player))
+            return;
+        player.SetPing(ping);
     }
 
     public void UpdatePosition(ClientboundPlayerPositionPacket packet)

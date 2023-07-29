@@ -195,7 +195,7 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundPingUpdatePacket(ClientboundPingUpdatePacket packet)
     {
-        // todo: update ping in ui
+        playerManager.UpdatePing(packet.Id, packet.Ping);
     }
 
     private void OnClientboundTickSyncPacket(ClientboundTickSyncPacket packet)

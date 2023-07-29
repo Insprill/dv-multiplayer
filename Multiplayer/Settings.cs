@@ -1,4 +1,5 @@
 ﻿using System;
+using Humanizer;
 using UnityEngine;
 using UnityModManagerNet;
 using Console = DV.Console;
@@ -9,12 +10,15 @@ namespace Multiplayer;
 [DrawFields(DrawFieldMask.OnlyDrawAttr)]
 public class Settings : UnityModManager.ModSettings, IDrawable
 {
+    private const byte MAX_USERNAME_LENGTH = 24;
+
     public static Action<Settings> OnSettingsUpdated;
 
     [Header("Player")]
     [Draw("Username", Tooltip = "Your username in-game")]
     public string Username = "Player";
 
+    [Space(10)]
     [Header("Server")]
     [Draw("Password", Tooltip = "The password required to join your server. Leave blank for no password.")]
     public string Password = "";
@@ -23,6 +27,14 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     [Draw("Port", Tooltip = "The port that your server will listen on. You generally don't need to change this.")]
     public int Port = 7777;
 
+    [Space(10)]
+    [Header("Preferences")]
+    [Draw("Show Name Tags", Tooltip = "Whether to show player names above their heads.")]
+    public bool ShowNameTags = true;
+    [Draw("Show Ping In Name Tag", Tooltip = "Whether to show player pings above their heads.", VisibleOn = "ShowNameTags|true")]
+    public bool ShowPingInNameTags = true;
+
+    [Space(10)]
     [Header("Advanced Settings")]
     [Draw("Show Advanced Settings", Tooltip = "You probably don't need to change these.")]
     public bool ShowAdvancedSettings;
@@ -51,8 +63,9 @@ public class Settings : UnityModManager.ModSettings, IDrawable
 
     public override void Save(UnityModManager.ModEntry modEntry)
     {
+        Username = Username.Trim().Truncate(MAX_USERNAME_LENGTH);
         Port = Mathf.Clamp(Port, 1024, 49151);
-        MaxPlayers = Mathf.Clamp(MaxPlayers, byte.MinValue, byte.MaxValue);
+        MaxPlayers = Mathf.Clamp(MaxPlayers, 1, byte.MaxValue);
         Password = Password?.Trim();
         OnSettingsUpdated?.Invoke(this);
         Save(this, modEntry);
