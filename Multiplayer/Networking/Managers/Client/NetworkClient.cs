@@ -63,6 +63,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundPlayerCarPacket>(OnClientboundPlayerCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundPingUpdatePacket>(OnClientboundPingUpdatePacket);
         netPacketProcessor.SubscribeReusable<ClientboundTickSyncPacket>(OnClientboundTickSyncPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundServerLoadingPacket>(OnClientboundServerLoadingPacket);
         netPacketProcessor.SubscribeReusable<ClientboundBeginWorldSyncPacket>(OnClientboundBeginWorldSyncPacket);
         netPacketProcessor.SubscribeReusable<ClientboundGameParamsPacket>(OnClientboundGameParamsPacket);
         netPacketProcessor.SubscribeReusable<ClientboundWeatherPacket>(OnClientboundWeatherPacket);
@@ -201,6 +202,20 @@ public class NetworkClient : NetworkManager
     private void OnClientboundTickSyncPacket(ClientboundTickSyncPacket packet)
     {
         NetworkLifecycle.Instance.Tick = (uint)(packet.ServerTick + ping / 2.0f * (1f / NetworkLifecycle.TICK_RATE));
+    }
+
+    private void OnClientboundServerLoadingPacket(ClientboundServerLoadingPacket packet)
+    {
+        Log("Waiting for server to load");
+
+        DisplayLoadingInfo displayLoadingInfo = Object.FindObjectOfType<DisplayLoadingInfo>();
+        if (displayLoadingInfo == null)
+        {
+            LogError($"Received {nameof(ClientboundServerLoadingPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
+            return;
+        }
+
+        displayLoadingInfo.OnLoadingStatusChanged("Waiting for server to load", false, 100);
     }
 
     private void OnClientboundGameParamsPacket(ClientboundGameParamsPacket packet)

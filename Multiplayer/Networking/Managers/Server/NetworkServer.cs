@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using DV;
 using DV.Logic.Job;
 using DV.ThingTypes;
@@ -26,6 +25,7 @@ public class NetworkServer : NetworkManager
 {
     protected override string LogPrefix => "[Server]";
 
+    private readonly Queue<NetPeer> joinQueue = new();
     private readonly Dictionary<byte, ServerPlayer> serverPlayers = new();
     private readonly Dictionary<byte, NetPeer> netPeers = new();
 
@@ -44,7 +44,7 @@ public class NetworkServer : NetworkManager
 
     public void Start(int port)
     {
-        WorldStreamingInit.LoadingFinished += () => IsLoaded = true;
+        WorldStreamingInit.LoadingFinished += OnLoaded;
         netManager.Start(port);
     }
 
@@ -67,6 +67,18 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonBrakeCylinderReleasePacket, NetPeer>(OnCommonBrakeCylinderReleasePacket);
         netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket, NetPeer>(OnCommonHandbrakePositionPacket);
         netPacketProcessor.SubscribeReusable<CommonSimFlowPacket, NetPeer>(OnCommonSimFlowPacket);
+    }
+
+    private void OnLoaded()
+    {
+        Log($"Server loaded, processing {joinQueue.Count} queued players");
+        IsLoaded = true;
+        while (joinQueue.Count > 0)
+        {
+            NetPeer peer = joinQueue.Dequeue();
+            if (peer.ConnectionState == ConnectionState.Connected)
+                OnServerboundClientReadyPacket(null, peer);
+        }
     }
 
     public bool TryGetServerPlayer(NetPeer peer, out ServerPlayer player)
@@ -247,16 +259,6 @@ public class NetworkServer : NetworkManager
             return;
         }
 
-        if (!IPAddress.IsLoopback(request.RemoteEndPoint.Address) && !IsLoaded)
-        {
-            LogWarning("Denied login due to the server not being loaded yet!");
-            ClientboundServerDenyPacket denyPacket = new() {
-                Reason = "The server is still starting!"
-            };
-            request.Reject(WritePacket(denyPacket));
-            return;
-        }
-
         NetPeer peer = request.Accept();
 
         ServerPlayer serverPlayer = new() {
@@ -272,6 +274,14 @@ public class NetworkServer : NetworkManager
     private void OnServerboundClientReadyPacket(ServerboundClientReadyPacket packet, NetPeer peer)
     {
         byte peerId = (byte)peer.Id;
+
+        // Allow clients to connect before the server is fully loaded
+        if (!IsLoaded)
+        {
+            joinQueue.Enqueue(peer);
+            SendPacket(peer, new ClientboundServerLoadingPacket(), DeliveryMethod.ReliableOrdered);
+            return;
+        }
 
         // Unpause physics
         if (AppUtil.Instance.IsTimePaused)
