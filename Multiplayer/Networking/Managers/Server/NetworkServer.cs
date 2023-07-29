@@ -149,7 +149,7 @@ public class NetworkServer : NetworkManager
             NetId = netId,
             LiveryId = carToSpawn.id,
             Track = track.gameObject.name,
-            Position = position,
+            Position = position + WorldMover.currentMove,
             Forward = forward,
             PlayerSpawnedCar = playerSpawnedCar
         }, DeliveryMethod.ReliableOrdered, selfPeer);
