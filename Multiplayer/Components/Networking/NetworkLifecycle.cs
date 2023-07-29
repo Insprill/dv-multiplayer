@@ -107,15 +107,17 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         mainMenuLoadedQueue.Enqueue(action);
     }
 
-    public void StartServer(int port)
+    public bool StartServer(int port)
     {
         if (Server != null)
             throw new InvalidOperationException("NetworkManager already exists!");
         Multiplayer.Log($"Starting server on port {port}");
         NetworkServer server = new(Multiplayer.Settings);
-        server.Start(port);
+        if (!server.Start(port))
+            return false;
         Server = server;
         StartClient("localhost", port, Multiplayer.Settings.Password);
+        return true;
     }
 
     public void StartClient(string address, int port, string password)

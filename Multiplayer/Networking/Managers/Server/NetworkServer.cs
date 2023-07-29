@@ -42,10 +42,10 @@ public class NetworkServer : NetworkManager
         serverMods = ModInfo.FromModEntries(UnityModManager.modEntries);
     }
 
-    public void Start(int port)
+    public bool Start(int port)
     {
         WorldStreamingInit.LoadingFinished += OnLoaded;
-        netManager.Start(port);
+        return netManager.Start(port);
     }
 
     protected override void Subscribe()
