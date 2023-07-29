@@ -522,15 +522,19 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        if (packet.CargoType == (ushort)CargoType.None && trainCar.logicCar.CurrentCargoTypeInCar == CargoType.None)
+        Car logicCar = trainCar.logicCar;
+
+        if (packet.CargoType == (ushort)CargoType.None && logicCar.CurrentCargoTypeInCar == CargoType.None)
             return;
+
+        float cargoAmount = Mathf.Clamp(packet.CargoAmount, 0, logicCar.capacity);
 
         // todo: cache warehouse machine
         WarehouseMachine warehouse = string.IsNullOrEmpty(packet.WarehouseMachineId) ? null : JobSaveManager.Instance.GetWarehouseMachineWithId(packet.WarehouseMachineId);
         if (packet.IsLoading)
-            trainCar.logicCar.LoadCargo(packet.CargoAmount, (CargoType)packet.CargoType, warehouse);
+            logicCar.LoadCargo(cargoAmount, (CargoType)packet.CargoType, warehouse);
         else
-            trainCar.logicCar.UnloadCargo(packet.CargoAmount, (CargoType)packet.CargoType, warehouse);
+            logicCar.UnloadCargo(cargoAmount, (CargoType)packet.CargoType, warehouse);
     }
 
     private void OnClientboundCarHealthUpdatePacket(ClientboundCarHealthUpdatePacket packet)
