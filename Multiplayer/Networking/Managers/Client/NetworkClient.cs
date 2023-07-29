@@ -312,8 +312,7 @@ public class NetworkClient : NetworkManager
 
     public void OnClientboundSpawnNewTrainCarPacket(ClientboundSpawnNewTrainCarPacket packet)
     {
-        RailTrack track = RailTrackRegistry.Instance.GetTrackWithName(packet.Track);
-        if (track == null)
+        if (!WorldComponentLookup.Instance.TrackFromIndex(packet.Track, out RailTrack track))
         {
             LogError($"Received {nameof(ClientboundSpawnNewTrainCarPacket)} but couldn't find track with name {packet.Track}");
             return;
@@ -330,15 +329,13 @@ public class NetworkClient : NetworkManager
 
     public void OnClientboundSpawnExistingTrainCarPacket(ClientboundSpawnExistingTrainCarPacket packet)
     {
-        RailTrack bogie1Track = RailTrackRegistry.Instance.GetTrackWithName(packet.Bogie1.Track);
-        if (!string.IsNullOrEmpty(packet.Bogie1.Track) && bogie1Track == null)
+        if (!WorldComponentLookup.Instance.TrackFromIndex(packet.Bogie1.Track, out RailTrack bogie1Track) && packet.Bogie1.Track != ushort.MaxValue)
         {
             LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find track with name {packet.Bogie1.Track}");
             return;
         }
 
-        RailTrack bogie2Track = RailTrackRegistry.Instance.GetTrackWithName(packet.Bogie2.Track);
-        if (!string.IsNullOrEmpty(packet.Bogie1.Track) && bogie2Track == null)
+        if (!WorldComponentLookup.Instance.TrackFromIndex(packet.Bogie2.Track, out RailTrack bogie2Track) && packet.Bogie2.Track != ushort.MaxValue)
         {
             LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find track with name {packet.Bogie2.Track}");
             return;
@@ -376,7 +373,7 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        trainCar.ReturnCarToPool();
+        CarSpawner.Instance.DeleteCar(trainCar);
     }
 
     public void OnClientboundTrainRigidbodyPacket(ClientboundTrainPhysicsPacket packet)

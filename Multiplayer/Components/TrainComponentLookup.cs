@@ -28,13 +28,12 @@ public class TrainComponentLookup : SingletonBehaviour<TrainComponentLookup>
         return true;
     }
 
-    public void RegisterTrainCar(TrainCar trainCar)
+    public void RegisterTrainCar(NetworkedTrainCar networkedTrainCar)
     {
-        NetworkedTrainCar networkedTrainCar = trainCar.GetComponent<NetworkedTrainCar>();
-        trainToNetworkedTrain[trainCar] = networkedTrainCar;
-        netIdToTrainCar[networkedTrainCar.NetId] = trainCar;
+        trainToNetworkedTrain[networkedTrainCar.TrainCar] = networkedTrainCar;
+        netIdToTrainCar[networkedTrainCar.NetId] = networkedTrainCar.TrainCar;
         netIdToNetworkedTrain[networkedTrainCar.NetId] = networkedTrainCar;
-        foreach (Coupler coupler in trainCar.couplers)
+        foreach (Coupler coupler in networkedTrainCar.TrainCar.couplers)
             hoseToCoupler[coupler.hoseAndCock] = coupler;
     }
 

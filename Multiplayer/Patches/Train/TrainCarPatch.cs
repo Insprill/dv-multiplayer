@@ -24,34 +24,3 @@ public class TrainCar_SetupRigidbody_Patch
             __instance.gameObject.GetOrAddComponent<TrainSpeedQueue>();
     }
 }
-
-[HarmonyPatch(typeof(TrainCar), nameof(TrainCar.Start))]
-public class TrainCar_Start_Patch
-{
-    private static void Prefix(TrainCar __instance)
-    {
-        TrainComponentLookup.Instance.RegisterTrainCar(__instance);
-    }
-}
-
-[HarmonyPatch(typeof(TrainCar), nameof(TrainCar.PrepareForDestroy))]
-public class TrainCar_PrepareForDestroy_Patch
-{
-    private static void Postfix(TrainCar __instance)
-    {
-        NetworkLifecycle.Instance.Server?.SendDestroyTrainCar(__instance);
-        TrainComponentLookup.Instance.UnregisterTrainCar(__instance);
-    }
-}
-
-[HarmonyPatch(typeof(TrainCar), nameof(TrainCar.OnDestroy))]
-public class TrainCar_OnDestroy_Patch
-{
-    private static void Postfix(TrainCar __instance)
-    {
-        if (UnloadWatcher.isUnloading)
-            return;
-        NetworkLifecycle.Instance.Server?.SendDestroyTrainCar(__instance);
-        TrainComponentLookup.Instance.UnregisterTrainCar(__instance);
-    }
-}

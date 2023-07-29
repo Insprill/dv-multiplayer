@@ -160,7 +160,7 @@ public class NetworkServer : NetworkManager
         SendPacketToAll(new ClientboundSpawnNewTrainCarPacket {
             NetId = netId,
             LiveryId = carToSpawn.id,
-            Track = track.gameObject.name,
+            Track = WorldComponentLookup.Instance.IndexFromTrack(track),
             Position = position + WorldMover.currentMove,
             Forward = forward,
             PlayerSpawnedCar = playerSpawnedCar

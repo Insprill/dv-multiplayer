@@ -8,12 +8,7 @@ public static class DvExtensions
 {
     public static ushort GetNetId(this TrainCar car)
     {
-        if (!TrainComponentLookup.Instance.NetworkedTrainFromTrain(car, out NetworkedTrainCar networkedTrainCar))
-        {
-            TrainComponentLookup.Instance.RegisterTrainCar(car);
-            return car.GetComponent<NetworkedTrainCar>().NetId;
-        }
-
+        TrainComponentLookup.Instance.NetworkedTrainFromTrain(car, out NetworkedTrainCar networkedTrainCar);
         ushort netId = networkedTrainCar.NetId;
         if (netId == 0)
             throw new InvalidOperationException($"NetId for {car.carLivery.id} ({car.ID}) isn't initialized!");
@@ -24,14 +19,7 @@ public static class DvExtensions
     {
         if (netId == 0)
             throw new ArgumentException("NetId cannot be 0");
-
-        if (!TrainComponentLookup.Instance.NetworkedTrainFromTrain(car, out NetworkedTrainCar networkedTrainCar))
-        {
-            TrainComponentLookup.Instance.RegisterTrainCar(car);
-            car.GetComponent<NetworkedTrainCar>().NetId = netId;
-            return;
-        }
-
+        TrainComponentLookup.Instance.NetworkedTrainFromTrain(car, out NetworkedTrainCar networkedTrainCar);
         networkedTrainCar.NetId = netId;
     }
 }

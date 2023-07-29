@@ -21,7 +21,7 @@ public class NetworkedTrainCar : MonoBehaviour
     [NonSerialized]
     public ushort NetId;
 
-    private TrainCar trainCar;
+    public TrainCar TrainCar;
     private Bogie bogie1;
     private Bogie bogie2;
     private BrakeSystem brakeSystem;
@@ -48,10 +48,12 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void Awake()
     {
-        trainCar = GetComponent<TrainCar>();
-        bogie1 = trainCar.Bogies[0];
-        bogie2 = trainCar.Bogies[1];
-        brakeSystem = trainCar.brakeSystem;
+        TrainCar = GetComponent<TrainCar>();
+        TrainComponentLookup.Instance.RegisterTrainCar(this);
+
+        bogie1 = TrainCar.Bogies[0];
+        bogie2 = TrainCar.Bogies[1];
+        brakeSystem = TrainCar.brakeSystem;
 
         if (NetworkLifecycle.Instance.IsHost())
             NetId = NextNetId++;
@@ -85,17 +87,17 @@ public class NetworkedTrainCar : MonoBehaviour
             NetworkLifecycle.Instance.OnTick += Server_OnTick;
             bogie1.TrackChanged += Server_BogieTrackChanged;
             bogie2.TrackChanged += Server_BogieTrackChanged;
-            trainCar.CarDamage.CarEffectiveHealthStateUpdate += Server_CarHealthUpdate;
+            TrainCar.CarDamage.CarEffectiveHealthStateUpdate += Server_CarHealthUpdate;
             StartCoroutine(WaitForLogicCar());
         }
     }
 
     private IEnumerator WaitForLogicCar()
     {
-        while (trainCar.logicCar == null)
+        while (TrainCar.logicCar == null)
             yield return null;
-        trainCar.logicCar.CargoLoaded += Server_OnCargoLoaded;
-        trainCar.logicCar.CargoUnloaded += Server_OnCargoUnloaded;
+        TrainCar.logicCar.CargoLoaded += Server_OnCargoLoaded;
+        TrainCar.logicCar.CargoUnloaded += Server_OnCargoUnloaded;
     }
 
     private void OnDisable()
@@ -110,11 +112,11 @@ public class NetworkedTrainCar : MonoBehaviour
             NetworkLifecycle.Instance.OnTick -= Server_OnTick;
             bogie1.TrackChanged -= Server_BogieTrackChanged;
             bogie2.TrackChanged -= Server_BogieTrackChanged;
-            trainCar.CarDamage.CarEffectiveHealthStateUpdate -= Server_CarHealthUpdate;
-            if (trainCar.logicCar != null)
+            TrainCar.CarDamage.CarEffectiveHealthStateUpdate -= Server_CarHealthUpdate;
+            if (TrainCar.logicCar != null)
             {
-                trainCar.logicCar.CargoLoaded -= Server_OnCargoLoaded;
-                trainCar.logicCar.CargoUnloaded -= Server_OnCargoUnloaded;
+                TrainCar.logicCar.CargoLoaded -= Server_OnCargoLoaded;
+                TrainCar.logicCar.CargoUnloaded -= Server_OnCargoUnloaded;
             }
         }
     }
@@ -171,9 +173,9 @@ public class NetworkedTrainCar : MonoBehaviour
         if (!cargoDirty)
             return;
         cargoDirty = false;
-        if (cargoIsLoading && trainCar.logicCar.CurrentCargoTypeInCar == CargoType.None)
+        if (cargoIsLoading && TrainCar.logicCar.CurrentCargoTypeInCar == CargoType.None)
             return;
-        NetworkLifecycle.Instance.Server.SendCargoState(trainCar, NetId, cargoIsLoading);
+        NetworkLifecycle.Instance.Server.SendCargoState(TrainCar, NetId, cargoIsLoading);
     }
 
     private void Server_SendHealthState()
@@ -181,14 +183,14 @@ public class NetworkedTrainCar : MonoBehaviour
         if (!healthDirty)
             return;
         healthDirty = false;
-        NetworkLifecycle.Instance.Server.SendCarHealthUpdate(NetId, trainCar.CarDamage.currentHealth);
+        NetworkLifecycle.Instance.Server.SendCarHealthUpdate(NetId, TrainCar.CarDamage.currentHealth);
     }
 
     private void Server_SendPhysicsUpdate()
     {
-        if (trainCar.isStationary || !bogie1.fullyInitialized || !bogie2.fullyInitialized || bogie1.rb == null || bogie2.rb == null)
+        if (TrainCar.isStationary || !bogie1.fullyInitialized || !bogie2.fullyInitialized || bogie1.rb == null || bogie2.rb == null)
             return;
-        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(trainCar, NetId, bogie1, bogie2, bogieTracksDirty);
+        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(TrainCar, NetId, bogie1, bogie2, bogieTracksDirty);
         bogieTracksDirty = false;
     }
 
@@ -208,10 +210,10 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if (!handbrakeDirty)
             return;
-        if (!trainCar.brakeSystem.hasHandbrake)
+        if (!TrainCar.brakeSystem.hasHandbrake)
             return;
         handbrakeDirty = false;
-        NetworkLifecycle.Instance.Client.SendHandbrakePositionChanged(trainCar);
+        NetworkLifecycle.Instance.Client.SendHandbrakePositionChanged(TrainCar);
     }
 
     private void Common_SendSimFlow()
@@ -248,7 +250,7 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket)
             return;
-        NetworkLifecycle.Instance.Client.SendBrakeCylinderReleased(trainCar);
+        NetworkLifecycle.Instance.Client.SendBrakeCylinderReleased(TrainCar);
     }
 
     private void Common_OnPortUpdated(string portId)
@@ -289,7 +291,7 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         // while ((client_trainCarNetworkedRigidbody = trainCar.GetComponent<NetworkedRigidbody>()) == null)
         //     yield return null;
-        while ((client_trainSpeedQueue = trainCar.GetComponent<TrainSpeedQueue>()) == null)
+        while ((client_trainSpeedQueue = TrainCar.GetComponent<TrainSpeedQueue>()) == null)
             yield return null;
         while ((client_bogie1Queue = bogie1.GetComponent<NetworkedBogie>()) == null)
             yield return null;
@@ -302,8 +304,8 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if (!client_Initialized)
             return;
-        if (trainCar.isEligibleForSleep)
-            trainCar.ForceOptimizationState(false);
+        if (TrainCar.isEligibleForSleep)
+            TrainCar.ForceOptimizationState(false);
 
         client_trainSpeedQueue.ReceiveSnapshot(packet.Speed, packet.Tick);
         client_bogie1Queue.ReceiveSnapshot(packet.Bogie1, packet.Tick);

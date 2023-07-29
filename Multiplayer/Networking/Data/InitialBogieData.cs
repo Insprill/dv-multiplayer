@@ -1,17 +1,18 @@
 using LiteNetLib.Utils;
+using Multiplayer.Components;
 
 namespace Multiplayer.Networking.Packets.Common;
 
 public struct InitialBogieData
 {
-    public string Track { get; set; }
+    public ushort Track { get; set; }
     public double PositionAlongTrack { get; set; }
     public bool IsDerailed { get; set; }
 
     public static InitialBogieData FromBogie(Bogie bogie)
     {
         return new InitialBogieData {
-            Track = !bogie.track ? string.Empty : bogie.track.gameObject.name,
+            Track = bogie.HasDerailed ? ushort.MaxValue : WorldComponentLookup.Instance.IndexFromTrack(bogie.track),
             PositionAlongTrack = bogie.traveller?.Span ?? -1.0,
             IsDerailed = bogie.HasDerailed
         };
@@ -27,7 +28,7 @@ public struct InitialBogieData
     public static InitialBogieData Deserialize(NetDataReader reader)
     {
         return new InitialBogieData {
-            Track = reader.GetString(),
+            Track = reader.GetUShort(),
             PositionAlongTrack = reader.GetDouble(),
             IsDerailed = reader.GetBool()
         };
