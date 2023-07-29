@@ -15,7 +15,7 @@ namespace Multiplayer.Components.Networking;
 // https://revenantx.github.io/LiteNetLib/index.html
 public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 {
-    public const byte TICK_RATE = 30;
+    public const byte TICK_RATE = 24;
     private const float TICK_INTERVAL = 1.0f / TICK_RATE;
 
     public NetworkServer Server { get; private set; }
