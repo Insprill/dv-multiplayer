@@ -267,9 +267,12 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundJunctionStatePacket(ClientboundJunctionStatePacket packet)
     {
-        Junction[] junctions = WorldData.Instance.OrderedJunctions;
-        for (int i = 0; i < packet.selectedBranches.Length; i++)
-            junctions[i].selectedBranch = packet.selectedBranches[i];
+        for (ushort i = 0; i < packet.selectedBranches.Length; i++)
+            OnCommonChangeJunctionPacket(new CommonChangeJunctionPacket {
+                Index = i,
+                SelectedBranch = packet.selectedBranches[i],
+                Mode = (byte)Junction.SwitchMode.NO_SOUND
+            });
     }
 
     private void OnClientboundTurntableStatePacket(ClientboundTurntableStatePacket packet)
