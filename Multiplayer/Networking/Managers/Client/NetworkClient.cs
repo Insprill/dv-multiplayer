@@ -30,15 +30,15 @@ public class NetworkClient : NetworkManager
     protected override string LogPrefix => "[Client]";
 
     public NetPeer selfPeer { get; private set; }
+    public readonly ClientPlayerManager PlayerManager;
 
     // One way ping in milliseconds
     private int ping;
     private NetPeer serverPeer;
-    private readonly ClientPlayerManager playerManager;
 
     public NetworkClient(Settings settings) : base(settings)
     {
-        playerManager = new ClientPlayerManager();
+        PlayerManager = new ClientPlayerManager();
     }
 
     public void Start(string address, int port, string password)
@@ -175,28 +175,28 @@ public class NetworkClient : NetworkManager
     private void OnClientboundPlayerJoinedPacket(ClientboundPlayerJoinedPacket packet)
     {
         Log($"Received player joined packet (Id: {packet.Id}, Username: {packet.Username})");
-        playerManager.AddPlayer(packet.Id, packet.Username);
+        PlayerManager.AddPlayer(packet.Id, packet.Username);
     }
 
     private void OnClientboundPlayerDisconnectPacket(ClientboundPlayerDisconnectPacket packet)
     {
         Log($"Received player disconnect packet (Id: {packet.Id})");
-        playerManager.RemovePlayer(packet.Id);
+        PlayerManager.RemovePlayer(packet.Id);
     }
 
     private void OnClientboundPlayerPositionPacket(ClientboundPlayerPositionPacket packet)
     {
-        playerManager.UpdatePosition(packet);
+        PlayerManager.UpdatePosition(packet);
     }
 
     private void OnClientboundPlayerCarPacket(ClientboundPlayerCarPacket packet)
     {
-        playerManager.UpdateCar(packet.Id, packet.CarId);
+        PlayerManager.UpdateCar(packet.Id, packet.CarId);
     }
 
     private void OnClientboundPingUpdatePacket(ClientboundPingUpdatePacket packet)
     {
-        playerManager.UpdatePing(packet.Id, packet.Ping);
+        PlayerManager.UpdatePing(packet.Id, packet.Ping);
     }
 
     private void OnClientboundTickSyncPacket(ClientboundTickSyncPacket packet)

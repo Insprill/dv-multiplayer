@@ -140,7 +140,8 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
             tickWatchdog.Start();
             try
             {
-                OnTick?.Invoke(Tick);
+                if (!UnloadWatcher.isUnloading)
+                    OnTick?.Invoke(Tick);
             }
             catch (Exception e)
             {

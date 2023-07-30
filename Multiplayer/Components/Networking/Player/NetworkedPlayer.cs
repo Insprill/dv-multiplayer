@@ -7,10 +7,21 @@ public class NetworkedPlayer : MonoBehaviour
 {
     private const float LERP_SPEED = 5.0f;
 
+    public byte Id;
+
     private AnimationHandler animationHandler;
     private NameTag nameTag;
 
     private string username;
+
+    public string Username {
+        get => username;
+        set {
+            username = value;
+            nameTag.SetUsername(value);
+        }
+    }
+
     private bool isOnCar;
 
     private Transform selfTransform;
@@ -41,12 +52,6 @@ public class NetworkedPlayer : MonoBehaviour
     {
         nameTag.ShowUsername(settings.ShowNameTags);
         nameTag.ShowPing(settings.ShowNameTags && settings.ShowPingInNameTags);
-    }
-
-    public void SetUsername(string newUsername)
-    {
-        username = newUsername;
-        nameTag.SetUsername(username);
     }
 
     public void SetPing(int ping)
