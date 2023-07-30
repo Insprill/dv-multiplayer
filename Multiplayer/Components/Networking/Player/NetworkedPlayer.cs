@@ -24,7 +24,8 @@ public class NetworkedPlayer : MonoBehaviour
         animationHandler = GetComponent<AnimationHandler>();
 
         nameTag = GetComponent<NameTag>();
-        nameTag.LookTarget = PlayerManager.PlayerCamera.transform;
+        nameTag.LookTarget = PlayerManager.ActiveCamera.transform;
+        PlayerManager.CameraChanged += () => nameTag.LookTarget = PlayerManager.ActiveCamera.transform;
 
         OnSettingsUpdated(Multiplayer.Settings);
         Settings.OnSettingsUpdated += OnSettingsUpdated;
