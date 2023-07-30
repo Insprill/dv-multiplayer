@@ -1,3 +1,4 @@
+using System;
 using System.Net;
 using System.Net.Sockets;
 using LiteNetLib;
@@ -112,6 +113,13 @@ public abstract class NetworkManager : INetEventListener
     #endregion
 
     #region Logging
+
+    public void LogDebug(Func<object> resolver)
+    {
+        if (!Multiplayer.Settings.VerboseLogging)
+            return;
+        Multiplayer.LogDebug(() => $"{LogPrefix} {resolver.Invoke()}");
+    }
 
     public void Log(object msg)
     {

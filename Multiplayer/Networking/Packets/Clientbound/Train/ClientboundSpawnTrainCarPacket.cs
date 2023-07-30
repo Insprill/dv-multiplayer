@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Multiplayer.Networking.Packets.Clientbound.Train;
 
-public class ClientboundSpawnExistingTrainCarPacket
+public class ClientboundSpawnTrainCarPacket
 {
     public ushort NetId { get; set; }
     public string LiveryId { get; set; }
@@ -18,15 +18,15 @@ public class ClientboundSpawnExistingTrainCarPacket
     public bool CouplerFCoupled { get; set; }
     public bool CouplerRCoupled { get; set; }
 
-    public static ClientboundSpawnExistingTrainCarPacket FromTrainCar(TrainCar trainCar)
+    public static ClientboundSpawnTrainCarPacket FromTrainCar(TrainCar trainCar)
     {
-        return new ClientboundSpawnExistingTrainCarPacket {
+        return new ClientboundSpawnTrainCarPacket {
             NetId = trainCar.GetNetId(),
             LiveryId = trainCar.carLivery.id,
             CarId = trainCar.ID,
             CarGuid = trainCar.CarGUID,
             PlayerSpawnedCar = trainCar.playerSpawnedCar,
-            Position = trainCar.transform.position + WorldMover.currentMove,
+            Position = trainCar.transform.position - WorldMover.currentMove,
             Rotation = trainCar.transform.eulerAngles,
             Bogie1 = InitialBogieData.FromBogie(trainCar.Bogies[0]),
             Bogie2 = InitialBogieData.FromBogie(trainCar.Bogies[1]),

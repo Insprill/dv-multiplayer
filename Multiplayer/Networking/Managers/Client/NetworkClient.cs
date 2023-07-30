@@ -73,10 +73,9 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundTurntableStatePacket>(OnClientboundTurntableStatePacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
-        netPacketProcessor.SubscribeReusable<ClientboundSpawnNewTrainCarPacket>(OnClientboundSpawnNewTrainCarPacket);
-        netPacketProcessor.SubscribeReusable<ClientboundSpawnExistingTrainCarPacket>(OnClientboundSpawnExistingTrainCarPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundSpawnTrainCarPacket>(OnClientboundSpawnExistingTrainCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundDestroyTrainCarPacket>(OnClientboundDestroyTrainCarPacket);
-        netPacketProcessor.SubscribeReusable<ClientboundTrainPhysicsPacket>(OnClientboundTrainRigidbodyPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundTrainPhysicsPacket>(OnClientboundTrainPhysicsPacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket>(OnCommonTrainCouplePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
@@ -211,7 +210,7 @@ public class NetworkClient : NetworkManager
         DisplayLoadingInfo displayLoadingInfo = Object.FindObjectOfType<DisplayLoadingInfo>();
         if (displayLoadingInfo == null)
         {
-            LogError($"Received {nameof(ClientboundServerLoadingPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
+            LogDebug(() => $"Received {nameof(ClientboundServerLoadingPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
             return;
         }
 
@@ -234,7 +233,7 @@ public class NetworkClient : NetworkManager
         DisplayLoadingInfo displayLoadingInfo = Object.FindObjectOfType<DisplayLoadingInfo>();
         if (displayLoadingInfo == null)
         {
-            LogError($"Received {nameof(ClientboundBeginWorldSyncPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
+            LogDebug(() => $"Received {nameof(ClientboundBeginWorldSyncPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
             return;
         }
 
@@ -253,7 +252,7 @@ public class NetworkClient : NetworkManager
         DisplayLoadingInfo displayLoadingInfo = Object.FindObjectOfType<DisplayLoadingInfo>();
         if (displayLoadingInfo == null)
         {
-            LogError($"Received {nameof(ClientboundRemoveLoadingScreenPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
+            LogDebug(() => $"Received {nameof(ClientboundRemoveLoadingScreenPacket)} but couldn't find {nameof(DisplayLoadingInfo)}!");
             return;
         }
 
@@ -313,49 +312,34 @@ public class NetworkClient : NetworkManager
         turntable.RotateToTargetRotation();
     }
 
-    public void OnClientboundSpawnNewTrainCarPacket(ClientboundSpawnNewTrainCarPacket packet)
-    {
-        if (!WorldComponentLookup.Instance.TrackFromIndex(packet.Track, out RailTrack track))
-        {
-            LogError($"Received {nameof(ClientboundSpawnNewTrainCarPacket)} but couldn't find track with name {packet.Track}");
-            return;
-        }
-
-        if (!TrainComponentLookup.Instance.LiveryFromId(packet.LiveryId, out TrainCarLivery livery))
-        {
-            LogError($"Received {nameof(ClientboundSpawnNewTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.LiveryId}");
-            return;
-        }
-
-        CarSpawner.Instance.SpawnCar(livery.prefab, track, packet.Position - WorldMover.currentMove, packet.Forward, packet.PlayerSpawnedCar).SetNetId(packet.NetId);
-    }
-
-    public void OnClientboundSpawnExistingTrainCarPacket(ClientboundSpawnExistingTrainCarPacket packet)
+    public void OnClientboundSpawnExistingTrainCarPacket(ClientboundSpawnTrainCarPacket packet)
     {
         if (!WorldComponentLookup.Instance.TrackFromIndex(packet.Bogie1.Track, out RailTrack bogie1Track) && packet.Bogie1.Track != ushort.MaxValue)
         {
-            LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find track with name {packet.Bogie1.Track}");
+            LogDebug(() => $"Received {nameof(ClientboundSpawnTrainCarPacket)} but couldn't find track with name {packet.Bogie1.Track}");
             return;
         }
 
         if (!WorldComponentLookup.Instance.TrackFromIndex(packet.Bogie2.Track, out RailTrack bogie2Track) && packet.Bogie2.Track != ushort.MaxValue)
         {
-            LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find track with name {packet.Bogie2.Track}");
+            LogDebug(() => $"Received {nameof(ClientboundSpawnTrainCarPacket)} but couldn't find track with name {packet.Bogie2.Track}");
             return;
         }
 
         if (!TrainComponentLookup.Instance.LiveryFromId(packet.LiveryId, out TrainCarLivery livery))
         {
-            LogError($"Received {nameof(ClientboundSpawnExistingTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.LiveryId}");
+            LogDebug(() => $"Received {nameof(ClientboundSpawnTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.LiveryId}");
             return;
         }
 
-        CarSpawner.Instance.SpawnLoadedCar(
+        Multiplayer.LogDebug(() => $"Spawning {packet.CarId} ({livery.id}) with net ID {packet.NetId}");
+
+        TrainCar trainCar = CarSpawner.Instance.SpawnLoadedCar(
             livery.prefab,
             packet.CarId,
             packet.CarGuid,
             packet.PlayerSpawnedCar,
-            packet.Position - WorldMover.currentMove,
+            packet.Position + WorldMover.currentMove,
             Quaternion.Euler(packet.Rotation),
             packet.Bogie1.IsDerailed,
             bogie1Track,
@@ -365,21 +349,24 @@ public class NetworkClient : NetworkManager
             packet.Bogie2.PositionAlongTrack,
             packet.CouplerFCoupled,
             packet.CouplerRCoupled
-        ).SetNetId(packet.NetId);
+        );
+        trainCar.GetComponent<NetworkedTrainCar>().NetId = packet.NetId;
+
+        SendTrainSyncRequest(packet.NetId);
     }
 
     public void OnClientboundDestroyTrainCarPacket(ClientboundDestroyTrainCarPacket packet)
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(ClientboundDestroyTrainCarPacket)} but couldn't find the car!");
+            LogDebug(() => $"Received {nameof(ClientboundDestroyTrainCarPacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
         CarSpawner.Instance.DeleteCar(trainCar);
     }
 
-    public void OnClientboundTrainRigidbodyPacket(ClientboundTrainPhysicsPacket packet)
+    public void OnClientboundTrainPhysicsPacket(ClientboundTrainPhysicsPacket packet)
     {
         if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             return;
@@ -391,7 +378,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
         {
-            LogError($"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
             return;
         }
 
@@ -405,7 +392,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonTrainUncouplePacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonTrainUncouplePacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -418,7 +405,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
         {
-            LogError($"Received {nameof(CommonHoseConnectedPacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonHoseConnectedPacket)} but couldn't find one of the cars!");
             return;
         }
 
@@ -432,7 +419,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonHoseDisconnectedPacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonHoseDisconnectedPacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -445,7 +432,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
         {
-            LogError($"Received {nameof(CommonMuConnectedPacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonMuConnectedPacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -459,7 +446,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonMuDisconnectedPacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonMuDisconnectedPacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -472,7 +459,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonCockFiddlePacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonCockFiddlePacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -485,7 +472,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonCockFiddlePacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonCockFiddlePacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -496,7 +483,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(CommonCockFiddlePacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonCockFiddlePacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -507,7 +494,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
         {
-            LogError($"Received {nameof(CommonSimFlowPacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(CommonSimFlowPacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -518,7 +505,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(ClientboundCargoStatePacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(ClientboundCargoStatePacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -541,7 +528,7 @@ public class NetworkClient : NetworkManager
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
-            LogError($"Received {nameof(ClientboundCarHealthUpdatePacket)} but couldn't find one of the cars!");
+            LogDebug(() => $"Received {nameof(ClientboundCarHealthUpdatePacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
@@ -707,6 +694,13 @@ public class NetworkClient : NetworkManager
             PortValues = portValues,
             FuseIds = fuseIds,
             FuseValues = fuseValues
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendTrainSyncRequest(ushort netId)
+    {
+        SendPacketToServer(new ServerboundTrainSyncRequestPacket {
+            NetId = netId
         }, DeliveryMethod.ReliableOrdered);
     }
 

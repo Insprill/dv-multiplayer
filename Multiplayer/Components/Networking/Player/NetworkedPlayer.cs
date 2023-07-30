@@ -63,7 +63,7 @@ public class NetworkedPlayer : MonoBehaviour
     {
         float t = Time.deltaTime * LERP_SPEED;
 
-        Vector3 position = Vector3.Lerp(isOnCar ? selfTransform.localPosition : selfTransform.position, isOnCar ? targetPos : targetPos - WorldMover.currentMove, t);
+        Vector3 position = Vector3.Lerp(isOnCar ? selfTransform.localPosition : selfTransform.position, isOnCar ? targetPos : targetPos + WorldMover.currentMove, t);
         Quaternion rotation = Quaternion.Lerp(isOnCar ? selfTransform.localRotation : selfTransform.rotation, targetRotation, t);
 
         moveDir = Vector2.Lerp(moveDir, targetMoveDir, t);

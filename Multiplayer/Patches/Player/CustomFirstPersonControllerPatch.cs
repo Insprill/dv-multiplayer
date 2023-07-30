@@ -45,7 +45,7 @@ public static class MovementSyncPatch
     private static void OnTick(uint obj)
     {
         bool isOnCar = PlayerManager.Car != null;
-        Vector3 position = isOnCar ? fpsTransform.localPosition : fpsTransform.position + WorldMover.currentMove;
+        Vector3 position = isOnCar ? fpsTransform.localPosition : fpsTransform.position - WorldMover.currentMove;
         float rotationY = (isOnCar ? fpsTransform.localEulerAngles : fpsTransform.eulerAngles).y;
 
         bool positionOrRotationChanged = lastPosition != position || !Mathf.Approximately(lastRotationY, rotationY);

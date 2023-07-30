@@ -16,7 +16,6 @@ using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
 using Multiplayer.Utils;
-using UnityEngine;
 using UnityModManagerNet;
 
 namespace Multiplayer.Networking.Listeners;
@@ -55,6 +54,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerCarPacket, NetPeer>(OnServerboundPlayerCarPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
+        netPacketProcessor.SubscribeReusable<ServerboundTrainSyncRequestPacket>(OnServerboundTrainSyncRequestPacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket, NetPeer>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket, NetPeer>(OnCommonRotateTurntablePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket, NetPeer>(OnCommonTrainCouplePacket);
@@ -155,16 +155,9 @@ public class NetworkServer : NetworkManager
         SendPacketToAll(ClientboundGameParamsPacket.FromGameParams(gameParams), DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendSpawnTrainCar(TrainCarLivery carToSpawn, ushort netId, RailTrack track, Vector3 position, Vector3 forward, bool playerSpawnedCar)
+    public void SendSpawnTrainCar(TrainCar trainCar)
     {
-        SendPacketToAll(new ClientboundSpawnNewTrainCarPacket {
-            NetId = netId,
-            LiveryId = carToSpawn.id,
-            Track = WorldComponentLookup.Instance.IndexFromTrack(track),
-            Position = position + WorldMover.currentMove,
-            Forward = forward,
-            PlayerSpawnedCar = playerSpawnedCar
-        }, DeliveryMethod.ReliableOrdered, selfPeer);
+        SendPacketToAll(ClientboundSpawnTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
     public void SendDestroyTrainCar(TrainCar trainCar)
@@ -338,18 +331,12 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered);
 
         // Send trains
-        List<TrainCar> trainCars = new();
         foreach (TrainCar trainCar in CarSpawner.Instance.allCars)
         {
             if (!trainCar.gameObject.activeInHierarchy)
                 continue;
-            trainCars.Add(trainCar);
-            SendPacket(peer, ClientboundSpawnExistingTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered);
+            SendPacket(peer, ClientboundSpawnTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered);
         }
-
-        foreach (TrainCar trainCar in trainCars)
-            if (TrainComponentLookup.Instance.NetworkedTrainFromTrain(trainCar, out NetworkedTrainCar networkedTrainCar))
-                networkedTrainCar.Server_DirtyAllState();
 
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
@@ -358,7 +345,7 @@ public class NetworkServer : NetworkManager
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)
     {
         if (TryGetServerPlayer(peer, out ServerPlayer player))
-            player.Position = packet.Position - WorldMover.currentMove;
+            player.Position = packet.Position + WorldMover.currentMove;
 
         ClientboundPlayerPositionPacket clientboundPacket = new() {
             Id = (byte)peer.Id,
@@ -452,6 +439,12 @@ public class NetworkServer : NetworkManager
     private void OnCommonSimFlowPacket(CommonSimFlowPacket packet, NetPeer peer)
     {
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+    }
+
+    private void OnServerboundTrainSyncRequestPacket(ServerboundTrainSyncRequestPacket packet)
+    {
+        if (TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
+            networkedTrainCar.Server_DirtyAllState();
     }
 
     #endregion

@@ -50,7 +50,7 @@ public class RigidbodySnapshot
             IncludedDataFlags = (byte)includedDataFlags
         };
         if (includedDataFlags.HasFlag(IncludedData.Position))
-            snapshot.Position = rb.position + WorldMover.currentMove;
+            snapshot.Position = rb.position - WorldMover.currentMove;
         if (includedDataFlags.HasFlag(IncludedData.Rotation))
             snapshot.Rotation = rb.rotation.eulerAngles;
         if (includedDataFlags.HasFlag(IncludedData.Velocity))
@@ -64,7 +64,7 @@ public class RigidbodySnapshot
     {
         IncludedData flags = (IncludedData)IncludedDataFlags;
         if (flags.HasFlag(IncludedData.Position))
-            rb.MovePosition(Position - WorldMover.currentMove);
+            rb.MovePosition(Position + WorldMover.currentMove);
         if (flags.HasFlag(IncludedData.Position))
             rb.MoveRotation(Quaternion.Euler(Rotation));
         if (flags.HasFlag(IncludedData.Position))
