@@ -102,14 +102,16 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void OnDisable()
     {
+        if (UnloadWatcher.isQuitting)
+            return;
+        NetworkLifecycle.Instance.OnTick -= Common_OnTick;
+        NetworkLifecycle.Instance.OnTick -= Server_OnTick;
         if (UnloadWatcher.isUnloading)
             return;
         brakeSystem.HandbrakePositionChanged -= Common_OnHandbrakePositionChanged;
         brakeSystem.BrakeCylinderReleased -= Common_OnBrakeCylinderReleased;
-        NetworkLifecycle.Instance.OnTick -= Common_OnTick;
         if (NetworkLifecycle.Instance.IsHost())
         {
-            NetworkLifecycle.Instance.OnTick -= Server_OnTick;
             bogie1.TrackChanged -= Server_BogieTrackChanged;
             bogie2.TrackChanged -= Server_BogieTrackChanged;
             TrainCar.CarDamage.CarEffectiveHealthStateUpdate -= Server_CarHealthUpdate;

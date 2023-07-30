@@ -25,11 +25,13 @@ public class NetworkedWorldMap : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (UnloadWatcher.isQuitting)
+            return;
+        NetworkLifecycle.Instance.OnTick -= OnTick;
         if (UnloadWatcher.isUnloading)
             return;
         NetworkLifecycle.Instance.Client.PlayerManager.OnPlayerConnected -= OnPlayerConnected;
         NetworkLifecycle.Instance.Client.PlayerManager.OnPlayerDisconnected -= OnPlayerDisconnected;
-        NetworkLifecycle.Instance.OnTick -= OnTick;
     }
 
     private void OnPlayerConnected(byte id, NetworkedPlayer player)
