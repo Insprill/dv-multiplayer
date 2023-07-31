@@ -58,6 +58,6 @@ public class WorldComponentLookup : SingletonBehaviour<WorldComponentLookup>
     [UsedImplicitly]
     public new static string AllowAutoCreate()
     {
-        return $"{nameof(WorldComponentLookup)}";
+        return $"[{nameof(WorldComponentLookup)}]";
     }
 }

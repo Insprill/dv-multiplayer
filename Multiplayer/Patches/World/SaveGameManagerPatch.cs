@@ -1,7 +1,38 @@
+using DV.Scenarios.Common;
+using DV.UIFramework;
 using HarmonyLib;
+using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
+using Multiplayer.Components.SaveGame;
 
 namespace Multiplayer.Patches.World;
+
+[HarmonyPatch(typeof(SaveGameManager), nameof(SaveGameManager.FindStartGameData))]
+public class SaveGameManager_FindStartGameData_Patch
+{
+    private static void Postfix(AStartGameData __result)
+    {
+        if (NetworkLifecycle.Instance.IsServerRunning || NetworkLifecycle.Instance.IsClientRunning)
+            return;
+        StartServer(__result.DifficultyToUse);
+    }
+
+    private static void StartServer(IDifficulty difficulty)
+    {
+        if (NetworkLifecycle.Instance.StartServer(Multiplayer.Settings.Port, difficulty))
+            return;
+
+        NetworkLifecycle.Instance.QueueMainMenuEvent(() =>
+        {
+            Popup popup = MainMenuThingsAndStuff.Instance.ShowOkPopup();
+            if (popup == null)
+                return;
+            popup.labelTMPro.text = "Failed to start server! Ensure that the port is not in use and try again.";
+        });
+
+        DV.UI.MainMenu.GoBackToMainMenu();
+    }
+}
 
 [HarmonyPatch(typeof(SaveGameManager), nameof(SaveGameManager.SaveAllowed))]
 public class SaveGameManager_SaveAllowed_Patch
@@ -12,5 +43,14 @@ public class SaveGameManager_SaveAllowed_Patch
             return true;
         __result = false;
         return false;
+    }
+}
+
+[HarmonyPatch(typeof(SaveGameManager), nameof(SaveGameManager.UpdateInternalData))]
+public class SaveGameManager_UpdateInternalData_Patch
+{
+    private static void Postfix(SaveGameManager __instance)
+    {
+        NetworkedSaveGameManager.Instance.UpdateInternalData(__instance.data);
     }
 }

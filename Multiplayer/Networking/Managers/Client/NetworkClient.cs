@@ -12,6 +12,7 @@ using Multiplayer.Components;
 using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
+using Multiplayer.Components.SaveGame;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Clientbound.World;
@@ -66,6 +67,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundServerLoadingPacket>(OnClientboundServerLoadingPacket);
         netPacketProcessor.SubscribeReusable<ClientboundBeginWorldSyncPacket>(OnClientboundBeginWorldSyncPacket);
         netPacketProcessor.SubscribeReusable<ClientboundGameParamsPacket>(OnClientboundGameParamsPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundSaveGameDataPacket>(OnClientboundSaveGameDataPacket);
         netPacketProcessor.SubscribeReusable<ClientboundWeatherPacket>(OnClientboundWeatherPacket);
         netPacketProcessor.SubscribeReusable<ClientboundRemoveLoadingScreenPacket>(OnClientboundRemoveLoadingScreen);
         netPacketProcessor.SubscribeReusable<ClientboundTimeAdvancePacket>(OnClientboundTimeAdvancePacket);
@@ -96,20 +98,16 @@ public class NetworkClient : NetworkManager
     {
         serverPeer = peer;
         if (NetworkLifecycle.Instance.IsHost(peer))
-        {
             SendReadyPacket();
-            return;
-        }
-
-        SceneSwitcher.SwitchToScene(DVScenes.Game);
-        WorldStreamingInit.LoadingFinished += SendReadyPacket;
-
-        TrainStress.globalIgnoreStressCalculation = true;
+        else
+            SendSaveGameDataRequest();
     }
 
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
         NetworkLifecycle.Instance.Stop();
+
+        TrainStress.globalIgnoreStressCalculation = false;
 
         if (MainMenuThingsAndStuff.Instance != null)
         {
@@ -219,11 +217,33 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundGameParamsPacket(ClientboundGameParamsPacket packet)
     {
-        Multiplayer.LogDebug(() => $"Received {nameof(ClientboundGameParamsPacket)} ({packet.SerializedGameParams.Length} chars)");
+        LogDebug(() => $"Received {nameof(ClientboundGameParamsPacket)} ({packet.SerializedGameParams.Length} chars)");
         if (Globals.G.gameParams != null)
             packet.Apply(Globals.G.gameParams);
         if (Globals.G.gameParamsInstance != null)
             packet.Apply(Globals.G.gameParamsInstance);
+    }
+
+    private void OnClientboundSaveGameDataPacket(ClientboundSaveGameDataPacket packet)
+    {
+        if (WorldStreamingInit.isLoaded)
+        {
+            LogWarning("Received save game data packet while already in game!");
+            return;
+        }
+
+        Log("Received save game data, loading world");
+
+        AStartGameData.DestroyAllInstances();
+
+        GameObject go = new("Server Start Game Data");
+        go.AddComponent<StartGameData_ServerSave>().SetFromPacket(packet);
+        Object.DontDestroyOnLoad(go);
+
+        SceneSwitcher.SwitchToScene(DVScenes.Game);
+        WorldStreamingInit.LoadingFinished += SendReadyPacket;
+
+        TrainStress.globalIgnoreStressCalculation = true;
     }
 
     private void OnClientboundBeginWorldSyncPacket(ClientboundBeginWorldSyncPacket packet)
@@ -332,7 +352,7 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        Multiplayer.LogDebug(() => $"Spawning {packet.CarId} ({livery.id}) with net ID {packet.NetId}");
+        LogDebug(() => $"Spawning {packet.CarId} ({livery.id}) with net ID {packet.NetId}");
 
         TrainCar trainCar = CarSpawner.Instance.SpawnLoadedCar(
             livery.prefab,
@@ -550,6 +570,11 @@ public class NetworkClient : NetworkManager
     private void SendPacketToServer<T>(T packet, DeliveryMethod deliveryMethod) where T : class, new()
     {
         SendPacket(serverPeer, packet, deliveryMethod);
+    }
+
+    public void SendSaveGameDataRequest()
+    {
+        SendPacketToServer(new ServerboundSaveGameDataRequestPacket(), DeliveryMethod.ReliableOrdered);
     }
 
     private void SendReadyPacket()

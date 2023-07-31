@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using DV.Scenarios.Common;
 using DV.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
@@ -107,12 +108,12 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         mainMenuLoadedQueue.Enqueue(action);
     }
 
-    public bool StartServer(int port)
+    public bool StartServer(int port, IDifficulty difficulty)
     {
         if (Server != null)
             throw new InvalidOperationException("NetworkManager already exists!");
         Multiplayer.Log($"Starting server on port {port}");
-        NetworkServer server = new(Multiplayer.Settings);
+        NetworkServer server = new(difficulty, Multiplayer.Settings);
         if (!server.Start(port))
             return false;
         Server = server;

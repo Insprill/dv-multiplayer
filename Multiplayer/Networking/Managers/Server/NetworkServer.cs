@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DV;
 using DV.Logic.Job;
+using DV.Scenarios.Common;
 using DV.ThingTypes;
 using DV.WeatherSystem;
 using LiteNetLib;
@@ -34,10 +35,12 @@ public class NetworkServer : NetworkManager
     private static NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
     private readonly ModInfo[] serverMods;
 
+    public readonly IDifficulty Difficulty;
     private bool IsLoaded;
 
-    public NetworkServer(Settings settings) : base(settings)
+    public NetworkServer(IDifficulty difficulty, Settings settings) : base(settings)
     {
+        Difficulty = difficulty;
         serverMods = ModInfo.FromModEntries(UnityModManager.modEntries);
     }
 
@@ -51,6 +54,7 @@ public class NetworkServer : NetworkManager
     {
         netPacketProcessor.SubscribeReusable<ServerboundClientLoginPacket, ConnectionRequest>(OnServerboundClientLoginPacket);
         netPacketProcessor.SubscribeReusable<ServerboundClientReadyPacket, NetPeer>(OnServerboundClientReadyPacket);
+        netPacketProcessor.SubscribeReusable<ServerboundSaveGameDataRequestPacket, NetPeer>(OnServerboundSaveGameDataRequestPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerPositionPacket, NetPeer>(OnServerboundPlayerPositionPacket);
         netPacketProcessor.SubscribeReusable<ServerboundPlayerCarPacket, NetPeer>(OnServerboundPlayerCarPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
@@ -99,6 +103,10 @@ public class NetworkServer : NetworkManager
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
         byte id = (byte)peer.Id;
+
+        if (WorldStreamingInit.isLoaded)
+            SaveGameManager.Instance.UpdateInternalData();
+
         serverPlayers.Remove(id);
         netPeers.Remove(id);
         netManager.SendToAll(WritePacket(new ClientboundPlayerDisconnectPacket {
@@ -205,7 +213,7 @@ public class NetworkServer : NetworkManager
 
     private void OnServerboundClientLoginPacket(ServerboundClientLoginPacket packet, ConnectionRequest request)
     {
-        Log($"Processing login packet{(Multiplayer.Settings.LogIps ? $" from ({request.RemoteEndPoint.Address})" : "")}");
+        Log($"Processing login packet{(Multiplayer.Settings.LogIps ? $" from {request.RemoteEndPoint.Address}" : "")}");
 
         if (Multiplayer.Settings.Password != packet.Password)
         {
@@ -260,8 +268,20 @@ public class NetworkServer : NetworkManager
         };
 
         serverPlayers.Add(serverPlayer.Id, serverPlayer);
+    }
+
+    private void OnServerboundSaveGameDataRequestPacket(ServerboundSaveGameDataRequestPacket packet, NetPeer peer)
+    {
+        if (netPeers.ContainsKey((byte)peer.Id))
+        {
+            LogWarning("Denied save game data request from already connected peer!");
+            return;
+        }
+
+        TryGetServerPlayer(peer, out ServerPlayer player);
 
         SendPacket(peer, ClientboundGameParamsPacket.FromGameParams(Globals.G.GameParams), DeliveryMethod.ReliableOrdered);
+        SendPacket(peer, ClientboundSaveGameDataPacket.CreatePacket(player), DeliveryMethod.ReliableOrdered);
     }
 
     private void OnServerboundClientReadyPacket(ServerboundClientReadyPacket packet, NetPeer peer)
