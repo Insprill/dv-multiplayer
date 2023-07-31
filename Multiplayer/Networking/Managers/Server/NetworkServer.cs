@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DV;
+using DV.InventorySystem;
 using DV.Logic.Job;
 using DV.Scenarios.Common;
 using DV.ThingTypes;
@@ -17,6 +18,7 @@ using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
 using Multiplayer.Utils;
+using UnityEngine;
 using UnityModManagerNet;
 
 namespace Multiplayer.Networking.Listeners;
@@ -59,6 +61,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundPlayerCarPacket, NetPeer>(OnServerboundPlayerCarPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
         netPacketProcessor.SubscribeReusable<ServerboundTrainSyncRequestPacket>(OnServerboundTrainSyncRequestPacket);
+        netPacketProcessor.SubscribeReusable<ServerboundTrainDeleteRequestPacket, NetPeer>(OnServerboundTrainDeleteRequestPacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket, NetPeer>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket, NetPeer>(OnCommonRotateTurntablePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket, NetPeer>(OnCommonTrainCouplePacket);
@@ -465,6 +468,41 @@ public class NetworkServer : NetworkManager
     {
         if (TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             networkedTrainCar.Server_DirtyAllState();
+    }
+
+    private void OnServerboundTrainDeleteRequestPacket(ServerboundTrainDeleteRequestPacket packet, NetPeer peer)
+    {
+        if (!TryGetServerPlayer(peer, out ServerPlayer player))
+            return;
+
+        if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
+            return;
+        if (networkedTrainCar.HasPlayers)
+        {
+            LogWarning($"{player.Username} tried to delete a train with players in it!");
+            return;
+        }
+
+        TrainCar trainCar = networkedTrainCar.TrainCar;
+        float cost = trainCar.playerSpawnedCar ? 0.0f : Mathf.RoundToInt(Globals.G.GameParams.DeleteCarMaxPrice);
+        if (Inventory.Instance.PlayerMoney < cost)
+        {
+            LogWarning($"{player.Username} tried to delete a train without enough money to do so!");
+            return;
+        }
+
+        Job job = JobsManager.Instance.GetJobOfCar(trainCar);
+        switch (job.State)
+        {
+            case JobState.Available:
+                job.ExpireJob();
+                break;
+            case JobState.InProgress:
+                JobsManager.Instance.AbandonJob(job);
+                break;
+        }
+
+        CarSpawner.Instance.DeleteCar(trainCar);
     }
 
     #endregion

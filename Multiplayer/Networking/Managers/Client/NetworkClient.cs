@@ -729,5 +729,12 @@ public class NetworkClient : NetworkManager
         }, DeliveryMethod.ReliableOrdered);
     }
 
+    public void SendTrainDeleteRequest(ushort netId)
+    {
+        SendPacketToServer(new ServerboundTrainDeleteRequestPacket {
+            NetId = netId
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
     #endregion
 }

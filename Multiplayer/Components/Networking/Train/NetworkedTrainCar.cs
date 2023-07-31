@@ -7,6 +7,7 @@ using DV.Simulation.Cars;
 using DV.ThingTypes;
 using LocoSim.Definitions;
 using LocoSim.Implementations;
+using Multiplayer.Components.Networking.Player;
 using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
@@ -22,6 +23,8 @@ public class NetworkedTrainCar : MonoBehaviour
     public ushort NetId;
 
     public TrainCar TrainCar;
+    public bool HasPlayers => PlayerManager.Car == TrainCar || GetComponentInChildren<NetworkedPlayer>() != null;
+
     private Bogie bogie1;
     private Bogie bogie2;
     private BrakeSystem brakeSystem;
