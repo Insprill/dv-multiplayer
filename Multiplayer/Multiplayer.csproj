@@ -66,6 +66,7 @@
         <Reference Include="Unity.TextMeshPro" />
         <Reference Include="UnityEngine" />
         <Reference Include="UnityEngine.AssetBundleModule" />
+        <Reference Include="UnityEngine.AudioModule" />
         <Reference Include="UnityEngine.CoreModule" />
         <Reference Include="UnityEngine.IMGUIModule" />
         <Reference Include="UnityEngine.JSONSerializeModule" />

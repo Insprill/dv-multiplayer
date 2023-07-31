@@ -9,6 +9,8 @@ namespace Multiplayer.Components.SaveGame;
 
 public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameManager>
 {
+    private const string KEY = "Multiplayer";
+
     protected override void Awake()
     {
         base.Awake();
@@ -30,12 +32,12 @@ public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameMana
             json.SetJObject($"Player_{player.Username}", playerData);
         }
 
-        data.SetJObject("Multiplayer", json);
+        data.SetJObject(KEY, json);
     }
 
     public JObject GetPlayerData(SaveGameData data, string username)
     {
-        return data?.GetJObject("Multiplayer")?.GetJObject($"Player_{username}");
+        return data?.GetJObject(KEY)?.GetJObject($"Player_{username}");
     }
 
     [UsedImplicitly]

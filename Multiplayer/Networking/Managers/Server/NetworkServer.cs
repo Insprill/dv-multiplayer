@@ -189,7 +189,7 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendCargoState(TrainCar trainCar, ushort netId, bool isLoading)
+    public void SendCargoState(TrainCar trainCar, ushort netId, bool isLoading, byte cargoModelIndex)
     {
         Car logicCar = trainCar.logicCar;
         CargoType cargoType = isLoading ? logicCar.CurrentCargoTypeInCar : logicCar.LastUnloadedCargoType;
@@ -198,6 +198,7 @@ public class NetworkServer : NetworkManager
             IsLoading = isLoading,
             CargoType = (ushort)cargoType,
             CargoAmount = logicCar.LoadedCargoAmount,
+            CargoModelIndex = cargoModelIndex,
             WarehouseMachineId = logicCar.CargoOriginWarehouse?.ID
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }

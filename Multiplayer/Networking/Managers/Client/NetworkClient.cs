@@ -523,13 +523,14 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundCargoStatePacket(ClientboundCargoStatePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
+        if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
         {
             LogDebug(() => $"Received {nameof(ClientboundCargoStatePacket)} but couldn't find car with net ID {packet.NetId}!");
             return;
         }
 
-        Car logicCar = trainCar.logicCar;
+        networkedTrainCar.CargoModelIndex = packet.CargoModelIndex;
+        Car logicCar = networkedTrainCar.TrainCar.logicCar;
 
         if (packet.CargoType == (ushort)CargoType.None && logicCar.CurrentCargoTypeInCar == CargoType.None)
             return;

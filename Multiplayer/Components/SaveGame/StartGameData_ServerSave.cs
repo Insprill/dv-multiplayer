@@ -51,7 +51,7 @@ public class StartGameData_ServerSave : AStartGameData
     {
         Transform playerTransform = playerContainer.transform;
         playerTransform.position = position + WorldMover.currentMove;
-        playerTransform.eulerAngles = rotation + WorldMover.currentMove;
+        playerTransform.eulerAngles = rotation;
 
         if (saveGameData.GetString("Game_mode") == "FreeRoam")
             LicenseManager.Instance.GrabAllUnlockables();

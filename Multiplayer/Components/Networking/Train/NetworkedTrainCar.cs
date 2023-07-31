@@ -38,6 +38,7 @@ public class NetworkedTrainCar : MonoBehaviour
     private bool bogieTracksDirty;
     private bool cargoDirty;
     private bool cargoIsLoading;
+    public byte CargoModelIndex = byte.MaxValue;
     private bool healthDirty;
     private bool sendCouplers;
 
@@ -165,6 +166,7 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         cargoDirty = true;
         cargoIsLoading = false;
+        CargoModelIndex = byte.MaxValue;
     }
 
     private void Server_CarHealthUpdate(float health)
@@ -209,7 +211,7 @@ public class NetworkedTrainCar : MonoBehaviour
         cargoDirty = false;
         if (cargoIsLoading && TrainCar.logicCar.CurrentCargoTypeInCar == CargoType.None)
             return;
-        NetworkLifecycle.Instance.Server.SendCargoState(TrainCar, NetId, cargoIsLoading);
+        NetworkLifecycle.Instance.Server.SendCargoState(TrainCar, NetId, cargoIsLoading, CargoModelIndex);
     }
 
     private void Server_SendHealthState()
