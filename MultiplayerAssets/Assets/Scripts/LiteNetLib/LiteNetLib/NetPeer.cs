@@ -1,6 +1,4 @@
-﻿#if DEBUG
-#define STATS_ENABLED
-#endif
+﻿#if DEVELOPMENT_BUILD
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;

@@ -133,7 +133,7 @@ namespace LiteNetLib
             object IEnumerator.Current => _p;
         }
 
-#if DEBUG
+#if DEVELOPMENT_BUILD
         private struct IncomingData
         {
             public NetPacket Data;
@@ -695,7 +695,7 @@ namespace LiteNetLib
         [Conditional("DEBUG")]
         private void ProcessDelayedPackets()
         {
-#if DEBUG
+#if DEVELOPMENT_BUILD
             if (!SimulateLatency)
                 return;
 
@@ -877,7 +877,7 @@ namespace LiteNetLib
 
         private void OnMessageReceived(NetPacket packet, IPEndPoint remoteEndPoint)
         {
-#if DEBUG
+#if DEVELOPMENT_BUILD
             if (SimulatePacketLoss && _randomGenerator.NextDouble() * 100 < SimulationPacketLossChance)
             {
                 //drop packet
@@ -1635,7 +1635,7 @@ namespace LiteNetLib
             _peersLock.ExitWriteLock();
             _peerIds = new ConcurrentQueue<int>();
             _lastPeerId = 0;
-#if DEBUG
+#if DEVELOPMENT_BUILD
             lock (_pingSimulationList)
                 _pingSimulationList.Clear();
 #endif

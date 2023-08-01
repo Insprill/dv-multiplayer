@@ -49,6 +49,11 @@ public abstract class NetworkManager : INetEventListener
         netManager.AutoRecycle = settings.ReuseNetPacketReaders;
         netManager.UseNativeSockets = settings.UseNativeSockets;
         netManager.EnableStatistics = settings.ShowStats;
+        netManager.SimulatePacketLoss = settings.SimulatePacketLoss;
+        netManager.SimulateLatency = settings.SimulateLatency;
+        netManager.SimulationPacketLossChance = settings.SimulationPacketLossChance;
+        netManager.SimulationMinLatency = settings.SimulationMinLatency;
+        netManager.SimulationMaxLatency = settings.SimulationMaxLatency;
     }
 
     public void PollEvents()
@@ -116,7 +121,7 @@ public abstract class NetworkManager : INetEventListener
 
     public void LogDebug(Func<object> resolver)
     {
-        if (!Multiplayer.Settings.VerboseLogging)
+        if (!Multiplayer.Settings.DebugLogging)
             return;
         Multiplayer.LogDebug(() => $"{LogPrefix} {resolver.Invoke()}");
     }

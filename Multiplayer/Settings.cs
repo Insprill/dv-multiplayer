@@ -32,7 +32,7 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     [Draw("Show Name Tags", Tooltip = "Whether to show player names above their heads.")]
     public bool ShowNameTags = true;
     [Draw("Show Ping In Name Tag", Tooltip = "Whether to show player pings above their heads.", VisibleOn = "ShowNameTags|true")]
-    public bool ShowPingInNameTags = true;
+    public bool ShowPingInNameTags;
 
     [Space(10)]
     [Header("Advanced Settings")]
@@ -40,8 +40,8 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public bool ShowAdvancedSettings;
     [Draw("Show Stats", Tooltip = "Whether to show network statistics.", VisibleOn = "ShowAdvancedSettings|true")]
     public bool ShowStats;
-    [Draw("Verbose Logging", Tooltip = "Whether to log extra information. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
-    public bool VerboseLogging;
+    [Draw("Debug Logging", Tooltip = "Whether to log extra information. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
+    public bool DebugLogging;
     [Draw("Enable Log File", Tooltip = "Whether to create a separate file for logs. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
     public bool EnableLogFile;
     [Draw("Enable NAT Punch", VisibleOn = "ShowAdvancedSettings|true")]
@@ -51,7 +51,17 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     [Draw("Use Native Sockets", VisibleOn = "ShowAdvancedSettings|true")]
     public bool UseNativeSockets = true;
     [Draw("Log Full IPs", Tooltip = "Whether to log the full IP address of clients. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
-    public bool LogIps = true;
+    public bool LogIps;
+    [Draw("Simulate Packet Loss", VisibleOn = "ShowAdvancedSettings|true")]
+    public bool SimulatePacketLoss;
+    [Draw("Packet Loss Chance", VisibleOn = "SimulatePacketLoss|true")]
+    public int SimulationPacketLossChance = 10;
+    [Draw("Simulate Latency", VisibleOn = "ShowAdvancedSettings|true")]
+    public bool SimulateLatency;
+    [Draw("Minimum Latency (ms)", VisibleOn = "SimulateLatency|true")]
+    public int SimulationMinLatency = 30;
+    [Draw("Maximum Latency (ms)", VisibleOn = "SimulateLatency|true")]
+    public int SimulationMaxLatency = 100;
 
     public void Draw(UnityModManager.ModEntry modEntry)
     {

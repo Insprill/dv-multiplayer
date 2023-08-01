@@ -93,7 +93,7 @@ public static class Multiplayer
 
     public static void LogDebug(Func<object> resolver)
     {
-        if (!Settings.VerboseLogging)
+        if (!Settings.DebugLogging)
             return;
         WriteLog($"[Debug] {resolver.Invoke()}");
     }
