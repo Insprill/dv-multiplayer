@@ -1,3 +1,4 @@
+using System.Collections;
 using DV.ThingTypes.TransitionHelpers;
 using HarmonyLib;
 using Multiplayer.Components.Networking.Train;
@@ -11,17 +12,30 @@ public static class CargoModelControllerPatch
 {
     private static bool Prefix(CargoModelController __instance)
     {
-        if (AudioManager.Instance.cargoLoadUnload != null && __instance.trainCar.IsCargoLoadedUnloadedByMachine)
+        __instance.StartCoroutine(AddCargoOnceInitialized(__instance));
+        return false;
+    }
+
+    private static IEnumerator AddCargoOnceInitialized(CargoModelController controller)
+    {
+        NetworkedTrainCar networkedTrainCar;
+        while ((networkedTrainCar = controller.trainCar.GetNetworkedCar()) == null)
+            yield return null;
+        AddCargo(controller, networkedTrainCar);
+    }
+
+    private static void AddCargo(CargoModelController controller, NetworkedTrainCar networkedTrainCar)
+    {
+        TrainCar trainCar = networkedTrainCar.TrainCar;
+        if (AudioManager.Instance.cargoLoadUnload != null && trainCar.IsCargoLoadedUnloadedByMachine)
         {
-            Transform transform = __instance.trainCar.transform;
+            Transform transform = trainCar.transform;
             AudioManager.Instance.cargoLoadUnload.Play(transform.position, minDistance: 10f, parent: transform);
         }
 
-        GameObject[] prefabsForCarType = __instance.trainCar.LoadedCargo.ToV2().GetCargoPrefabsForCarType(__instance.trainCar.carLivery.parentType);
+        GameObject[] prefabsForCarType = trainCar.LoadedCargo.ToV2().GetCargoPrefabsForCarType(trainCar.carLivery.parentType);
         if (prefabsForCarType == null || prefabsForCarType.Length == 0)
-            return false;
-
-        NetworkedTrainCar networkedTrainCar = __instance.trainCar.GetNetworkedCar();
+            return;
 
         byte modelIndex = networkedTrainCar.CargoModelIndex;
         if (modelIndex == byte.MaxValue || modelIndex >= prefabsForCarType.Length)
@@ -30,10 +44,9 @@ public static class CargoModelControllerPatch
             networkedTrainCar.CargoModelIndex = modelIndex;
         }
 
-        __instance.currentCargoModel = Object.Instantiate(prefabsForCarType[modelIndex], __instance.trainCar.interior.transform, false);
-        __instance.currentCargoModel.transform.localPosition = Vector3.zero;
-        __instance.currentCargoModel.transform.localRotation = Quaternion.identity;
-        __instance.trainColliders.SetupCargo(__instance.currentCargoModel);
-        return false;
+        controller.currentCargoModel = Object.Instantiate(prefabsForCarType[modelIndex], trainCar.interior.transform, false);
+        controller.currentCargoModel.transform.localPosition = Vector3.zero;
+        controller.currentCargoModel.transform.localRotation = Quaternion.identity;
+        controller.trainColliders.SetupCargo(controller.currentCargoModel);
     }
 }
