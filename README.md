@@ -53,7 +53,8 @@ It works by having one player host a game, and then other players can join that 
 
 ## Roadmap
 
-For a list of planned features, see the [project board][project-board-url].
+For a list of planned features, see the [project board][project-board-url].  
+The mod will be released on Nexus once it's ready.
 
 
 
@@ -87,9 +88,6 @@ If you're new to contributing to open-source projects, you can follow [this][con
 
 Code is distributed under the Apache 2.0 license.  
 See [LICENSE][license-url] for more information.
-
-AssetBundle assets are owned by Altfuture and are included with permission, for the purpose of having Read/Write protection on them removed, which is necessary for this mod to function.
-These assets are not covered by the Apache 2.0 license and have different terms and conditions. Contact [support@altfuture.gg][altfuture-support-email-url] for more information.
 
 
 
