@@ -127,11 +127,11 @@ public class NetworkServer : NetworkManager
             Ping = latency
         };
 
-        SendPacketToAll(clientboundPingUpdatePacket, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(clientboundPingUpdatePacket, DeliveryMethod.ReliableUnordered, peer);
 
         SendPacket(peer, new ClientboundTickSyncPacket {
             ServerTick = NetworkLifecycle.Instance.Tick
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public override void OnConnectionRequest(ConnectionRequest request)
@@ -186,7 +186,7 @@ public class NetworkServer : NetworkManager
             Speed = trainCar.GetForwardSpeed(),
             Bogie1 = BogieMovementData.FromBogie(bogie1, bogieTracksDirty, bogie1TrackDirection),
             Bogie2 = BogieMovementData.FromBogie(bogie2, bogieTracksDirty, bogie2TrackDirection)
-        }, DeliveryMethod.ReliableOrdered, selfPeer);
+        }, bogieTracksDirty ? DeliveryMethod.ReliableUnordered : DeliveryMethod.Unreliable, selfPeer);
     }
 
     public void SendCargoState(TrainCar trainCar, ushort netId, bool isLoading, byte cargoModelIndex)
@@ -402,12 +402,12 @@ public class NetworkServer : NetworkManager
     {
         SendPacketToAll(new ClientboundTimeAdvancePacket {
             amountOfTimeToSkipInSeconds = packet.amountOfTimeToSkipInSeconds
-        }, DeliveryMethod.ReliableOrdered, peer);
+        }, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet, NetPeer peer)
@@ -417,42 +417,42 @@ public class NetworkServer : NetworkManager
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonTrainUncouplePacket(CommonTrainUncouplePacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonHoseConnectedPacket(CommonHoseConnectedPacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonHoseDisconnectedPacket(CommonHoseDisconnectedPacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonMuConnectedPacket(CommonMuConnectedPacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonMuDisconnectedPacket(CommonMuDisconnectedPacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonCockFiddlePacket(CommonCockFiddlePacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonBrakeCylinderReleasePacket(CommonBrakeCylinderReleasePacket packet, NetPeer peer)
     {
-        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+        SendPacketToAll(packet, DeliveryMethod.ReliableUnordered, peer);
     }
 
     private void OnCommonHandbrakePositionPacket(CommonHandbrakePositionPacket packet, NetPeer peer)

@@ -575,7 +575,7 @@ public class NetworkClient : NetworkManager
             MoveDir = new Vector2(moveDir.x, moveDir.z),
             RotationY = rotationY,
             IsJumpingIsOnCar = (byte)((isJumping ? 1 : 0) | (isOnCar ? 2 : 0))
-        }, reliable ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Sequenced);
+        }, reliable ? DeliveryMethod.ReliableUnordered : DeliveryMethod.Sequenced);
     }
 
     public void SendPlayerCar(ushort carId)
@@ -618,7 +618,7 @@ public class NetworkClient : NetworkManager
             OtherCarIsFrontCoupler = otherCoupler.isFrontCoupler,
             PlayAudio = playAudio,
             ViaChainInteraction = viaChainInteraction
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendTrainUncouple(Coupler coupler, bool playAudio, bool dueToBrokenCouple, bool viaChainInteraction)
@@ -629,7 +629,7 @@ public class NetworkClient : NetworkManager
             PlayAudio = playAudio,
             ViaChainInteraction = viaChainInteraction,
             DueToBrokenCouple = dueToBrokenCouple
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendHoseConnected(Coupler coupler, Coupler otherCoupler, bool playAudio)
@@ -640,7 +640,7 @@ public class NetworkClient : NetworkManager
             OtherNetId = otherCoupler.train.GetNetId(),
             OtherIsFront = otherCoupler.isFrontCoupler,
             PlayAudio = playAudio
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendHoseDisconnected(Coupler coupler, bool playAudio)
@@ -649,7 +649,7 @@ public class NetworkClient : NetworkManager
             NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
             PlayAudio = playAudio
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendMuConnected(MultipleUnitCable cable, MultipleUnitCable otherCable, bool playAudio)
@@ -660,7 +660,7 @@ public class NetworkClient : NetworkManager
             OtherNetId = otherCable.muModule.train.GetNetId(),
             OtherIsFront = otherCable.isFront,
             PlayAudio = playAudio
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendMuDisconnected(MultipleUnitCable cable, bool playAudio)
@@ -669,7 +669,7 @@ public class NetworkClient : NetworkManager
             NetId = cable.muModule.train.GetNetId(),
             IsFront = cable.isFront,
             PlayAudio = playAudio
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendCockState(Coupler coupler, bool isOpen)
@@ -678,14 +678,14 @@ public class NetworkClient : NetworkManager
             NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
             IsOpen = isOpen
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendBrakeCylinderReleased(ushort netId)
     {
         SendPacketToServer(new CommonBrakeCylinderReleasePacket {
             NetId = netId
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendHandbrakePositionChanged(ushort netId, float position)
@@ -711,14 +711,14 @@ public class NetworkClient : NetworkManager
     {
         SendPacketToServer(new ServerboundTrainSyncRequestPacket {
             NetId = netId
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendTrainDeleteRequest(ushort netId)
     {
         SendPacketToServer(new ServerboundTrainDeleteRequestPacket {
             NetId = netId
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     #endregion
