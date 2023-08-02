@@ -618,7 +618,7 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLWasmStreaming: 0
   scriptingDefineSymbols:
-    1: LITENETLIB_UNSAFE
+    1: LITENETLIB_UNSAFE;LITENETLIB_DEBUGGING
   platformArchitecture: {}
   scriptingBackend: {}
   il2cppCompilerConfiguration: {}

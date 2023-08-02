@@ -55,19 +55,8 @@ namespace Multiplayer.Editor
             Debug.Log("Finished building asset bundle");
         }
 
-        [MenuItem("Multiplayer/Build Debug Scripts")]
-        private static void BuildDebugScripts()
-        {
-            BuildScripts(true);
-        }
-
         [MenuItem("Multiplayer/Build Scripts")]
         private static void BuildScripts()
-        {
-            BuildScripts(false);
-        }
-
-        private static void BuildScripts(bool debug)
         {
             Debug.Log("Validating AssetIndex");
             if (!ValidateAssetIndex())
@@ -78,7 +67,7 @@ namespace Multiplayer.Editor
             string buildDir = CreateTmpDir();
             string exePath = Path.Combine(buildDir, Path.GetRandomFileName());
             string managedFolder = $"{Path.Combine(buildDir, Path.GetFileNameWithoutExtension(exePath))}_Data/Managed";
-            BuildPipeline.BuildPlayer(Array.Empty<string>(), exePath, BuildTarget.StandaloneWindows64, debug ? BuildOptions.Development : BuildOptions.None);
+            BuildPipeline.BuildPlayer(Array.Empty<string>(), exePath, BuildTarget.StandaloneWindows64, BuildOptions.None);
             foreach (string dll in COPY_DLLS)
             {
                 string sourceName = Path.Combine(managedFolder, dll);
