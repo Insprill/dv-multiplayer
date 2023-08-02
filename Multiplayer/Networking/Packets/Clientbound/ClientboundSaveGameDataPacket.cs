@@ -3,7 +3,7 @@ using DV.JObjectExtstensions;
 using DV.UserManagement;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.SaveGame;
-using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Networking.Data;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;

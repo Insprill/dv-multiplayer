@@ -3,7 +3,7 @@ using LiteNetLib.Utils;
 using Multiplayer.Networking.Serialization;
 using UnityEngine;
 
-namespace Multiplayer.Networking.Packets.Common;
+namespace Multiplayer.Networking.Data;
 
 public class RigidbodySnapshot
 {

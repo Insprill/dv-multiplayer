@@ -1,5 +1,5 @@
 using System;
-using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Networking.Data;
 
 namespace Multiplayer.Networking.Packets.Clientbound;
 

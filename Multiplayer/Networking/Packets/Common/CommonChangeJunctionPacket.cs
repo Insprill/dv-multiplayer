@@ -1,4 +1,4 @@
-namespace Multiplayer.Networking.Packets.Serverbound;
+namespace Multiplayer.Networking.Packets.Common;
 
 public class CommonChangeJunctionPacket
 {

@@ -1,4 +1,4 @@
-using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Networking.Data;
 using UnityEngine;
 
 namespace Multiplayer.Components.Networking.Train;

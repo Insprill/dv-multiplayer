@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Multiplayer.Networking.Packets.Common;
+namespace Multiplayer.Networking.Data;
 
 public class ServerPlayer
 {

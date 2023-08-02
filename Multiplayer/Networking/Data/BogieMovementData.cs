@@ -1,7 +1,7 @@
 using LiteNetLib.Utils;
 using Multiplayer.Components;
 
-namespace Multiplayer.Networking.Packets.Common;
+namespace Multiplayer.Networking.Data;
 
 public struct BogieMovementData
 {

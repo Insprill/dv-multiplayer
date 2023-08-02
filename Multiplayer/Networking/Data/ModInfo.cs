@@ -4,7 +4,7 @@ using System.Linq;
 using LiteNetLib.Utils;
 using UnityModManagerNet;
 
-namespace Multiplayer.Networking.Packets.Common;
+namespace Multiplayer.Networking.Data;
 
 [Serializable]
 public readonly struct ModInfo

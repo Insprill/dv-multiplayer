@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using LiteNetLib;
 using LiteNetLib.Utils;
-using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Serialization;
 
 namespace Multiplayer.Networking.Listeners;

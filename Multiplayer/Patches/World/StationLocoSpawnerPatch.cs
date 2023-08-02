@@ -5,7 +5,7 @@ using DV.ThingTypes;
 using DV.Utils;
 using HarmonyLib;
 using Multiplayer.Components.Networking;
-using Multiplayer.Networking.Packets.Common;
+using Multiplayer.Networking.Data;
 using UnityEngine;
 
 namespace Multiplayer.Patches.World;
