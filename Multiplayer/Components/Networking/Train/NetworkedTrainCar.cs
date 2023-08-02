@@ -9,7 +9,6 @@ using LocoSim.Definitions;
 using LocoSim.Implementations;
 using Multiplayer.Components.Networking.Player;
 using Multiplayer.Networking.Data;
-using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Utils;
 using UnityEngine;
@@ -36,7 +35,7 @@ public class NetworkedTrainCar : MonoBehaviour
     private HashSet<string> dirtyPorts;
     private HashSet<string> dirtyFuses;
     private bool handbrakeDirty;
-    private bool bogieTracksDirty;
+    public bool BogieTracksDirty;
     public int Bogie1TrackDirection;
     public int Bogie2TrackDirection;
     private bool cargoDirty;
@@ -64,6 +63,7 @@ public class NetworkedTrainCar : MonoBehaviour
         {
             NetId = IdPool.NextId;
             TrainComponentLookup.Instance.RegisterTrainCar(this);
+            NetworkTrainsetWatcher.Instance.CheckInstance(); // Ensure the NetworkTrainsetWatcher is initialized
         }
         else
         {
@@ -150,7 +150,7 @@ public class NetworkedTrainCar : MonoBehaviour
         cargoDirty = true;
         cargoIsLoading = true;
         healthDirty = true;
-        bogieTracksDirty = true;
+        BogieTracksDirty = true;
         sendCouplers = true;
         if (!hasSimFlow)
             return;
@@ -162,7 +162,7 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private void Server_BogieTrackChanged(RailTrack arg1, Bogie arg2)
     {
-        bogieTracksDirty = true;
+        BogieTracksDirty = true;
     }
 
     private void Server_OnCargoLoaded(CargoType obj)
@@ -190,7 +190,6 @@ public class NetworkedTrainCar : MonoBehaviour
         Server_SendCouplers();
         Server_SendCargoState();
         Server_SendHealthState();
-        Server_SendPhysicsUpdate();
     }
 
     private void Server_SendCouplers()
@@ -229,14 +228,6 @@ public class NetworkedTrainCar : MonoBehaviour
             return;
         healthDirty = false;
         NetworkLifecycle.Instance.Server.SendCarHealthUpdate(NetId, TrainCar.CarDamage.currentHealth);
-    }
-
-    private void Server_SendPhysicsUpdate()
-    {
-        if ((!bogieTracksDirty && TrainCar.isStationary) || !bogie1.fullyInitialized || !bogie2.fullyInitialized || bogie1.rb == null || bogie2.rb == null)
-            return;
-        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(TrainCar, NetId, bogie1, bogie2, bogieTracksDirty, Bogie1TrackDirection, Bogie2TrackDirection);
-        bogieTracksDirty = false;
     }
 
     #endregion
@@ -341,16 +332,16 @@ public class NetworkedTrainCar : MonoBehaviour
         client_Initialized = true;
     }
 
-    public void Client_ReceiveTrainPhysicsUpdate(ClientboundTrainPhysicsPacket packet)
+    public void Client_ReceiveTrainPhysicsUpdate(TrainsetPart part, uint tick)
     {
         if (!client_Initialized)
             return;
         if (TrainCar.isEligibleForSleep)
             TrainCar.ForceOptimizationState(false);
 
-        client_trainSpeedQueue.ReceiveSnapshot(packet.Speed, packet.Tick);
-        client_bogie1Queue.ReceiveSnapshot(packet.Bogie1, packet.Tick);
-        client_bogie2Queue.ReceiveSnapshot(packet.Bogie2, packet.Tick);
+        client_trainSpeedQueue.ReceiveSnapshot(part.Speed, tick);
+        client_bogie1Queue.ReceiveSnapshot(part.Bogie1, tick);
+        client_bogie2Queue.ReceiveSnapshot(part.Bogie2, tick);
     }
 
     #endregion

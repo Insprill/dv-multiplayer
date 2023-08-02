@@ -41,6 +41,7 @@ public abstract class NetworkManager : INetEventListener
         netPacketProcessor.RegisterNestedType(Vector3Serializer.Serialize, Vector3Serializer.Deserialize);
         netPacketProcessor.RegisterNestedType(RigidbodySnapshot.Serialize, RigidbodySnapshot.Deserialize);
         netPacketProcessor.RegisterNestedType(BogieMovementData.Serialize, BogieMovementData.Deserialize);
+        netPacketProcessor.RegisterNestedType(TrainsetPart.Serialize, TrainsetPart.Deserialize);
     }
 
     private void OnSettingsUpdated(Settings settings)

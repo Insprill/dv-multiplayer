@@ -78,7 +78,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
         netPacketProcessor.SubscribeReusable<ClientboundSpawnTrainCarPacket>(OnClientboundSpawnExistingTrainCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundDestroyTrainCarPacket>(OnClientboundDestroyTrainCarPacket);
-        netPacketProcessor.SubscribeReusable<ClientboundTrainPhysicsPacket>(OnClientboundTrainPhysicsPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundTrainsetPhysicsPacket>(OnClientboundTrainPhysicsPacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket>(OnCommonTrainCouplePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainUncouplePacket>(OnCommonTrainUncouplePacket);
         netPacketProcessor.SubscribeReusable<CommonHoseConnectedPacket>(OnCommonHoseConnectedPacket);
@@ -371,12 +371,9 @@ public class NetworkClient : NetworkManager
         CarSpawner.Instance.DeleteCar(trainCar);
     }
 
-    public void OnClientboundTrainPhysicsPacket(ClientboundTrainPhysicsPacket packet)
+    public void OnClientboundTrainPhysicsPacket(ClientboundTrainsetPhysicsPacket packet)
     {
-        if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
-            return;
-
-        networkedTrainCar.Client_ReceiveTrainPhysicsUpdate(packet);
+        NetworkTrainsetWatcher.Instance.Client_HandleTrainsetPhysicsUpdate(packet);
     }
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet)

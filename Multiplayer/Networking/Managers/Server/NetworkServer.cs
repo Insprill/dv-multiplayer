@@ -179,15 +179,9 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendPhysicsUpdate(TrainCar trainCar, ushort netId, Bogie bogie1, Bogie bogie2, bool bogieTracksDirty, int bogie1TrackDirection, int bogie2TrackDirection)
+    public void SendTrainsetPhysicsUpdate(ClientboundTrainsetPhysicsPacket packet, bool reliable)
     {
-        SendPacketToAll(new ClientboundTrainPhysicsPacket {
-            NetId = netId,
-            Tick = NetworkLifecycle.Instance.Tick,
-            Speed = trainCar.GetForwardSpeed(),
-            Bogie1 = BogieMovementData.FromBogie(bogie1, bogieTracksDirty, bogie1TrackDirection),
-            Bogie2 = BogieMovementData.FromBogie(bogie2, bogieTracksDirty, bogie2TrackDirection)
-        }, bogieTracksDirty ? DeliveryMethod.ReliableUnordered : DeliveryMethod.Unreliable, selfPeer);
+        SendPacketToAll(packet, reliable ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Unreliable, selfPeer);
     }
 
     public void SendCargoState(TrainCar trainCar, ushort netId, bool isLoading, byte cargoModelIndex)
