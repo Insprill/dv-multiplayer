@@ -66,6 +66,8 @@ public class NetworkedTrainCar : MonoBehaviour
         }
         else
         {
+            TrainComponentLookup.Instance.RegisterTrainCar(this);
+            client_trainSpeedQueue = TrainCar.GetComponent<TrainSpeedQueue>();
             StartCoroutine(Client_InitLater());
         }
 
@@ -325,11 +327,6 @@ public class NetworkedTrainCar : MonoBehaviour
 
     private IEnumerator Client_InitLater()
     {
-        while (NetId == 0)
-            yield return null;
-        TrainComponentLookup.Instance.RegisterTrainCar(this);
-        while ((client_trainSpeedQueue = TrainCar.GetComponent<TrainSpeedQueue>()) == null)
-            yield return null;
         while ((client_bogie1Queue = bogie1.GetComponent<NetworkedBogie>()) == null)
             yield return null;
         while ((client_bogie2Queue = bogie2.GetComponent<NetworkedBogie>()) == null)

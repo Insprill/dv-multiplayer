@@ -1,17 +1,20 @@
 using HarmonyLib;
 using Multiplayer.Components;
 using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.Train;
 
 namespace Multiplayer.Patches.World;
 
-[HarmonyPatch(typeof(CarSpawner), nameof(CarSpawner.FireCarAboutToBeDeleted))]
-public static class CarSpawner_FireCarAboutToBeDeleted_Patch
+[HarmonyPatch(typeof(CarSpawner), nameof(CarSpawner.ActuallyDeletingTrainCar))]
+public static class CarSpawner_ActuallyDeletingTrainCar_Patch
 {
-    private static void Postfix(TrainCar car)
+    private static void Postfix(TrainCar trainCar)
     {
         if (UnloadWatcher.isUnloading)
             return;
-        NetworkLifecycle.Instance.Server?.SendDestroyTrainCar(car);
-        TrainComponentLookup.Instance.UnregisterTrainCar(car);
+        if (!TrainComponentLookup.Instance.NetworkedTrainFromTrain(trainCar, out NetworkedTrainCar _))
+            return;
+        NetworkLifecycle.Instance.Server?.SendDestroyTrainCar(trainCar);
+        TrainComponentLookup.Instance.UnregisterTrainCar(trainCar);
     }
 }

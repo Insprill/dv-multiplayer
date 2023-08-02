@@ -354,23 +354,7 @@ public class NetworkClient : NetworkManager
 
         LogDebug(() => $"Spawning {packet.CarId} ({livery.id}) with net ID {packet.NetId}");
 
-        TrainCar trainCar = CarSpawner.Instance.SpawnLoadedCar(
-            livery.prefab,
-            packet.CarId,
-            packet.CarGuid,
-            packet.PlayerSpawnedCar,
-            packet.Position + WorldMover.currentMove,
-            Quaternion.Euler(packet.Rotation),
-            packet.Bogie1.IsDerailed,
-            bogie1Track,
-            packet.Bogie1.PositionAlongTrack,
-            packet.Bogie2.IsDerailed,
-            bogie2Track,
-            packet.Bogie2.PositionAlongTrack,
-            packet.CouplerFCoupled,
-            packet.CouplerRCoupled
-        );
-        trainCar.GetComponent<NetworkedTrainCar>().NetId = packet.NetId;
+        NetworkedCarSpawner.SpawnCar(packet, livery, bogie1Track, bogie2Track);
 
         SendTrainSyncRequest(packet.NetId);
     }
