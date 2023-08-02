@@ -24,11 +24,11 @@ public class NetworkedBogie : TickedQueue<BogieMovementData>
         if (bogie.HasDerailed)
             return;
 
-        if (snapshot.TrackIndex != ushort.MaxValue)
+        if (snapshot.IncludesTrackData)
         {
             if (WorldComponentLookup.Instance.TrackFromIndex(snapshot.TrackIndex, out RailTrack track))
             {
-                bogie.SetTrack(track, snapshot.PositionAlongTrack);
+                bogie.SetTrack(track, snapshot.PositionAlongTrack, snapshot.TrackDirection);
             }
             else
             {

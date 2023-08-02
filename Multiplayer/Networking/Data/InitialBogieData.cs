@@ -20,17 +20,21 @@ public struct InitialBogieData
 
     public static void Serialize(NetDataWriter writer, InitialBogieData data)
     {
+        writer.Put(data.IsDerailed);
+        if (data.IsDerailed) return;
         writer.Put(data.Track);
         writer.Put(data.PositionAlongTrack);
-        writer.Put(data.IsDerailed);
     }
 
     public static InitialBogieData Deserialize(NetDataReader reader)
     {
-        return new InitialBogieData {
-            Track = reader.GetUShort(),
-            PositionAlongTrack = reader.GetDouble(),
+        InitialBogieData data = new() {
             IsDerailed = reader.GetBool()
         };
+        if (data.IsDerailed)
+            return data;
+        data.Track = reader.GetUShort();
+        data.PositionAlongTrack = reader.GetDouble();
+        return data;
     }
 }

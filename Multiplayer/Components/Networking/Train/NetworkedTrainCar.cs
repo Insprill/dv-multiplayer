@@ -37,6 +37,8 @@ public class NetworkedTrainCar : MonoBehaviour
     private HashSet<string> dirtyFuses;
     private bool handbrakeDirty;
     private bool bogieTracksDirty;
+    public int Bogie1TrackDirection;
+    public int Bogie2TrackDirection;
     private bool cargoDirty;
     private bool cargoIsLoading;
     public byte CargoModelIndex = byte.MaxValue;
@@ -231,7 +233,7 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if ((!bogieTracksDirty && TrainCar.isStationary) || !bogie1.fullyInitialized || !bogie2.fullyInitialized || bogie1.rb == null || bogie2.rb == null)
             return;
-        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(TrainCar, NetId, bogie1, bogie2, bogieTracksDirty);
+        NetworkLifecycle.Instance.Server.SendPhysicsUpdate(TrainCar, NetId, bogie1, bogie2, bogieTracksDirty, Bogie1TrackDirection, Bogie2TrackDirection);
         bogieTracksDirty = false;
     }
 
