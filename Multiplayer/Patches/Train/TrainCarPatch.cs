@@ -25,10 +25,6 @@ public class TrainCarPatch
     {
         if (CarSpawner.Instance.PoolSetupInProgress)
             return;
-        if (__instance.gameObject.GetComponent<NetworkedTrainCar>())
-            Multiplayer.LogDebug(() => $"{__instance.carLivery.id} already has a NetworkedTrainCar before awake");
-        else
-            Multiplayer.LogDebug(() => $"Adding NetworkedTrainCar to {__instance.carLivery.id} before awake");
         __instance.GetOrAddComponent<NetworkedTrainCar>();
     }
 }
