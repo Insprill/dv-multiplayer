@@ -681,18 +681,18 @@ public class NetworkClient : NetworkManager
         }, DeliveryMethod.ReliableOrdered);
     }
 
-    public void SendBrakeCylinderReleased(TrainCar trainCar)
+    public void SendBrakeCylinderReleased(ushort netId)
     {
         SendPacketToServer(new CommonBrakeCylinderReleasePacket {
-            NetId = trainCar.GetNetId()
+            NetId = netId
         }, DeliveryMethod.ReliableOrdered);
     }
 
-    public void SendHandbrakePositionChanged(TrainCar trainCar)
+    public void SendHandbrakePositionChanged(ushort netId, float position)
     {
         SendPacketToServer(new CommonHandbrakePositionPacket {
-            NetId = trainCar.GetNetId(),
-            Position = trainCar.brakeSystem.handbrakePosition
+            NetId = netId,
+            Position = position
         }, DeliveryMethod.ReliableOrdered);
     }
 

@@ -1,19 +1,34 @@
 using HarmonyLib;
-using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
 using Multiplayer.Utils;
 
 namespace Multiplayer.Patches.World;
 
-[HarmonyPatch(typeof(TrainCar), nameof(TrainCar.Awake))]
-public class TrainCar_Awake_Patch
+[HarmonyPatch(typeof(TrainCar))]
+public class TrainCarPatch
 {
-    private static void Postfix(TrainCar __instance)
+    [HarmonyPrefix]
+    [HarmonyPatch(nameof(TrainCar.Awake))]
+    private static void Awake_Prefix(TrainCar __instance)
+    {
+        InitNetworkedTrainCar(__instance);
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(nameof(TrainCar.AwakeForPooledCar))]
+    private static void AwakeForPooledCar_Prefix(TrainCar __instance)
+    {
+        InitNetworkedTrainCar(__instance);
+    }
+
+    private static void InitNetworkedTrainCar(TrainCar __instance)
     {
         if (CarSpawner.Instance.PoolSetupInProgress)
             return;
-        __instance.gameObject.GetOrAddComponent<NetworkedTrainCar>();
-        if (!NetworkLifecycle.Instance.IsHost())
-            __instance.gameObject.GetOrAddComponent<TrainSpeedQueue>();
+        if (__instance.gameObject.GetComponent<NetworkedTrainCar>())
+            Multiplayer.LogDebug(() => $"{__instance.carLivery.id} already has a NetworkedTrainCar before awake");
+        else
+            Multiplayer.LogDebug(() => $"Adding NetworkedTrainCar to {__instance.carLivery.id} before awake");
+        __instance.GetOrAddComponent<NetworkedTrainCar>();
     }
 }

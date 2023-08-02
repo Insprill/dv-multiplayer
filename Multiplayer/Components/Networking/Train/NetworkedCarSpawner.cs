@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using DV.ThingTypes;
 using Multiplayer.Networking.Packets.Clientbound.Train;
+using Multiplayer.Utils;
 using UnityEngine;
-using VLB;
 
 namespace Multiplayer.Components.Networking.Train;
 
@@ -25,6 +25,7 @@ public static class NetworkedCarSpawner
         trainTransform.eulerAngles = packet.Rotation;
         trainCar.playerSpawnedCar = packet.PlayerSpawnedCar;
         trainCar.InitializeExistingLogicCar(packet.CarId, packet.CarGuid);
+        trainCar.preventAutoCouple = true;
 
         if (!packet.Bogie1.IsDerailed)
             trainCar.Bogies[0].SetTrack(bogie1Track, packet.Bogie1.PositionAlongTrack);

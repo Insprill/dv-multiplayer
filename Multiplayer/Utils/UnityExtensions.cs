@@ -70,4 +70,9 @@ public static class UnityExtensions
             component = gameObject.AddComponent<T>();
         return component;
     }
+
+    public static T GetOrAddComponent<T>(this Component component) where T : Component
+    {
+        return component.gameObject.GetOrAddComponent<T>();
+    }
 }

@@ -11,6 +11,7 @@ using Multiplayer.Components.Networking.Player;
 using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
+using Multiplayer.Utils;
 using UnityEngine;
 
 namespace Multiplayer.Components.Networking.Train;
@@ -51,13 +52,11 @@ public class NetworkedTrainCar : MonoBehaviour
 
     #endregion
 
-    private void Awake()
+    internal void Awake()
     {
         TrainCar = GetComponent<TrainCar>();
-
         bogie1 = TrainCar.Bogies[0];
         bogie2 = TrainCar.Bogies[1];
-        brakeSystem = TrainCar.brakeSystem;
 
         if (NetworkLifecycle.Instance.IsHost())
         {
@@ -67,29 +66,31 @@ public class NetworkedTrainCar : MonoBehaviour
         else
         {
             TrainComponentLookup.Instance.RegisterTrainCar(this);
-            client_trainSpeedQueue = TrainCar.GetComponent<TrainSpeedQueue>();
+            client_trainSpeedQueue = TrainCar.GetOrAddComponent<TrainSpeedQueue>();
             StartCoroutine(Client_InitLater());
         }
-
-        SimController simController = GetComponent<SimController>();
-        if (simController == null)
-            return;
-
-        hasSimFlow = true;
-        simulationFlow = simController.SimulationFlow;
-
-        dirtyPorts = new HashSet<string>(simulationFlow.fullPortIdToPort.Count);
-        foreach (KeyValuePair<string, Port> kvp in simulationFlow.fullPortIdToPort)
-            if (kvp.Value.valueType == PortValueType.CONTROL || NetworkLifecycle.Instance.IsHost())
-                kvp.Value.ValueUpdatedInternally += _ => { Common_OnPortUpdated(kvp.Key); }; // todo: secure this
-
-        dirtyFuses = new HashSet<string>(simulationFlow.fullFuseIdToFuse.Count);
-        foreach (KeyValuePair<string, Fuse> kvp in simulationFlow.fullFuseIdToFuse)
-            kvp.Value.StateUpdated += _ => { Common_OnFuseUpdated(kvp.Key); };
     }
 
-    private void OnEnable()
+    private void Start()
     {
+        brakeSystem = TrainCar.brakeSystem;
+
+        SimController simController = GetComponent<SimController>();
+        if (simController != null)
+        {
+            hasSimFlow = true;
+            simulationFlow = simController.SimulationFlow;
+
+            dirtyPorts = new HashSet<string>(simulationFlow.fullPortIdToPort.Count);
+            foreach (KeyValuePair<string, Port> kvp in simulationFlow.fullPortIdToPort)
+                if (kvp.Value.valueType == PortValueType.CONTROL || NetworkLifecycle.Instance.IsHost())
+                    kvp.Value.ValueUpdatedInternally += _ => { Common_OnPortUpdated(kvp.Key); }; // todo: secure this
+
+            dirtyFuses = new HashSet<string>(simulationFlow.fullFuseIdToFuse.Count);
+            foreach (KeyValuePair<string, Fuse> kvp in simulationFlow.fullFuseIdToFuse)
+                kvp.Value.StateUpdated += _ => { Common_OnFuseUpdated(kvp.Key); };
+        }
+
         brakeSystem.HandbrakePositionChanged += Common_OnHandbrakePositionChanged;
         brakeSystem.BrakeCylinderReleased += Common_OnBrakeCylinderReleased;
         NetworkLifecycle.Instance.OnTick += Common_OnTick;
@@ -124,6 +125,8 @@ public class NetworkedTrainCar : MonoBehaviour
                 TrainCar.logicCar.CargoUnloaded -= Server_OnCargoUnloaded;
             }
         }
+
+        Destroy(this);
     }
 
     #region Server
@@ -251,7 +254,7 @@ public class NetworkedTrainCar : MonoBehaviour
         if (!TrainCar.brakeSystem.hasHandbrake)
             return;
         handbrakeDirty = false;
-        NetworkLifecycle.Instance.Client.SendHandbrakePositionChanged(TrainCar);
+        NetworkLifecycle.Instance.Client.SendHandbrakePositionChanged(NetId, brakeSystem.handbrakePosition);
     }
 
     private void Common_SendSimFlow()
@@ -288,7 +291,7 @@ public class NetworkedTrainCar : MonoBehaviour
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket)
             return;
-        NetworkLifecycle.Instance.Client.SendBrakeCylinderReleased(TrainCar);
+        NetworkLifecycle.Instance.Client.SendBrakeCylinderReleased(NetId);
     }
 
     private void Common_OnPortUpdated(string portId)

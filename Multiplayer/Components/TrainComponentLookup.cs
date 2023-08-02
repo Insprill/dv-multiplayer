@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using DV;
 using DV.Simulation.Brake;
@@ -33,6 +34,13 @@ public class TrainComponentLookup : SingletonBehaviour<TrainComponentLookup>
         trainToNetworkedTrain[networkedTrainCar.TrainCar] = networkedTrainCar;
         netIdToTrainCar[networkedTrainCar.NetId] = networkedTrainCar.TrainCar;
         netIdToNetworkedTrain[networkedTrainCar.NetId] = networkedTrainCar;
+        StartCoroutine(RegisterCouplers(networkedTrainCar));
+    }
+
+    private IEnumerator RegisterCouplers(NetworkedTrainCar networkedTrainCar)
+    {
+        while (networkedTrainCar.TrainCar.couplers == null || networkedTrainCar.TrainCar.couplers.Length == 0)
+            yield return WaitFor.EndOfFrame;
         foreach (Coupler coupler in networkedTrainCar.TrainCar.couplers)
             hoseToCoupler[coupler.hoseAndCock] = coupler;
     }
