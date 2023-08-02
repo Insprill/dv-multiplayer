@@ -22,13 +22,12 @@ public static class MainMenuController_Awake_Patch
             return;
         }
 
-        button.SetActive(false);
         MultiplayerButton = Object.Instantiate(button, button.transform.parent);
-        button.SetActive(true);
         MultiplayerButton.transform.SetSiblingIndex(button.transform.GetSiblingIndex() + 1);
         MultiplayerButton.name = "ButtonSelectable Multiplayer";
 
         Object.Destroy(MultiplayerButton.GetComponentInChildren<Localize>());
+
         TMP_Text text = MultiplayerButton.GetComponentInChildren<TMP_Text>();
         text.text = "Join Server";
 
@@ -41,24 +40,5 @@ public static class MainMenuController_Awake_Patch
         }
 
         icon.GetComponent<Image>().sprite = Multiplayer.AssetIndex.multiplayerIcon;
-    }
-}
-
-[HarmonyPatch(typeof(MainMenuController), "RefreshInterface")]
-public static class MainMenuController_RefreshInterface_Patch
-{
-    private static void Postix(AMainMenuProvider ___provider)
-    {
-        GameObject multiplayerButton = MainMenuController_Awake_Patch.MultiplayerButton;
-        if (multiplayerButton == null)
-        {
-            Multiplayer.LogError("MultiplayerButton wasn't initialized!");
-            return;
-        }
-
-        if (___provider?.UserProfileProvider?.GetCurrentProfile() == null)
-            multiplayerButton.SetActive(false);
-        else if (___provider)
-            multiplayerButton.SetActive(true);
     }
 }
