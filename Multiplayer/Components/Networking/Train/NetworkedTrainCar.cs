@@ -18,7 +18,7 @@ namespace Multiplayer.Components.Networking.Train;
 
 public class NetworkedTrainCar : MonoBehaviour
 {
-    private static ushort NextNetId = 1;
+    private static readonly IdPool<ushort> IdPool = new();
 
     [NonSerialized]
     public ushort NetId;
@@ -62,7 +62,7 @@ public class NetworkedTrainCar : MonoBehaviour
 
         if (NetworkLifecycle.Instance.IsHost())
         {
-            NetId = NextNetId++;
+            NetId = IdPool.NextId;
             TrainComponentLookup.Instance.RegisterTrainCar(this);
         }
         else
@@ -126,6 +126,8 @@ public class NetworkedTrainCar : MonoBehaviour
                 TrainCar.logicCar.CargoLoaded -= Server_OnCargoLoaded;
                 TrainCar.logicCar.CargoUnloaded -= Server_OnCargoUnloaded;
             }
+
+            IdPool.ReleaseId(NetId);
         }
 
         Destroy(this);
