@@ -22,7 +22,9 @@ public abstract class NetworkManager : INetEventListener
 
     protected NetworkManager(Settings settings)
     {
-        netManager = new NetManager(this);
+        netManager = new NetManager(this) {
+            DisconnectTimeout = 10000
+        };
         netPacketProcessor = new NetPacketProcessor();
         RegisterNestedTypes();
         OnSettingsUpdated(settings);
