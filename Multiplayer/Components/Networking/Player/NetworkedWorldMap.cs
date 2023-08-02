@@ -41,11 +41,10 @@ public class NetworkedWorldMap : MonoBehaviour
                 parent = worldMap.playerIndicator.parent
             }
         }.transform;
-        Multiplayer.LogDebug(() => $"Creating indicator for {player.Username}. Parent: {worldMap.playerIndicator.parent} Markers Displayed: {worldMap.gameParams.PlayerMarkerDisplayed}");
         Instantiate(worldMap.playerIndicator.gameObject, indicator);
         TMP_Text text = Instantiate(textPrefab, indicator).GetComponent<TMP_Text>();
         text.text = player.Username;
-        text.fontSize /= 1.5f;
+        text.fontSize /= 1.25f;
         playerIndicators[id] = indicator;
     }
 
