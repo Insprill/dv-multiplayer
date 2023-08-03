@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DV.ThingTypes;
+using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Data;
 using Multiplayer.Utils;
 using UnityEngine;
@@ -19,15 +20,15 @@ public static class NetworkedCarSpawner
 
     public static TrainCar SpawnCar(TrainsetSpawnPart spawnPart, bool preventCoupling = false)
     {
-        if (!WorldComponentLookup.Instance.TrackFromIndex(spawnPart.Bogie1.TrackIndex, out RailTrack bogie1Track) && spawnPart.Bogie1.TrackIndex != ushort.MaxValue)
+        if (!NetworkedRailTrack.Get(spawnPart.Bogie1.TrackNetId, out NetworkedRailTrack bogie1Track) && spawnPart.Bogie1.TrackNetId != 0)
         {
-            NetworkLifecycle.Instance.Client.LogDebug(() => $"Tried spawning car but couldn't find track with index {spawnPart.Bogie1.TrackIndex}");
+            NetworkLifecycle.Instance.Client.LogDebug(() => $"Tried spawning car but couldn't find track with index {spawnPart.Bogie1.TrackNetId}");
             return null;
         }
 
-        if (!WorldComponentLookup.Instance.TrackFromIndex(spawnPart.Bogie2.TrackIndex, out RailTrack bogie2Track) && spawnPart.Bogie2.TrackIndex != ushort.MaxValue)
+        if (!NetworkedRailTrack.Get(spawnPart.Bogie2.TrackNetId, out NetworkedRailTrack bogie2Track) && spawnPart.Bogie2.TrackNetId != 0)
         {
-            NetworkLifecycle.Instance.Client.LogDebug(() => $"Tried spawning car but couldn't find track with index {spawnPart.Bogie2.TrackIndex}");
+            NetworkLifecycle.Instance.Client.LogDebug(() => $"Tried spawning car but couldn't find track with index {spawnPart.Bogie2.TrackNetId}");
             return null;
         }
 
@@ -57,12 +58,12 @@ public static class NetworkedCarSpawner
         trainCar.preventAutoCouple = true;
 
         if (!spawnPart.Bogie1.HasDerailed)
-            trainCar.Bogies[0].SetTrack(bogie1Track, spawnPart.Bogie1.PositionAlongTrack, spawnPart.Bogie1.TrackDirection);
+            trainCar.Bogies[0].SetTrack(bogie1Track.RailTrack, spawnPart.Bogie1.PositionAlongTrack, spawnPart.Bogie1.TrackDirection);
         else
             trainCar.Bogies[0].SetDerailedOnLoadFlag(true);
 
         if (!spawnPart.Bogie2.HasDerailed)
-            trainCar.Bogies[1].SetTrack(bogie2Track, spawnPart.Bogie2.PositionAlongTrack, spawnPart.Bogie2.TrackDirection);
+            trainCar.Bogies[1].SetTrack(bogie2Track.RailTrack, spawnPart.Bogie2.PositionAlongTrack, spawnPart.Bogie2.TrackDirection);
         else
             trainCar.Bogies[1].SetDerailedOnLoadFlag(true);
 

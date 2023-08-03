@@ -3,7 +3,7 @@ using DV;
 
 namespace Multiplayer.Components.Networking.World;
 
-public class NetworkedJunction : IdMonoBehaviour<ushort>
+public class NetworkedJunction : IdMonoBehaviour<ushort, NetworkedJunction>
 {
     private static NetworkedJunction[] _indexedJunctions;
     public static NetworkedJunction[] IndexedJunctions => _indexedJunctions ??= WorldData.Instance.TrackRootParent.GetComponentsInChildren<NetworkedJunction>().OrderBy(nj => nj.NetId).ToArray();
@@ -34,7 +34,7 @@ public class NetworkedJunction : IdMonoBehaviour<ushort>
 
     public static bool Get(ushort netId, out NetworkedJunction obj)
     {
-        bool b = Get(netId, out IdMonoBehaviour<ushort> rawObj);
+        bool b = Get(netId, out IdMonoBehaviour<ushort, NetworkedJunction> rawObj);
         obj = (NetworkedJunction)rawObj;
         return b;
     }

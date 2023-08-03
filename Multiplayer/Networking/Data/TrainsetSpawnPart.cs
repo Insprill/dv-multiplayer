@@ -96,7 +96,7 @@ public readonly struct TrainsetSpawnPart
     {
         TrainsetSpawnPart[] parts = new TrainsetSpawnPart[trainset.cars.Count];
         for (int i = 0; i < trainset.cars.Count; i++)
-            parts[i] = FromTrainCar(trainset.cars[i].GetNetworkedCar());
+            parts[i] = FromTrainCar(trainset.cars[i].Networked());
         return parts;
     }
 }

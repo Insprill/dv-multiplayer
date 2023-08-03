@@ -6,15 +6,15 @@ using UnityEngine;
 
 namespace Multiplayer.Components;
 
-public abstract class IdMonoBehaviour<T> : MonoBehaviour where T : struct
+public abstract class IdMonoBehaviour<T, I> : MonoBehaviour where T : struct where I : MonoBehaviour
 {
     private static readonly IdPool<T> idPool = new();
-    private static readonly Dictionary<T, IdMonoBehaviour<T>> indexToObject = new();
+    private static readonly Dictionary<T, IdMonoBehaviour<T, I>> indexToObject = new();
 
     public T NetId;
     protected abstract bool IsIdServerAuthoritative { get; }
 
-    protected static bool Get(T netId, out IdMonoBehaviour<T> obj)
+    protected static bool Get(T netId, out IdMonoBehaviour<T, I> obj)
     {
         if (indexToObject.TryGetValue(netId, out obj))
             return true;

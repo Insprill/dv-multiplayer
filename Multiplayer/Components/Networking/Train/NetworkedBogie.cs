@@ -1,3 +1,4 @@
+using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Data;
 using UnityEngine;
 
@@ -32,15 +33,8 @@ public class NetworkedBogie : TickedQueue<BogieData>
 
         if (snapshot.IncludesTrackData)
         {
-            if (WorldComponentLookup.Instance.TrackFromIndex(snapshot.TrackIndex, out RailTrack track))
-            {
-                bogie.SetTrack(track, snapshot.PositionAlongTrack, snapshot.TrackDirection);
-            }
-            else
-            {
-                Multiplayer.LogError($"Could not find track with index {snapshot.TrackIndex}! Skipping update and waiting for the next snapshot.");
-                return;
-            }
+            if (NetworkedRailTrack.Get(snapshot.TrackNetId, out NetworkedRailTrack track))
+                bogie.SetTrack(track.RailTrack, snapshot.PositionAlongTrack, snapshot.TrackDirection);
         }
         else
         {

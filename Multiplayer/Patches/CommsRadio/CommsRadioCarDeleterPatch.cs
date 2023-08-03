@@ -18,7 +18,7 @@ public static class CommsRadioCarDeleterPatch
             return true;
         if (__instance.state != CommsRadioCarDeleter.State.ConfirmDelete)
             return true;
-        if (__instance.carToDelete.GetNetworkedCar().HasPlayers)
+        if (__instance.carToDelete.Networked().HasPlayers)
             return false;
         if (Inventory.Instance.PlayerMoney <= __instance.removePrice)
             return true;
@@ -37,7 +37,7 @@ public static class CommsRadioCarDeleterPatch
         if (!Physics.Raycast(__instance.signalOrigin.position, __instance.signalOrigin.forward, out __instance.hit, CommsRadioCarDeleter.SIGNAL_RANGE, __instance.trainCarMask))
             return true;
         TrainCar car = TrainCar.Resolve(__instance.hit.transform.root);
-        if (car != null && !car.GetNetworkedCar().HasPlayers)
+        if (car != null && !car.Networked().HasPlayers)
             return true;
         __instance.PointToCar(null);
         return false;

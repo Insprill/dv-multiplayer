@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Multiplayer.Components.Networking.World;
 
-public class NetworkedTurntable : IdMonoBehaviour<byte>
+public class NetworkedTurntable : IdMonoBehaviour<byte, NetworkedTurntable>
 {
     private static NetworkedTurntable[] _indexedTurntables;
     public static NetworkedTurntable[] IndexedTurntables => _indexedTurntables ??= WorldData.Instance.TrackRootParent.GetComponentsInChildren<NetworkedTurntable>().OrderBy(nj => nj.NetId).ToArray();
@@ -47,7 +47,7 @@ public class NetworkedTurntable : IdMonoBehaviour<byte>
 
     public static bool Get(byte netId, out NetworkedTurntable obj)
     {
-        bool b = Get(netId, out IdMonoBehaviour<byte> rawObj);
+        bool b = Get(netId, out IdMonoBehaviour<byte, NetworkedTurntable> rawObj);
         obj = (NetworkedTurntable)rawObj;
         return b;
     }
