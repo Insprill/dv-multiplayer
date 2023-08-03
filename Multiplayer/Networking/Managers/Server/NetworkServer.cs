@@ -11,6 +11,7 @@ using LiteNetLib.Utils;
 using Multiplayer.Components;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
+using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Clientbound.Train;
@@ -341,7 +342,7 @@ public class NetworkServer : NetworkManager
 
         // Send junctions
         SendPacket(peer, new ClientboundJunctionStatePacket {
-            selectedBranches = WorldData.Instance.OrderedJunctions.Select(j => (byte)j.selectedBranch).ToArray()
+            SelectedBranches = NetworkedJunction.IndexedJunctions.Select(j => (byte)j.Junction.selectedBranch).ToArray()
         }, DeliveryMethod.ReliableOrdered);
 
         // Send turntables

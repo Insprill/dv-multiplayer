@@ -13,6 +13,7 @@ using Multiplayer.Components;
 using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
+using Multiplayer.Components.Networking.World;
 using Multiplayer.Components.SaveGame;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Packets.Clientbound;
@@ -289,12 +290,12 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundJunctionStatePacket(ClientboundJunctionStatePacket packet)
     {
-        for (ushort i = 0; i < packet.selectedBranches.Length; i++)
-            OnCommonChangeJunctionPacket(new CommonChangeJunctionPacket {
-                Index = i,
-                SelectedBranch = packet.selectedBranches[i],
-                Mode = (byte)Junction.SwitchMode.NO_SOUND
-            });
+        for (int i = 0; i < packet.SelectedBranches.Length; i++)
+        {
+            if (!NetworkedJunction.Get((ushort)(i + 1), out NetworkedJunction junction))
+                return;
+            junction.Switch((byte)Junction.SwitchMode.NO_SOUND, packet.SelectedBranches[i]);
+        }
     }
 
     private void OnClientboundTurntableStatePacket(ClientboundTurntableStatePacket packet)
@@ -309,16 +310,9 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonChangeJunctionPacket(CommonChangeJunctionPacket packet)
     {
-        Junction[] orderedJunctions = WorldData.Instance.OrderedJunctions;
-        if (packet.Index >= orderedJunctions.Length)
-        {
-            LogWarning($"Received {nameof(CommonChangeJunctionPacket)} for junction with index {packet.Index}, but there's only {orderedJunctions.Length} junctions on the map!");
+        if (!NetworkedJunction.Get(packet.NetId, out NetworkedJunction junction))
             return;
-        }
-
-        Junction junction = orderedJunctions[packet.Index];
-        junction.selectedBranch = packet.SelectedBranch - 1; // Junction#Switch increments this before processing
-        junction.Switch((Junction.SwitchMode)packet.Mode);
+        junction.Switch(packet.Mode, packet.SelectedBranch);
     }
 
     private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet)
@@ -595,7 +589,7 @@ public class NetworkClient : NetworkManager
     public void SendJunctionSwitched(ushort index, byte selectedBranch, Junction.SwitchMode mode)
     {
         SendPacketToServer(new CommonChangeJunctionPacket {
-            Index = index,
+            NetId = index,
             SelectedBranch = selectedBranch,
             Mode = (byte)mode
         }, DeliveryMethod.ReliableUnordered);

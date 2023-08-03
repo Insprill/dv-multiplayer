@@ -8,6 +8,8 @@ namespace LiteNetLib.Utils
     {
         private static IReadOnlyDictionary<Type, byte> PacketIdDict;
 
+        public static byte CurrentlyProcessingPacket { get; private set; }
+
         public static IReadOnlyDictionary<Type, byte> RegisterPacketTypes()
         {
             Type[] packetTypes = AppDomain.CurrentDomain
@@ -51,6 +53,7 @@ namespace LiteNetLib.Utils
         protected SubscribeDelegate GetCallbackFromData(NetDataReader reader)
         {
             byte id = reader.GetByte();
+            CurrentlyProcessingPacket = id;
             if (!_callbacks.TryGetValue(id, out var action))
             {
                 throw new ParseException($"Undefined packet {id} in NetDataReader");

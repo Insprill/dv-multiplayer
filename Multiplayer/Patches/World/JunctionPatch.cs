@@ -1,18 +1,13 @@
 using HarmonyLib;
-using Multiplayer.Components;
-using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.World;
 
 namespace Multiplayer.Patches.World;
 
-[HarmonyPatch(typeof(Junction), nameof(Junction.Switch))]
-public static class Junction_Switched_Patch
+[HarmonyPatch(typeof(Junction), nameof(Junction.Awake))]
+public static class Junction_Awake_Patch
 {
-    private static void Postfix(Junction __instance, Junction.SwitchMode mode)
+    private static void Prefix(Junction __instance)
     {
-        if (NetworkLifecycle.Instance.IsProcessingPacket)
-            return;
-
-        ushort index = WorldComponentLookup.Instance.IndexFromJunction(__instance);
-        NetworkLifecycle.Instance.Client.SendJunctionSwitched(index, (byte)__instance.selectedBranch, mode);
+        __instance.gameObject.AddComponent<NetworkedJunction>();
     }
 }
