@@ -22,6 +22,8 @@ public class NetworkTrainsetWatcher : SingletonBehaviour<NetworkTrainsetWatcher>
     protected override void OnDestroy()
     {
         base.OnDestroy();
+        if (UnloadWatcher.isQuitting)
+            return;
         if (NetworkLifecycle.Instance.IsHost())
             NetworkLifecycle.Instance.OnTick -= Server_OnTick;
     }
