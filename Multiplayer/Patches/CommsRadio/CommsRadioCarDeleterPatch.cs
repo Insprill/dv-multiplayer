@@ -23,6 +23,9 @@ public static class CommsRadioCarDeleterPatch
         if (Inventory.Instance.PlayerMoney <= __instance.removePrice)
             return true;
         NetworkLifecycle.Instance.Client.SendTrainDeleteRequest(__instance.carToDelete.GetNetId());
+        CommsRadioController.PlayAudioFromCar(__instance.removeCarSound, __instance.carToDelete, true);
+        CommsRadioController.PlayAudioFromRadio(__instance.confirmSound, __instance.transform);
+        __instance.ClearFlags();
         return false;
     }
 

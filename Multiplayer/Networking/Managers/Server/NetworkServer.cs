@@ -477,14 +477,14 @@ public class NetworkServer : NetworkManager
 
         TrainCar trainCar = networkedTrainCar.TrainCar;
         float cost = trainCar.playerSpawnedCar ? 0.0f : Mathf.RoundToInt(Globals.G.GameParams.DeleteCarMaxPrice);
-        if (Inventory.Instance.PlayerMoney < cost)
+        if (!Inventory.Instance.RemoveMoney(cost))
         {
             LogWarning($"{player.Username} tried to delete a train without enough money to do so!");
             return;
         }
 
         Job job = JobsManager.Instance.GetJobOfCar(trainCar);
-        switch (job.State)
+        switch (job?.State)
         {
             case JobState.Available:
                 job.ExpireJob();
