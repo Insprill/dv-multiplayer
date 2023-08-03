@@ -22,13 +22,13 @@ public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameMana
 
     public void UpdateInternalData(SaveGameData data)
     {
-        JObject json = new();
+        JObject json = data.GetJObject(KEY) ?? new JObject();
 
         foreach (NetworkedPlayer player in NetworkLifecycle.Instance.Client.PlayerManager.Players)
         {
             JObject playerData = new();
-            playerData.SetVector3("Position", player.transform.position - WorldMover.currentMove);
-            playerData.SetFloat("Rotation", player.transform.rotation.y);
+            playerData.SetVector3(SaveGameKeys.Player_position, player.transform.position - WorldMover.currentMove);
+            playerData.SetFloat(SaveGameKeys.Player_rotation, player.transform.rotation.y);
             json.SetJObject($"Player_{player.Username}", playerData);
         }
 

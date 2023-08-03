@@ -13,7 +13,6 @@ namespace Multiplayer.Networking.Packets.Clientbound;
 public class ClientboundSaveGameDataPacket
 {
     public string GameMode { get; set; }
-    public string World { get; set; }
     public string SerializedDifficulty { get; set; }
     public float Money { get; set; }
     public string[] AcquiredGeneralLicenses { get; set; }
@@ -35,15 +34,14 @@ public class ClientboundSaveGameDataPacket
         JObject playerData = NetworkedSaveGameManager.Instance.GetPlayerData(data, player.Username);
 
         return new ClientboundSaveGameDataPacket {
-            GameMode = data.GetString("Game_mode"),
-            World = data.GetString("World"),
+            GameMode = data.GetString(SaveGameKeys.Game_mode),
             SerializedDifficulty = difficulty.ToString(Formatting.None),
-            Money = Inventory.Instance == null ? data.GetFloat("Player_money").GetValueOrDefault(0) : (float)Inventory.Instance.PlayerMoney,
-            AcquiredGeneralLicenses = data.GetStringArray("Licenses_General"),
-            AcquiredJobLicenses = data.GetStringArray("Licenses_Jobs"),
-            UnlockedGarages = data.GetStringArray("Garages"),
-            Position = playerData?.GetVector3("Position") ?? LevelInfo.DefaultSpawnPosition,
-            Rotation = playerData?.GetFloat("Rotation") ?? LevelInfo.DefaultSpawnRotation.y
+            Money = Inventory.Instance == null ? data.GetFloat(SaveGameKeys.Player_money).GetValueOrDefault(0) : (float)Inventory.Instance.PlayerMoney,
+            AcquiredGeneralLicenses = data.GetStringArray(SaveGameKeys.Licenses_General),
+            AcquiredJobLicenses = data.GetStringArray(SaveGameKeys.Licenses_Jobs),
+            UnlockedGarages = data.GetStringArray(SaveGameKeys.Garages),
+            Position = playerData?.GetVector3(SaveGameKeys.Player_position) ?? LevelInfo.DefaultSpawnPosition,
+            Rotation = playerData?.GetFloat(SaveGameKeys.Player_rotation) ?? LevelInfo.DefaultSpawnRotation.y
         };
     }
 }

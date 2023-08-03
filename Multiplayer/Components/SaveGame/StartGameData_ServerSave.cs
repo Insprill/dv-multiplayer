@@ -17,22 +17,21 @@ public class StartGameData_ServerSave : AStartGameData
     public void SetFromPacket(ClientboundSaveGameDataPacket packet)
     {
         saveGameData = SaveGameManager.MakeEmptySave();
-        saveGameData.SetString("World", packet.World);
-        saveGameData.SetString("Game_mode", packet.GameMode);
+        saveGameData.SetString(SaveGameKeys.Game_mode, packet.GameMode);
         DifficultyToUse = DifficultyDataUtils.GetDifficultyFromJSON(JObject.Parse(packet.SerializedDifficulty), false);
 
-        saveGameData.SetFloat("Player_money", packet.Money);
+        saveGameData.SetFloat(SaveGameKeys.Player_money, packet.Money);
 
-        saveGameData.SetStringArray("Licenses_Jobs", packet.AcquiredJobLicenses);
-        saveGameData.SetStringArray("Licenses_General", packet.AcquiredGeneralLicenses);
-        saveGameData.SetStringArray("Garages", packet.UnlockedGarages);
+        saveGameData.SetStringArray(SaveGameKeys.Licenses_Jobs, packet.AcquiredJobLicenses);
+        saveGameData.SetStringArray(SaveGameKeys.Licenses_General, packet.AcquiredGeneralLicenses);
+        saveGameData.SetStringArray(SaveGameKeys.Garages, packet.UnlockedGarages);
 
         position = packet.Position;
         rotation = new Vector3(0, packet.Rotation, 0);
 
-        saveGameData.SetBool("Tutorial_01_completed", true);
-        saveGameData.SetBool("Tutorial_02_completed", true);
-        saveGameData.SetBool("Tutorial_03_completed", true);
+        saveGameData.SetBool(SaveGameKeys.Tutorial_01_completed, true);
+        saveGameData.SetBool(SaveGameKeys.Tutorial_02_completed, true);
+        saveGameData.SetBool(SaveGameKeys.Tutorial_03_completed, true);
     }
 
     public override void Initialize()
@@ -53,7 +52,7 @@ public class StartGameData_ServerSave : AStartGameData
         playerTransform.position = position + WorldMover.currentMove;
         playerTransform.eulerAngles = rotation;
 
-        if (saveGameData.GetString("Game_mode") == "FreeRoam")
+        if (saveGameData.GetString(SaveGameKeys.Game_mode) == "FreeRoam")
             LicenseManager.Instance.GrabAllUnlockables();
         else
             StartingItemsController.Instance.AddStartingItems(saveGameData, true);
