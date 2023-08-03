@@ -4,7 +4,7 @@ using Multiplayer.Components.Networking;
 namespace Multiplayer.Patches.World;
 
 [HarmonyPatch(typeof(CarsSaveManager), nameof(CarsSaveManager.Load))]
-public class CarsSaveManager_Load_Patch
+public static class CarsSaveManager_Load_Patch
 {
     private static bool Prefix()
     {

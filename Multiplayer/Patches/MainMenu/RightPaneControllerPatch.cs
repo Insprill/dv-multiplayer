@@ -8,7 +8,7 @@ using UnityEngine;
 namespace Multiplayer.Patches.MainMenu;
 
 [HarmonyPatch(typeof(RightPaneController), "OnEnable")]
-public class RightPaneController_OnEnable_Patch
+public static class RightPaneController_OnEnable_Patch
 {
     private static void Prefix(RightPaneController __instance)
     {

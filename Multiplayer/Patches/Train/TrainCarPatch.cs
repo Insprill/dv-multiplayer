@@ -5,7 +5,7 @@ using Multiplayer.Utils;
 namespace Multiplayer.Patches.World;
 
 [HarmonyPatch(typeof(TrainCar))]
-public class TrainCarPatch
+public static class TrainCarPatch
 {
     [HarmonyPrefix]
     [HarmonyPatch(nameof(TrainCar.Awake))]

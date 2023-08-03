@@ -8,7 +8,7 @@ using Multiplayer.Components.SaveGame;
 namespace Multiplayer.Patches.World;
 
 [HarmonyPatch(typeof(SaveGameManager), nameof(SaveGameManager.FindStartGameData))]
-public class SaveGameManager_FindStartGameData_Patch
+public static class SaveGameManager_FindStartGameData_Patch
 {
     private static void Postfix(AStartGameData __result)
     {
@@ -35,7 +35,7 @@ public class SaveGameManager_FindStartGameData_Patch
 }
 
 [HarmonyPatch(typeof(SaveGameManager), nameof(SaveGameManager.SaveAllowed))]
-public class SaveGameManager_SaveAllowed_Patch
+public static class SaveGameManager_SaveAllowed_Patch
 {
     private static bool Prefix(ref bool __result)
     {
@@ -47,7 +47,7 @@ public class SaveGameManager_SaveAllowed_Patch
 }
 
 [HarmonyPatch(typeof(SaveGameManager), nameof(SaveGameManager.UpdateInternalData))]
-public class SaveGameManager_UpdateInternalData_Patch
+public static class SaveGameManager_UpdateInternalData_Patch
 {
     private static void Postfix(SaveGameManager __instance)
     {
