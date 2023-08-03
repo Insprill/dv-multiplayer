@@ -6,20 +6,37 @@ using UnityEngine;
 
 namespace Multiplayer.Networking.Data;
 
-public struct TrainsetSpawnPart
+public readonly struct TrainsetSpawnPart
 {
-    public ushort NetId { get; set; }
-    public string LiveryId { get; set; }
-    public string CarId { get; set; }
-    public string CarGuid { get; set; }
-    public bool PlayerSpawnedCar { get; set; }
-    public bool IsFrontCoupled { get; set; }
-    public bool IsRearCoupled { get; set; }
-    public float Speed { get; set; }
-    public Vector3 Position { get; set; }
-    public Vector3 Rotation { get; set; }
-    public BogieData Bogie1 { get; set; }
-    public BogieData Bogie2 { get; set; }
+    public readonly ushort NetId;
+    public readonly string LiveryId;
+    public readonly string CarId;
+    public readonly string CarGuid;
+    public readonly bool PlayerSpawnedCar;
+    public readonly bool IsFrontCoupled;
+    public readonly bool IsRearCoupled;
+    public readonly float Speed;
+    public readonly Vector3 Position;
+    public readonly Vector3 Rotation;
+    public readonly BogieData Bogie1;
+    public readonly BogieData Bogie2;
+
+    private TrainsetSpawnPart(ushort netId, string liveryId, string carId, string carGuid, bool playerSpawnedCar, bool isFrontCoupled, bool isRearCoupled, float speed, Vector3 position, Vector3 rotation,
+        BogieData bogie1, BogieData bogie2)
+    {
+        NetId = netId;
+        LiveryId = liveryId;
+        CarId = carId;
+        CarGuid = carGuid;
+        PlayerSpawnedCar = playerSpawnedCar;
+        IsFrontCoupled = isFrontCoupled;
+        IsRearCoupled = isRearCoupled;
+        Speed = speed;
+        Position = position;
+        Rotation = rotation;
+        Bogie1 = bogie1;
+        Bogie2 = bogie2;
+    }
 
     public static void Serialize(NetDataWriter writer, TrainsetSpawnPart data)
     {
@@ -39,40 +56,40 @@ public struct TrainsetSpawnPart
 
     public static TrainsetSpawnPart Deserialize(NetDataReader reader)
     {
-        return new TrainsetSpawnPart {
-            NetId = reader.GetUShort(),
-            LiveryId = reader.GetString(),
-            CarId = reader.GetString(),
-            CarGuid = reader.GetString(),
-            PlayerSpawnedCar = reader.GetBool(),
-            IsFrontCoupled = reader.GetBool(),
-            IsRearCoupled = reader.GetBool(),
-            Speed = reader.GetFloat(),
-            Position = Vector3Serializer.Deserialize(reader),
-            Rotation = Vector3Serializer.Deserialize(reader),
-            Bogie1 = BogieData.Deserialize(reader),
-            Bogie2 = BogieData.Deserialize(reader)
-        };
+        return new TrainsetSpawnPart(
+            reader.GetUShort(),
+            reader.GetString(),
+            reader.GetString(),
+            reader.GetString(),
+            reader.GetBool(),
+            reader.GetBool(),
+            reader.GetBool(),
+            reader.GetFloat(),
+            Vector3Serializer.Deserialize(reader),
+            Vector3Serializer.Deserialize(reader),
+            BogieData.Deserialize(reader),
+            BogieData.Deserialize(reader)
+        );
     }
 
     public static TrainsetSpawnPart FromTrainCar(NetworkedTrainCar networkedTrainCar)
     {
         TrainCar trainCar = networkedTrainCar.TrainCar;
         Transform transform = networkedTrainCar.transform;
-        return new TrainsetSpawnPart {
-            NetId = networkedTrainCar.NetId,
-            LiveryId = trainCar.carLivery.id,
-            CarId = trainCar.ID,
-            CarGuid = trainCar.CarGUID,
-            PlayerSpawnedCar = trainCar.playerSpawnedCar,
-            IsFrontCoupled = trainCar.frontCoupler.IsCoupled(),
-            IsRearCoupled = trainCar.rearCoupler.IsCoupled(),
-            Speed = trainCar.GetForwardSpeed(),
-            Position = transform.position - WorldMover.currentMove,
-            Rotation = transform.eulerAngles,
-            Bogie1 = BogieData.FromBogie(trainCar.Bogies[0], true, networkedTrainCar.Bogie1TrackDirection),
-            Bogie2 = BogieData.FromBogie(trainCar.Bogies[1], true, networkedTrainCar.Bogie2TrackDirection)
-        };
+        return new TrainsetSpawnPart(
+            networkedTrainCar.NetId,
+            trainCar.carLivery.id,
+            trainCar.ID,
+            trainCar.CarGUID,
+            trainCar.playerSpawnedCar,
+            trainCar.frontCoupler.IsCoupled(),
+            trainCar.rearCoupler.IsCoupled(),
+            trainCar.GetForwardSpeed(),
+            transform.position - WorldMover.currentMove,
+            transform.eulerAngles,
+            BogieData.FromBogie(trainCar.Bogies[0], true, networkedTrainCar.Bogie1TrackDirection),
+            BogieData.FromBogie(trainCar.Bogies[1], true, networkedTrainCar.Bogie2TrackDirection)
+        );
     }
 
     public static TrainsetSpawnPart[] FromTrainSet(Trainset trainset)
