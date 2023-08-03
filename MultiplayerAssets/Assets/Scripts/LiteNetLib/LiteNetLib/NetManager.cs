@@ -692,11 +692,11 @@ namespace LiteNetLib
             stopwatch.Stop();
         }
 
-        [Conditional("DEBUG")]
+        [Conditional("LITENETLIB_DEBUGGING")]
         private void ProcessDelayedPackets()
         {
 #if LITENETLIB_DEBUGGING
-            if (!SimulateLatency)
+            if (!SimulateLatency && _pingSimulationList.Count == 0)
                 return;
 
             var time = DateTime.UtcNow;
