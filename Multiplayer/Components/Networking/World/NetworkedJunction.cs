@@ -32,9 +32,9 @@ public class NetworkedJunction : IdMonoBehaviour<ushort>
         Junction.Switch((Junction.SwitchMode)mode);
     }
 
-    public static bool Get(ushort index, out NetworkedJunction obj)
+    public static bool Get(ushort netId, out NetworkedJunction obj)
     {
-        bool b = Get(index, out IdMonoBehaviour<ushort> rawObj);
+        bool b = Get(netId, out IdMonoBehaviour<ushort> rawObj);
         obj = (NetworkedJunction)rawObj;
         return b;
     }

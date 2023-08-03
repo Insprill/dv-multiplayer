@@ -1,13 +1,13 @@
 using HarmonyLib;
-using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.World;
 
 namespace Multiplayer.Patches.World;
 
-[HarmonyPatch(typeof(TurntableController), nameof(TurntableController.LoadData))]
-public static class TurntableController_LoadData_Patch
+[HarmonyPatch(typeof(TurntableController), nameof(TurntableController.Awake))]
+public static class TurntableController_Awake_Patch
 {
-    private static bool Prefix()
+    private static void Prefix(TurntableController __instance)
     {
-        return !NetworkLifecycle.Instance.IsClientRunning || NetworkLifecycle.Instance.IsHost();
+        __instance.turntable.gameObject.AddComponent<NetworkedTurntable>();
     }
 }

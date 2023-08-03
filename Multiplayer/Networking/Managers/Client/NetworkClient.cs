@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Text;
 using DV;
 using DV.Damage;
@@ -74,8 +73,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundWeatherPacket>(OnClientboundWeatherPacket);
         netPacketProcessor.SubscribeReusable<ClientboundRemoveLoadingScreenPacket>(OnClientboundRemoveLoadingScreen);
         netPacketProcessor.SubscribeReusable<ClientboundTimeAdvancePacket>(OnClientboundTimeAdvancePacket);
-        netPacketProcessor.SubscribeReusable<ClientboundJunctionStatePacket>(OnClientboundJunctionStatePacket);
-        netPacketProcessor.SubscribeReusable<ClientboundTurntableStatePacket>(OnClientboundTurntableStatePacket);
+        netPacketProcessor.SubscribeReusable<ClientboundRailwayStatePacket>(OnClientboundRailwayStatePacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
         netPacketProcessor.SubscribeReusable<ClientboundSpawnTrainCarPacket>(OnClientboundSpawnTrainCarPacket);
@@ -288,23 +286,20 @@ public class NetworkClient : NetworkManager
         TimeAdvance.AdvanceTime(packet.amountOfTimeToSkipInSeconds);
     }
 
-    private void OnClientboundJunctionStatePacket(ClientboundJunctionStatePacket packet)
+    private void OnClientboundRailwayStatePacket(ClientboundRailwayStatePacket packet)
     {
-        for (int i = 0; i < packet.SelectedBranches.Length; i++)
+        for (int i = 0; i < packet.SelectedJunctionBranches.Length; i++)
         {
             if (!NetworkedJunction.Get((ushort)(i + 1), out NetworkedJunction junction))
                 return;
-            junction.Switch((byte)Junction.SwitchMode.NO_SOUND, packet.SelectedBranches[i]);
+            junction.Switch((byte)Junction.SwitchMode.NO_SOUND, packet.SelectedJunctionBranches[i]);
         }
-    }
 
-    private void OnClientboundTurntableStatePacket(ClientboundTurntableStatePacket packet)
-    {
-        for (int i = 0; i < packet.rotations.Length; i++)
+        for (int i = 0; i < packet.TurntableRotations.Length; i++)
         {
-            TurntableRailTrack turntableRailTrack = TurntableController.allControllers[i].turntable;
-            turntableRailTrack.targetYRotation = packet.rotations[i];
-            turntableRailTrack.RotateToTargetRotation(true);
+            if (!NetworkedTurntable.Get((byte)(i + 1), out NetworkedTurntable turntable))
+                return;
+            turntable.SetRotation(packet.TurntableRotations[i], true);
         }
     }
 
@@ -317,16 +312,9 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonRotateTurntablePacket(CommonRotateTurntablePacket packet)
     {
-        List<TurntableController> controllers = TurntableController.allControllers;
-        if (packet.index >= controllers.Count)
-        {
-            LogWarning($"Received {nameof(CommonRotateTurntablePacket)} for turntable with index {packet.index}, but there's only {controllers.Count} turntables on the map!");
+        if (!NetworkedTurntable.Get(packet.NetId, out NetworkedTurntable turntable))
             return;
-        }
-
-        TurntableRailTrack turntable = controllers[packet.index].turntable;
-        turntable.targetYRotation = packet.rotation;
-        turntable.RotateToTargetRotation();
+        turntable.SetRotation(packet.rotation);
     }
 
     private void OnClientboundSpawnTrainCarPacket(ClientboundSpawnTrainCarPacket packet)
@@ -586,19 +574,19 @@ public class NetworkClient : NetworkManager
         }, DeliveryMethod.ReliableUnordered);
     }
 
-    public void SendJunctionSwitched(ushort index, byte selectedBranch, Junction.SwitchMode mode)
+    public void SendJunctionSwitched(ushort netId, byte selectedBranch, Junction.SwitchMode mode)
     {
         SendPacketToServer(new CommonChangeJunctionPacket {
-            NetId = index,
+            NetId = netId,
             SelectedBranch = selectedBranch,
             Mode = (byte)mode
         }, DeliveryMethod.ReliableUnordered);
     }
 
-    public void SendTurntableRotation(byte index, float rotation)
+    public void SendTurntableRotation(byte netId, float rotation)
     {
         SendPacketToServer(new CommonRotateTurntablePacket {
-            index = index,
+            NetId = netId,
             rotation = rotation
         }, DeliveryMethod.ReliableOrdered);
     }

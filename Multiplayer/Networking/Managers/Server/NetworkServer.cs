@@ -340,14 +340,10 @@ public class NetworkServer : NetworkManager
         // Send weather state
         SendPacket(peer, WeatherDriver.Instance.GetSaveData().ToObject<ClientboundWeatherPacket>(), DeliveryMethod.ReliableOrdered);
 
-        // Send junctions
-        SendPacket(peer, new ClientboundJunctionStatePacket {
-            SelectedBranches = NetworkedJunction.IndexedJunctions.Select(j => (byte)j.Junction.selectedBranch).ToArray()
-        }, DeliveryMethod.ReliableOrdered);
-
-        // Send turntables
-        SendPacket(peer, new ClientboundTurntableStatePacket {
-            rotations = TurntableController.allControllers.Select(c => c.turntable.currentYRotation).ToArray()
+        // Send junctions and turntables
+        SendPacket(peer, new ClientboundRailwayStatePacket {
+            SelectedJunctionBranches = NetworkedJunction.IndexedJunctions.Select(j => (byte)j.Junction.selectedBranch).ToArray(),
+            TurntableRotations = NetworkedTurntable.IndexedTurntables.Select(j => j.TurntableRailTrack.currentYRotation).ToArray()
         }, DeliveryMethod.ReliableOrdered);
 
         // Send trains
