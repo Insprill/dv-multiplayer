@@ -4,8 +4,8 @@ using Multiplayer.Components.Networking;
 
 namespace Multiplayer.Patches.World;
 
-[HarmonyPatch(nameof(QuickTutorialInitiator), nameof(QuickTutorialInitiator.WasTutorialAlreadyPlayed))]
-public static class QuickTutorialInitiatorPatch
+[HarmonyPatch(nameof(QuickTutorialInitiator), nameof(QuickTutorialInitiator.IsPlayerOnLocoThatSupportsQuickTutorial))]
+public static class QuickTutorialInitiator_IsPlayerOnLocoThatSupportsQuickTutorial_Patch
 {
     private static bool Prefix()
     {
