@@ -167,9 +167,9 @@ public class NetworkServer : NetworkManager
         SendPacketToAll(ClientboundGameParamsPacket.FromGameParams(gameParams), DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendSpawnTrainCar(TrainCar trainCar)
+    public void SendSpawnTrainCar(NetworkedTrainCar networkedTrainCar)
     {
-        SendPacketToAll(ClientboundSpawnTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered, selfPeer);
+        SendPacketToAll(ClientboundSpawnTrainCarPacket.FromTrainCar(networkedTrainCar), DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
     public void SendDestroyTrainCar(TrainCar trainCar)
@@ -179,15 +179,9 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendPhysicsUpdate(TrainCar trainCar, ushort netId, Bogie bogie1, Bogie bogie2, bool bogieTracksDirty, int bogie1TrackDirection, int bogie2TrackDirection)
+    public void SendTrainsetPhysicsUpdate(ClientboundTrainsetPhysicsPacket packet, bool reliable)
     {
-        SendPacketToAll(new ClientboundTrainPhysicsPacket {
-            NetId = netId,
-            Tick = NetworkLifecycle.Instance.Tick,
-            Speed = trainCar.GetForwardSpeed(),
-            Bogie1 = BogieMovementData.FromBogie(bogie1, bogieTracksDirty, bogie1TrackDirection),
-            Bogie2 = BogieMovementData.FromBogie(bogie2, bogieTracksDirty, bogie2TrackDirection)
-        }, bogieTracksDirty ? DeliveryMethod.ReliableUnordered : DeliveryMethod.Unreliable, selfPeer);
+        SendPacketToAll(packet, reliable ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Unreliable, selfPeer);
     }
 
     public void SendCargoState(TrainCar trainCar, ushort netId, bool isLoading, byte cargoModelIndex)
@@ -356,11 +350,10 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered);
 
         // Send trains
-        foreach (TrainCar trainCar in CarSpawner.Instance.allCars)
+        foreach (Trainset set in Trainset.allSets)
         {
-            if (!trainCar.gameObject.activeInHierarchy)
-                continue;
-            SendPacket(peer, ClientboundSpawnTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered);
+            LogDebug(() => $"Sending trainset {set.firstCar.GetNetId()} with {set.cars.Count} cars");
+            SendPacket(peer, ClientboundSpawnTrainSetPacket.FromTrainSet(set), DeliveryMethod.ReliableOrdered);
         }
 
         // All data has been sent, allow the client to load into the world.

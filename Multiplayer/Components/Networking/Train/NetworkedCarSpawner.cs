@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using DV.ThingTypes;
-using Multiplayer.Networking.Packets.Clientbound.Train;
+using Multiplayer.Networking.Data;
 using Multiplayer.Utils;
 using UnityEngine;
 
@@ -8,11 +8,39 @@ namespace Multiplayer.Components.Networking.Train;
 
 public static class NetworkedCarSpawner
 {
-    public static void SpawnCar(ClientboundSpawnTrainCarPacket packet, TrainCarLivery livery, RailTrack bogie1Track, RailTrack bogie2Track)
+    public static void SpawnCars(TrainsetSpawnPart[] parts)
     {
+        TrainCar[] cars = new TrainCar[parts.Length];
+        for (int i = 0; i < parts.Length; i++)
+            cars[i] = SpawnCar(parts[i], true);
+        for (int i = 0; i < cars.Length; i++)
+            AutoCouple(parts[i], cars[i]);
+    }
+
+    public static TrainCar SpawnCar(TrainsetSpawnPart spawnPart, bool preventCoupling = false)
+    {
+        if (!WorldComponentLookup.Instance.TrackFromIndex(spawnPart.Bogie1.TrackIndex, out RailTrack bogie1Track) && spawnPart.Bogie1.TrackIndex != ushort.MaxValue)
+        {
+            NetworkLifecycle.Instance.Client.LogDebug(() => $"Tried spawning car but couldn't find track with index {spawnPart.Bogie1.TrackIndex}");
+            return null;
+        }
+
+        if (!WorldComponentLookup.Instance.TrackFromIndex(spawnPart.Bogie2.TrackIndex, out RailTrack bogie2Track) && spawnPart.Bogie2.TrackIndex != ushort.MaxValue)
+        {
+            NetworkLifecycle.Instance.Client.LogDebug(() => $"Tried spawning car but couldn't find track with index {spawnPart.Bogie2.TrackIndex}");
+            return null;
+        }
+
+        if (!TrainComponentLookup.Instance.LiveryFromId(spawnPart.LiveryId, out TrainCarLivery livery))
+        {
+            NetworkLifecycle.Instance.Client.LogDebug(() => $"Tried spawning car but couldn't find TrainCarLivery with ID {spawnPart.LiveryId}");
+            return null;
+        }
+
         (TrainCar trainCar, bool isPooled) = GetFromPool(livery);
 
-        trainCar.gameObject.GetOrAddComponent<NetworkedTrainCar>().NetId = packet.NetId;
+        NetworkedTrainCar networkedTrainCar = trainCar.gameObject.GetOrAddComponent<NetworkedTrainCar>();
+        networkedTrainCar.NetId = spawnPart.NetId;
         trainCar.gameObject.GetOrAddComponent<TrainSpeedQueue>();
 
         trainCar.gameObject.SetActive(true);
@@ -20,24 +48,38 @@ public static class NetworkedCarSpawner
         if (isPooled)
             trainCar.AwakeForPooledCar();
 
+        trainCar.InitializeExistingLogicCar(spawnPart.CarId, spawnPart.CarGuid);
+
         Transform trainTransform = trainCar.transform;
-        trainTransform.position = packet.Position + WorldMover.currentMove;
-        trainTransform.eulerAngles = packet.Rotation;
-        trainCar.playerSpawnedCar = packet.PlayerSpawnedCar;
-        trainCar.InitializeExistingLogicCar(packet.CarId, packet.CarGuid);
+        trainTransform.position = spawnPart.Position + WorldMover.currentMove;
+        trainTransform.eulerAngles = spawnPart.Rotation;
+        trainCar.playerSpawnedCar = spawnPart.PlayerSpawnedCar;
         trainCar.preventAutoCouple = true;
 
-        if (!packet.Bogie1.IsDerailed)
-            trainCar.Bogies[0].SetTrack(bogie1Track, packet.Bogie1.PositionAlongTrack);
+        if (!spawnPart.Bogie1.HasDerailed)
+            trainCar.Bogies[0].SetTrack(bogie1Track, spawnPart.Bogie1.PositionAlongTrack, spawnPart.Bogie1.TrackDirection);
         else
             trainCar.Bogies[0].SetDerailedOnLoadFlag(true);
 
-        if (!packet.Bogie2.IsDerailed)
-            trainCar.Bogies[1].SetTrack(bogie2Track, packet.Bogie2.PositionAlongTrack);
+        if (!spawnPart.Bogie2.HasDerailed)
+            trainCar.Bogies[1].SetTrack(bogie2Track, spawnPart.Bogie2.PositionAlongTrack, spawnPart.Bogie2.TrackDirection);
         else
             trainCar.Bogies[1].SetDerailedOnLoadFlag(true);
 
         CarSpawner.Instance.FireCarSpawned(trainCar);
+
+        networkedTrainCar.Client_trainSpeedQueue.ReceiveSnapshot(spawnPart.Speed, NetworkLifecycle.Instance.Tick);
+
+        if (!preventCoupling)
+            AutoCouple(spawnPart, trainCar);
+
+        return trainCar;
+    }
+
+    private static void AutoCouple(TrainsetSpawnPart spawnPart, TrainCar trainCar)
+    {
+        if (spawnPart.IsFrontCoupled) trainCar.frontCoupler.TryCouple(false, true);
+        if (spawnPart.IsRearCoupled) trainCar.rearCoupler.TryCouple(false, true);
     }
 
     private static (TrainCar, bool) GetFromPool(TrainCarLivery livery)

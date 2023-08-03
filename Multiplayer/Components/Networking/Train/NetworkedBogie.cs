@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Multiplayer.Components.Networking.Train;
 
-public class NetworkedBogie : TickedQueue<BogieMovementData>
+public class NetworkedBogie : TickedQueue<BogieData>
 {
     private Bogie bogie;
 
@@ -19,10 +19,16 @@ public class NetworkedBogie : TickedQueue<BogieMovementData>
         base.OnEnable();
     }
 
-    protected override void Process(BogieMovementData snapshot, uint snapshotTick)
+    protected override void Process(BogieData snapshot, uint snapshotTick)
     {
         if (bogie.HasDerailed)
             return;
+
+        if (snapshot.HasDerailed)
+        {
+            bogie.Derail();
+            return;
+        }
 
         if (snapshot.IncludesTrackData)
         {
