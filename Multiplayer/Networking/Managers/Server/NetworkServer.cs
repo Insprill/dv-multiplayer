@@ -167,9 +167,9 @@ public class NetworkServer : NetworkManager
         SendPacketToAll(ClientboundGameParamsPacket.FromGameParams(gameParams), DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
-    public void SendSpawnTrainCar(TrainCar trainCar)
+    public void SendSpawnTrainCar(NetworkedTrainCar networkedTrainCar)
     {
-        SendPacketToAll(ClientboundSpawnTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered, selfPeer);
+        SendPacketToAll(ClientboundSpawnTrainCarPacket.FromTrainCar(networkedTrainCar), DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
     public void SendDestroyTrainCar(TrainCar trainCar)
@@ -350,11 +350,10 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered);
 
         // Send trains
-        foreach (TrainCar trainCar in CarSpawner.Instance.allCars)
+        foreach (Trainset set in Trainset.allSets)
         {
-            if (!trainCar.gameObject.activeInHierarchy)
-                continue;
-            SendPacket(peer, ClientboundSpawnTrainCarPacket.FromTrainCar(trainCar), DeliveryMethod.ReliableOrdered);
+            LogDebug(() => $"Sending trainset {set.firstCar.GetNetId()} with {set.cars.Count} cars");
+            SendPacket(peer, ClientboundSpawnTrainSetPacket.FromTrainSet(set), DeliveryMethod.ReliableOrdered);
         }
 
         // All data has been sent, allow the client to load into the world.

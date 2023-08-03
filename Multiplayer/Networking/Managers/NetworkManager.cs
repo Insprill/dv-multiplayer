@@ -35,13 +35,13 @@ public abstract class NetworkManager : INetEventListener
 
     private void RegisterNestedTypes()
     {
+        netPacketProcessor.RegisterNestedType(BogieData.Serialize, BogieData.Deserialize);
         netPacketProcessor.RegisterNestedType(ModInfo.Serialize, ModInfo.Deserialize);
-        netPacketProcessor.RegisterNestedType(InitialBogieData.Serialize, InitialBogieData.Deserialize);
+        netPacketProcessor.RegisterNestedType(RigidbodySnapshot.Serialize, RigidbodySnapshot.Deserialize);
+        netPacketProcessor.RegisterNestedType(TrainsetMovementPart.Serialize, TrainsetMovementPart.Deserialize);
+        netPacketProcessor.RegisterNestedType(TrainsetSpawnPart.Serialize, TrainsetSpawnPart.Deserialize);
         netPacketProcessor.RegisterNestedType(Vector2Serializer.Serialize, Vector2Serializer.Deserialize);
         netPacketProcessor.RegisterNestedType(Vector3Serializer.Serialize, Vector3Serializer.Deserialize);
-        netPacketProcessor.RegisterNestedType(RigidbodySnapshot.Serialize, RigidbodySnapshot.Deserialize);
-        netPacketProcessor.RegisterNestedType(BogieMovementData.Serialize, BogieMovementData.Deserialize);
-        netPacketProcessor.RegisterNestedType(TrainsetPart.Serialize, TrainsetPart.Deserialize);
     }
 
     private void OnSettingsUpdated(Settings settings)

@@ -50,21 +50,22 @@ public class NetworkTrainsetWatcher : SingletonBehaviour<NetworkTrainsetWatcher>
             return;
 
         cachedSendPacket.NetId = set.firstCar.GetNetId();
-        if (cachedSendPacket.TrainsetParts == null || cachedSendPacket.TrainsetParts.Length != set.cars.Count)
-            cachedSendPacket.TrainsetParts = new TrainsetPart[set.cars.Count];
 
+        TrainsetMovementPart[] trainsetParts = new TrainsetMovementPart[set.cars.Count];
         bool anyTracksDirty = false;
         for (int i = 0; i < set.cars.Count; i++)
         {
             TrainCar trainCar = set.cars[i];
             TrainComponentLookup.Instance.NetworkedTrainFromTrain(trainCar, out NetworkedTrainCar networkedTrainCar);
-            TrainsetPart trainsetPart = cachedSendPacket.TrainsetParts[i];
             anyTracksDirty |= networkedTrainCar.BogieTracksDirty;
-            trainsetPart.Speed = trainCar.GetForwardSpeed();
-            trainsetPart.Bogie1 = BogieMovementData.FromBogie(trainCar.Bogies[0], networkedTrainCar.BogieTracksDirty, networkedTrainCar.Bogie1TrackDirection);
-            trainsetPart.Bogie1 = BogieMovementData.FromBogie(trainCar.Bogies[1], networkedTrainCar.BogieTracksDirty, networkedTrainCar.Bogie2TrackDirection);
+            trainsetParts[i] = new TrainsetMovementPart(
+                trainCar.GetForwardSpeed(),
+                BogieData.FromBogie(trainCar.Bogies[0], networkedTrainCar.BogieTracksDirty, networkedTrainCar.Bogie1TrackDirection),
+                BogieData.FromBogie(trainCar.Bogies[1], networkedTrainCar.BogieTracksDirty, networkedTrainCar.Bogie2TrackDirection)
+            );
         }
 
+        cachedSendPacket.TrainsetParts = trainsetParts;
         NetworkLifecycle.Instance.Server.SendTrainsetPhysicsUpdate(cachedSendPacket, anyTracksDirty);
     }
 

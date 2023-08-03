@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using DV;
 using DV.Damage;
 using DV.Logic.Job;
@@ -76,7 +77,8 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundTurntableStatePacket>(OnClientboundTurntableStatePacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket>(OnCommonRotateTurntablePacket);
-        netPacketProcessor.SubscribeReusable<ClientboundSpawnTrainCarPacket>(OnClientboundSpawnExistingTrainCarPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundSpawnTrainCarPacket>(OnClientboundSpawnTrainCarPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundSpawnTrainSetPacket>(OnClientboundSpawnTrainSetPacket);
         netPacketProcessor.SubscribeReusable<ClientboundDestroyTrainCarPacket>(OnClientboundDestroyTrainCarPacket);
         netPacketProcessor.SubscribeReusable<ClientboundTrainsetPhysicsPacket>(OnClientboundTrainPhysicsPacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket>(OnCommonTrainCouplePacket);
@@ -333,34 +335,34 @@ public class NetworkClient : NetworkManager
         turntable.RotateToTargetRotation();
     }
 
-    public void OnClientboundSpawnExistingTrainCarPacket(ClientboundSpawnTrainCarPacket packet)
+    private void OnClientboundSpawnTrainCarPacket(ClientboundSpawnTrainCarPacket packet)
     {
-        if (!WorldComponentLookup.Instance.TrackFromIndex(packet.Bogie1.Track, out RailTrack bogie1Track) && packet.Bogie1.Track != ushort.MaxValue)
-        {
-            LogDebug(() => $"Received {nameof(ClientboundSpawnTrainCarPacket)} but couldn't find track with name {packet.Bogie1.Track}");
-            return;
-        }
+        TrainsetSpawnPart spawnPart = packet.SpawnPart;
 
-        if (!WorldComponentLookup.Instance.TrackFromIndex(packet.Bogie2.Track, out RailTrack bogie2Track) && packet.Bogie2.Track != ushort.MaxValue)
-        {
-            LogDebug(() => $"Received {nameof(ClientboundSpawnTrainCarPacket)} but couldn't find track with name {packet.Bogie2.Track}");
-            return;
-        }
+        LogDebug(() => $"Spawning {spawnPart.CarId} ({spawnPart.LiveryId}) with net ID {spawnPart.NetId}");
 
-        if (!TrainComponentLookup.Instance.LiveryFromId(packet.LiveryId, out TrainCarLivery livery))
-        {
-            LogDebug(() => $"Received {nameof(ClientboundSpawnTrainCarPacket)} but couldn't find TrainCarLivery with ID {packet.LiveryId}");
-            return;
-        }
+        NetworkedCarSpawner.SpawnCar(spawnPart);
 
-        LogDebug(() => $"Spawning {packet.CarId} ({livery.id}) with net ID {packet.NetId}");
-
-        NetworkedCarSpawner.SpawnCar(packet, livery, bogie1Track, bogie2Track);
-
-        SendTrainSyncRequest(packet.NetId);
+        SendTrainSyncRequest(spawnPart.NetId);
     }
 
-    public void OnClientboundDestroyTrainCarPacket(ClientboundDestroyTrainCarPacket packet)
+    private void OnClientboundSpawnTrainSetPacket(ClientboundSpawnTrainSetPacket packet)
+    {
+        LogDebug(() =>
+        {
+            StringBuilder sb = new("Spawning trainset consisting of ");
+            foreach (TrainsetSpawnPart spawnPart in packet.SpawnParts)
+                sb.Append($"{spawnPart.CarId} ({spawnPart.LiveryId}) with net ID {spawnPart.NetId}, ");
+            return sb.ToString();
+        });
+
+        NetworkedCarSpawner.SpawnCars(packet.SpawnParts);
+
+        foreach (TrainsetSpawnPart spawnPart in packet.SpawnParts)
+            SendTrainSyncRequest(spawnPart.NetId);
+    }
+
+    private void OnClientboundDestroyTrainCarPacket(ClientboundDestroyTrainCarPacket packet)
     {
         if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
         {
@@ -573,7 +575,7 @@ public class NetworkClient : NetworkManager
             MoveDir = new Vector2(moveDir.x, moveDir.z),
             RotationY = rotationY,
             IsJumpingIsOnCar = (byte)((isJumping ? 1 : 0) | (isOnCar ? 2 : 0))
-        }, reliable ? DeliveryMethod.ReliableUnordered : DeliveryMethod.Sequenced);
+        }, reliable ? DeliveryMethod.ReliableOrdered : DeliveryMethod.Sequenced);
     }
 
     public void SendPlayerCar(ushort carId)

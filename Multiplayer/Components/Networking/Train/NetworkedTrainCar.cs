@@ -47,9 +47,9 @@ public class NetworkedTrainCar : MonoBehaviour
     #region Client
 
     private bool client_Initialized;
-    private TickedQueue<float> client_trainSpeedQueue;
-    private TickedQueue<BogieMovementData> client_bogie1Queue;
-    private TickedQueue<BogieMovementData> client_bogie2Queue;
+    public TickedQueue<float> Client_trainSpeedQueue;
+    private TickedQueue<BogieData> client_bogie1Queue;
+    private TickedQueue<BogieData> client_bogie2Queue;
 
     #endregion
 
@@ -68,7 +68,7 @@ public class NetworkedTrainCar : MonoBehaviour
         else
         {
             TrainComponentLookup.Instance.RegisterTrainCar(this);
-            client_trainSpeedQueue = TrainCar.GetOrAddComponent<TrainSpeedQueue>();
+            Client_trainSpeedQueue = TrainCar.GetOrAddComponent<TrainSpeedQueue>();
             StartCoroutine(Client_InitLater());
         }
     }
@@ -141,7 +141,7 @@ public class NetworkedTrainCar : MonoBehaviour
             yield return null;
         TrainCar.logicCar.CargoLoaded += Server_OnCargoLoaded;
         TrainCar.logicCar.CargoUnloaded += Server_OnCargoUnloaded;
-        NetworkLifecycle.Instance.Server.SendSpawnTrainCar(TrainCar);
+        NetworkLifecycle.Instance.Server.SendSpawnTrainCar(this);
     }
 
     public void Server_DirtyAllState()
@@ -198,13 +198,9 @@ public class NetworkedTrainCar : MonoBehaviour
             return;
         sendCouplers = false;
 
-        if (TrainCar.frontCoupler.IsCoupled())
-            NetworkLifecycle.Instance.Client.SendTrainCouple(TrainCar.frontCoupler, TrainCar.frontCoupler.coupledTo, false, false);
         if (TrainCar.frontCoupler.hoseAndCock.IsHoseConnected)
             NetworkLifecycle.Instance.Client.SendHoseConnected(TrainCar.frontCoupler, TrainCar.frontCoupler.coupledTo, false);
 
-        if (TrainCar.rearCoupler.IsCoupled())
-            NetworkLifecycle.Instance.Client.SendTrainCouple(TrainCar.rearCoupler, TrainCar.rearCoupler.coupledTo, false, false);
         if (TrainCar.rearCoupler.hoseAndCock.IsHoseConnected)
             NetworkLifecycle.Instance.Client.SendHoseConnected(TrainCar.rearCoupler, TrainCar.rearCoupler.coupledTo, false);
 
@@ -305,6 +301,9 @@ public class NetworkedTrainCar : MonoBehaviour
 
     public void Common_UpdateSimFlow(CommonSimFlowPacket packet)
     {
+        if (simulationFlow == null)
+            return; // ?
+
         for (int i = 0; i < packet.PortIds.Length; i++)
         {
             Port port = simulationFlow.fullPortIdToPort[packet.PortIds[i]];
@@ -332,16 +331,16 @@ public class NetworkedTrainCar : MonoBehaviour
         client_Initialized = true;
     }
 
-    public void Client_ReceiveTrainPhysicsUpdate(TrainsetPart part, uint tick)
+    public void Client_ReceiveTrainPhysicsUpdate(TrainsetMovementPart movementPart, uint tick)
     {
         if (!client_Initialized)
             return;
         if (TrainCar.isEligibleForSleep)
             TrainCar.ForceOptimizationState(false);
 
-        client_trainSpeedQueue.ReceiveSnapshot(part.Speed, tick);
-        client_bogie1Queue.ReceiveSnapshot(part.Bogie1, tick);
-        client_bogie2Queue.ReceiveSnapshot(part.Bogie2, tick);
+        Client_trainSpeedQueue.ReceiveSnapshot(movementPart.Speed, tick);
+        client_bogie1Queue.ReceiveSnapshot(movementPart.Bogie1, tick);
+        client_bogie2Queue.ReceiveSnapshot(movementPart.Bogie2, tick);
     }
 
     #endregion

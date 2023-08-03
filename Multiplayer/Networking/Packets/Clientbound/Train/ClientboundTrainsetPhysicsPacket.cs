@@ -6,5 +6,5 @@ public class ClientboundTrainsetPhysicsPacket
 {
     public int NetId { get; set; }
     public uint Tick { get; set; }
-    public TrainsetPart[] TrainsetParts { get; set; }
+    public TrainsetMovementPart[] TrainsetParts { get; set; }
 }
