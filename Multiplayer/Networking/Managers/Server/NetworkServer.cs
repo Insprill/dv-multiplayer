@@ -214,6 +214,21 @@ public class NetworkServer : NetworkManager
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
+    public void SendWindowsBroken(ushort netId, Vector3 forceDirection)
+    {
+        SendPacketToAll(new ClientboundWindowsBrokenPacket {
+            NetId = netId,
+            ForceDirection = forceDirection
+        }, DeliveryMethod.ReliableUnordered, selfPeer);
+    }
+
+    public void SendWindowsRepaired(ushort netId)
+    {
+        SendPacketToAll(new ClientboundWindowsBrokenPacket {
+            NetId = netId
+        }, DeliveryMethod.ReliableUnordered, selfPeer);
+    }
+
     #endregion
 
     #region Listeners

@@ -92,6 +92,8 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundCargoStatePacket>(OnClientboundCargoStatePacket);
         netPacketProcessor.SubscribeReusable<ClientboundCarHealthUpdatePacket>(OnClientboundCarHealthUpdatePacket);
         netPacketProcessor.SubscribeReusable<ClientboundRerailTrainPacket>(OnClientboundRerailTrainPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundWindowsBrokenPacket>(OnClientboundWindowsBrokenPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundWindowsRepairedPacket>(OnClientboundWindowsRepairedPacket);
     }
 
     #region Net Events
@@ -500,6 +502,32 @@ public class NetworkClient : NetworkManager
         if (!NetworkedRailTrack.Get(packet.TrackId, out NetworkedRailTrack networkedRailTrack))
             return;
         trainCar.Rerail(networkedRailTrack.RailTrack, packet.Position + WorldMover.currentMove, packet.Forward);
+    }
+
+    private void OnClientboundWindowsBrokenPacket(ClientboundWindowsBrokenPacket packet)
+    {
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
+            return;
+        DamageController damageController = trainCar.GetComponent<DamageController>();
+        if (damageController == null)
+            return;
+        WindowsBreakingController windowsController = damageController.windows;
+        if (windowsController == null)
+            return;
+        windowsController.BreakWindowsFromCollision(packet.ForceDirection);
+    }
+
+    private void OnClientboundWindowsRepairedPacket(ClientboundWindowsRepairedPacket packet)
+    {
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
+            return;
+        DamageController damageController = trainCar.GetComponent<DamageController>();
+        if (damageController == null)
+            return;
+        WindowsBreakingController windowsController = damageController.windows;
+        if (windowsController == null)
+            return;
+        windowsController.RepairWindows();
     }
 
     #endregion
