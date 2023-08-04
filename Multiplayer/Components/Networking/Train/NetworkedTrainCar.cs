@@ -7,6 +7,7 @@ using DV.ThingTypes;
 using LocoSim.Definitions;
 using LocoSim.Implementations;
 using Multiplayer.Components.Networking.Player;
+using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Utils;
@@ -79,6 +80,7 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
 
     private bool client_Initialized;
     public TickedQueue<float> Client_trainSpeedQueue;
+    public TickedQueue<RigidbodySnapshot> Client_trainRigidbodyQueue;
     private TickedQueue<BogieData> client_bogie1Queue;
     private TickedQueue<BogieData> client_bogie2Queue;
 
@@ -103,6 +105,7 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         else
         {
             Client_trainSpeedQueue = TrainCar.GetOrAddComponent<TrainSpeedQueue>();
+            Client_trainRigidbodyQueue = TrainCar.GetOrAddComponent<NetworkedRigidbody>();
             StartCoroutine(Client_InitLater());
         }
     }
@@ -369,16 +372,24 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         client_Initialized = true;
     }
 
-    public void Client_ReceiveTrainPhysicsUpdate(TrainsetMovementPart movementPart, uint tick)
+    public void Client_ReceiveTrainPhysicsUpdate(in TrainsetMovementPart movementPart, uint tick)
     {
         if (!client_Initialized)
             return;
         if (TrainCar.isEligibleForSleep)
             TrainCar.ForceOptimizationState(false);
 
-        Client_trainSpeedQueue.ReceiveSnapshot(movementPart.Speed, tick);
-        client_bogie1Queue.ReceiveSnapshot(movementPart.Bogie1, tick);
-        client_bogie2Queue.ReceiveSnapshot(movementPart.Bogie2, tick);
+        if (movementPart.IsRigidbodySnapshot)
+        {
+            TrainCar.Derail();
+            Client_trainRigidbodyQueue.ReceiveSnapshot(movementPart.RigidbodySnapshot, tick);
+        }
+        else
+        {
+            Client_trainSpeedQueue.ReceiveSnapshot(movementPart.Speed, tick);
+            client_bogie1Queue.ReceiveSnapshot(movementPart.Bogie1, tick);
+            client_bogie2Queue.ReceiveSnapshot(movementPart.Bogie2, tick);
+        }
     }
 
     #endregion

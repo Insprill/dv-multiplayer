@@ -79,11 +79,15 @@ public class NetworkTrainsetWatcher : SingletonBehaviour<NetworkTrainsetWatcher>
 
             NetworkedTrainCar networkedTrainCar = trainCar.Networked();
             anyTracksDirty |= networkedTrainCar.BogieTracksDirty;
-            trainsetParts[i] = new TrainsetMovementPart(
-                trainCar.GetForwardSpeed(),
-                BogieData.FromBogie(trainCar.Bogies[0], networkedTrainCar.BogieTracksDirty, networkedTrainCar.Bogie1TrackDirection),
-                BogieData.FromBogie(trainCar.Bogies[1], networkedTrainCar.BogieTracksDirty, networkedTrainCar.Bogie2TrackDirection)
-            );
+
+            if (trainCar.derailed)
+                trainsetParts[i] = new TrainsetMovementPart(RigidbodySnapshot.From(trainCar.rb));
+            else
+                trainsetParts[i] = new TrainsetMovementPart(
+                    trainCar.GetForwardSpeed(),
+                    BogieData.FromBogie(trainCar.Bogies[0], networkedTrainCar.BogieTracksDirty, networkedTrainCar.Bogie1TrackDirection),
+                    BogieData.FromBogie(trainCar.Bogies[1], networkedTrainCar.BogieTracksDirty, networkedTrainCar.Bogie2TrackDirection)
+                );
         }
 
         cachedSendPacket.TrainsetParts = trainsetParts;
@@ -111,7 +115,7 @@ public class NetworkTrainsetWatcher : SingletonBehaviour<NetworkTrainsetWatcher>
         }
 
         for (int i = 0; i < packet.TrainsetParts.Length; i++)
-            set.cars[i].Networked().Client_ReceiveTrainPhysicsUpdate(packet.TrainsetParts[i], packet.Tick);
+            set.cars[i].Networked().Client_ReceiveTrainPhysicsUpdate(in packet.TrainsetParts[i], packet.Tick);
     }
 
     #endregion
