@@ -1,5 +1,4 @@
 using System;
-using Multiplayer.Components;
 using Multiplayer.Components.Networking.Train;
 using Multiplayer.Components.Networking.World;
 
@@ -7,6 +6,8 @@ namespace Multiplayer.Utils;
 
 public static class DvExtensions
 {
+    #region TrainCar
+
     public static ushort GetNetId(this TrainCar car)
     {
         ushort netId = car.Networked().NetId;
@@ -15,14 +16,24 @@ public static class DvExtensions
         return netId;
     }
 
-    public static NetworkedTrainCar Networked(this TrainCar car)
+    public static NetworkedTrainCar Networked(this TrainCar trainCar)
     {
-        TrainComponentLookup.Instance.NetworkedTrainFromTrain(car, out NetworkedTrainCar networkedTrainCar);
-        return networkedTrainCar;
+        return NetworkedTrainCar.GetFromTrainCar(trainCar);
     }
+
+    public static bool TryNetworked(this TrainCar trainCar, out NetworkedTrainCar networkedTrainCar)
+    {
+        return NetworkedTrainCar.TryGetFromTrainCar(trainCar, out networkedTrainCar);
+    }
+
+    #endregion
+
+    #region RailTrack
 
     public static NetworkedRailTrack Networked(this RailTrack railTrack)
     {
         return NetworkedRailTrack.GetFromRailTrack(railTrack);
     }
+
+    #endregion
 }

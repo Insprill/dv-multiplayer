@@ -6,10 +6,9 @@ public class ServerPlayer
 {
     public byte Id { get; set; }
     public string Username { get; set; }
-    public int Ping { get; set; }
-    public Vector3 Position { get; set; }
-    public Vector3 Rotation { get; set; }
-    public TrainCar Car { get; set; }
+    public Vector3 RawPosition { get; set; }
+    public float RawRotationY { get; set; }
+    public ushort CarId { get; set; }
 
     public override string ToString()
     {

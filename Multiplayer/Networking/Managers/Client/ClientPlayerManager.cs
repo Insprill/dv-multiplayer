@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using DV;
 using Multiplayer.Components.Networking.Player;
-using Multiplayer.Networking.Packets.Clientbound;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -55,13 +54,11 @@ public class ClientPlayerManager
         player.SetPing(ping);
     }
 
-    public void UpdatePosition(ClientboundPlayerPositionPacket packet)
+    public void UpdatePosition(byte id, Vector3 position, Vector3 moveDir, float rotation, bool isJumping, bool isOnCar)
     {
-        if (!playerMap.TryGetValue(packet.Id, out NetworkedPlayer player))
+        if (!playerMap.TryGetValue(id, out NetworkedPlayer player))
             return;
-        bool isJumping = (packet.IsJumpingIsOnCar & 1) != 0;
-        bool isOnCar = (packet.IsJumpingIsOnCar & 2) != 0;
-        player.UpdatePosition(packet.Position, packet.MoveDir, packet.RotationY, isJumping, isOnCar);
+        player.UpdatePosition(position, moveDir, rotation, isJumping, isOnCar);
     }
 
     public void UpdateCar(byte playerId, ushort carId)

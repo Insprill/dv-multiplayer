@@ -8,7 +8,6 @@ using DV.UI;
 using DV.UIFramework;
 using DV.WeatherSystem;
 using LiteNetLib;
-using Multiplayer.Components;
 using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
@@ -175,6 +174,8 @@ public class NetworkClient : NetworkManager
     {
         Log($"Received player joined packet (Id: {packet.Id}, Username: {packet.Username})");
         PlayerManager.AddPlayer(packet.Id, packet.Username);
+        PlayerManager.UpdateCar(packet.Id, packet.TrainCar);
+        PlayerManager.UpdatePosition(packet.Id, packet.Position, Vector3.zero, packet.Rotation, false, packet.TrainCar != 0);
     }
 
     private void OnClientboundPlayerDisconnectPacket(ClientboundPlayerDisconnectPacket packet)
@@ -185,7 +186,7 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundPlayerPositionPacket(ClientboundPlayerPositionPacket packet)
     {
-        PlayerManager.UpdatePosition(packet);
+        PlayerManager.UpdatePosition(packet.Id, packet.Position, packet.MoveDir, packet.RotationY, packet.IsJumping, packet.IsOnCar);
     }
 
     private void OnClientboundPlayerCarPacket(ClientboundPlayerCarPacket packet)
@@ -346,13 +347,10 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundDestroyTrainCarPacket(ClientboundDestroyTrainCarPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-        {
-            LogDebug(() => $"Received {nameof(ClientboundDestroyTrainCarPacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             return;
-        }
 
-        CarSpawner.Instance.DeleteCar(trainCar);
+        CarSpawner.Instance.DeleteCar(networkedTrainCar.TrainCar);
     }
 
     public void OnClientboundTrainPhysicsPacket(ClientboundTrainsetPhysicsPacket packet)
@@ -362,11 +360,8 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonTrainCouplePacket(CommonTrainCouplePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonTrainCouplePacket)} but couldn't find one of the cars!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar) || !NetworkedTrainCar.GetTrainCar(packet.OtherNetId, out TrainCar otherTrainCar))
             return;
-        }
 
         Coupler coupler = packet.IsFrontCoupler ? trainCar.frontCoupler : trainCar.rearCoupler;
         Coupler otherCoupler = packet.OtherCarIsFrontCoupler ? otherTrainCar.frontCoupler : otherTrainCar.rearCoupler;
@@ -376,11 +371,8 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonTrainUncouplePacket(CommonTrainUncouplePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonTrainUncouplePacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
             return;
-        }
 
         Coupler coupler = packet.IsFrontCoupler ? trainCar.frontCoupler : trainCar.rearCoupler;
 
@@ -389,11 +381,8 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonHoseConnectedPacket(CommonHoseConnectedPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonHoseConnectedPacket)} but couldn't find one of the cars!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar) || !NetworkedTrainCar.GetTrainCar(packet.OtherNetId, out TrainCar otherTrainCar))
             return;
-        }
 
         Coupler coupler = packet.IsFront ? trainCar.frontCoupler : trainCar.rearCoupler;
         Coupler otherCoupler = packet.OtherIsFront ? otherTrainCar.frontCoupler : otherTrainCar.rearCoupler;
@@ -403,11 +392,8 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonHoseDisconnectedPacket(CommonHoseDisconnectedPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonHoseDisconnectedPacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
             return;
-        }
 
         Coupler coupler = packet.IsFront ? trainCar.frontCoupler : trainCar.rearCoupler;
 
@@ -416,11 +402,8 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonMuConnectedPacket(CommonMuConnectedPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar) || !TrainComponentLookup.Instance.TrainFromNetId(packet.OtherNetId, out TrainCar otherTrainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonMuConnectedPacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar) || !NetworkedTrainCar.GetTrainCar(packet.OtherNetId, out TrainCar otherTrainCar))
             return;
-        }
 
         MultipleUnitCable cable = packet.IsFront ? trainCar.muModule.frontCable : trainCar.muModule.rearCable;
         MultipleUnitCable otherCable = packet.IsFront ? otherTrainCar.muModule.frontCable : otherTrainCar.muModule.rearCable;
@@ -430,11 +413,8 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonMuDisconnectedPacket(CommonMuDisconnectedPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonMuDisconnectedPacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
             return;
-        }
 
         MultipleUnitCable cable = packet.IsFront ? trainCar.muModule.frontCable : trainCar.muModule.rearCable;
 
@@ -443,11 +423,8 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonCockFiddlePacket(CommonCockFiddlePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonCockFiddlePacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
             return;
-        }
 
         Coupler coupler = packet.IsFront ? trainCar.frontCoupler : trainCar.rearCoupler;
 
@@ -456,44 +433,32 @@ public class NetworkClient : NetworkManager
 
     private void OnCommonBrakeCylinderReleasePacket(CommonBrakeCylinderReleasePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonCockFiddlePacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
             return;
-        }
 
         trainCar.brakeSystem.ReleaseBrakeCylinderPressure();
     }
 
     private void OnCommonHandbrakePositionPacket(CommonHandbrakePositionPacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonCockFiddlePacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
             return;
-        }
 
         trainCar.brakeSystem.SetHandbrakePosition(packet.Position);
     }
 
     private void OnCommonSimFlowPacket(CommonSimFlowPacket packet)
     {
-        if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
-        {
-            LogDebug(() => $"Received {nameof(CommonSimFlowPacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             return;
-        }
 
         networkedTrainCar.Common_UpdateSimFlow(packet);
     }
 
     private void OnClientboundCargoStatePacket(ClientboundCargoStatePacket packet)
     {
-        if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
-        {
-            LogDebug(() => $"Received {nameof(ClientboundCargoStatePacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             return;
-        }
 
         networkedTrainCar.CargoModelIndex = packet.CargoModelIndex;
         Car logicCar = networkedTrainCar.TrainCar.logicCar;
@@ -513,11 +478,8 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundCarHealthUpdatePacket(ClientboundCarHealthUpdatePacket packet)
     {
-        if (!TrainComponentLookup.Instance.TrainFromNetId(packet.NetId, out TrainCar trainCar))
-        {
-            LogDebug(() => $"Received {nameof(ClientboundCarHealthUpdatePacket)} but couldn't find car with net ID {packet.NetId}!");
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
             return;
-        }
 
         CarDamageModel carDamage = trainCar.CarDamage;
         float difference = Mathf.Abs(packet.Health - carDamage.currentHealth);
@@ -645,19 +607,19 @@ public class NetworkClient : NetworkManager
         }, DeliveryMethod.ReliableUnordered);
     }
 
-    public void SendMuDisconnected(MultipleUnitCable cable, bool playAudio)
+    public void SendMuDisconnected(ushort netId, MultipleUnitCable cable, bool playAudio)
     {
         SendPacketToServer(new CommonMuDisconnectedPacket {
-            NetId = cable.muModule.train.GetNetId(),
+            NetId = netId,
             IsFront = cable.isFront,
             PlayAudio = playAudio
         }, DeliveryMethod.ReliableUnordered);
     }
 
-    public void SendCockState(Coupler coupler, bool isOpen)
+    public void SendCockState(ushort netId, Coupler coupler, bool isOpen)
     {
         SendPacketToServer(new CommonCockFiddlePacket {
-            NetId = coupler.train.GetNetId(),
+            NetId = netId,
             IsFront = coupler.isFrontCoupler,
             IsOpen = isOpen
         }, DeliveryMethod.ReliableUnordered);

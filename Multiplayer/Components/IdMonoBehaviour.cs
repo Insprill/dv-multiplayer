@@ -11,7 +11,19 @@ public abstract class IdMonoBehaviour<T, I> : MonoBehaviour where T : struct whe
     private static readonly IdPool<T> idPool = new();
     private static readonly Dictionary<T, IdMonoBehaviour<T, I>> indexToObject = new();
 
-    public T NetId;
+    private T _netId;
+
+    public T NetId {
+        get => _netId;
+        set {
+            if (_netId.Equals(value))
+                return;
+            if ((_netId as dynamic).CompareTo(default(T)) != 0)
+                idPool.ReleaseId(_netId);
+            Register(value);
+        }
+    }
+
     protected abstract bool IsIdServerAuthoritative { get; }
 
     protected static bool Get(T netId, out IdMonoBehaviour<T, I> obj)
@@ -19,7 +31,8 @@ public abstract class IdMonoBehaviour<T, I> : MonoBehaviour where T : struct whe
         if (indexToObject.TryGetValue(netId, out obj))
             return true;
         obj = null;
-        Multiplayer.LogDebug(() => $"Got invalid NetId {netId} while processing packet {NetPacketProcessor.CurrentlyProcessingPacket}");
+        if ((netId as dynamic).CompareTo(default(T)) != 0)
+            Multiplayer.LogDebug(() => $"Got invalid NetId {netId} while processing packet {NetPacketProcessor.CurrentlyProcessingPacket}");
         return false;
     }
 
@@ -32,7 +45,7 @@ public abstract class IdMonoBehaviour<T, I> : MonoBehaviour where T : struct whe
 
     public void Register(T id)
     {
-        NetId = id;
+        _netId = id;
         indexToObject[id] = this;
     }
 
@@ -41,6 +54,7 @@ public abstract class IdMonoBehaviour<T, I> : MonoBehaviour where T : struct whe
         idPool.ReleaseId(NetId);
         if (!UnloadWatcher.isUnloading)
             return;
+        idPool.Reset();
         indexToObject.Clear();
     }
 }

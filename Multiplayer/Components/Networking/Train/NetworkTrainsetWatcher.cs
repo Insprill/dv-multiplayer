@@ -1,3 +1,4 @@
+using System.Linq;
 using DV.Utils;
 using JetBrains.Annotations;
 using Multiplayer.Networking.Data;
@@ -53,12 +54,30 @@ public class NetworkTrainsetWatcher : SingletonBehaviour<NetworkTrainsetWatcher>
 
         cachedSendPacket.NetId = set.firstCar.GetNetId();
 
+        if (set.cars.Contains(null))
+        {
+            Multiplayer.LogError($"Trainset {set.id} ({set.firstCar.GetNetId()} has a null car!");
+            return;
+        }
+
+        if (set.cars.Any(car => !car.gameObject.activeSelf))
+        {
+            Multiplayer.LogError($"Trainset {set.id} ({set.firstCar.GetNetId()} has a non-active car!");
+            return;
+        }
+
         TrainsetMovementPart[] trainsetParts = new TrainsetMovementPart[set.cars.Count];
         bool anyTracksDirty = false;
         for (int i = 0; i < set.cars.Count; i++)
         {
             TrainCar trainCar = set.cars[i];
-            TrainComponentLookup.Instance.NetworkedTrainFromTrain(trainCar, out NetworkedTrainCar networkedTrainCar);
+            if (!trainCar.TryNetworked(out NetworkedTrainCar _))
+            {
+                Multiplayer.LogDebug(() => $"TrainCar {trainCar.ID} is not networked! Is active? {trainCar.gameObject.activeInHierarchy}");
+                continue;
+            }
+
+            NetworkedTrainCar networkedTrainCar = trainCar.Networked();
             anyTracksDirty |= networkedTrainCar.BogieTracksDirty;
             trainsetParts[i] = new TrainsetMovementPart(
                 trainCar.GetForwardSpeed(),
@@ -92,10 +111,7 @@ public class NetworkTrainsetWatcher : SingletonBehaviour<NetworkTrainsetWatcher>
         }
 
         for (int i = 0; i < packet.TrainsetParts.Length; i++)
-        {
-            TrainComponentLookup.Instance.NetworkedTrainFromTrain(set.cars[i], out NetworkedTrainCar networkedTrainCar);
-            networkedTrainCar.Client_ReceiveTrainPhysicsUpdate(packet.TrainsetParts[i], packet.Tick);
-        }
+            set.cars[i].Networked().Client_ReceiveTrainPhysicsUpdate(packet.TrainsetParts[i], packet.Tick);
     }
 
     #endregion

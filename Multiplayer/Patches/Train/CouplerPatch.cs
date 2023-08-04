@@ -1,5 +1,7 @@
 using HarmonyLib;
 using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.Train;
+using Multiplayer.Utils;
 
 namespace Multiplayer.Patches.World;
 
@@ -20,6 +22,8 @@ public static class Coupler_Uncouple_Patch
     private static void Postfix(Coupler __instance, bool playAudio, bool calledOnOtherCoupler, bool dueToBrokenCouple, bool viaChainInteraction)
     {
         if (UnloadWatcher.isUnloading || NetworkLifecycle.Instance.IsProcessingPacket || calledOnOtherCoupler)
+            return;
+        if (!__instance.train.TryNetworked(out NetworkedTrainCar networkedTrainCar) || networkedTrainCar.IsDestroying)
             return;
         NetworkLifecycle.Instance.Client?.SendTrainUncouple(__instance, playAudio, dueToBrokenCouple, viaChainInteraction);
     }

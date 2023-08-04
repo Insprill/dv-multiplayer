@@ -14,17 +14,22 @@ public static class CommsRadioCarDeleterPatch
     [HarmonyPatch(nameof(CommsRadioCarDeleter.OnUse))]
     private static bool OnUse_Prefix(CommsRadioCarDeleter __instance)
     {
-        if (NetworkLifecycle.Instance.IsHost() && NetworkLifecycle.Instance.Server.PlayerCount == 1)
-            return true;
         if (__instance.state != CommsRadioCarDeleter.State.ConfirmDelete)
             return true;
-        if (__instance.carToDelete.Networked().HasPlayers)
-            return false;
-        if (Inventory.Instance.PlayerMoney <= __instance.removePrice)
+        if (NetworkLifecycle.Instance.IsHost() && NetworkLifecycle.Instance.Server.PlayerCount == 1)
             return true;
-        NetworkLifecycle.Instance.Client.SendTrainDeleteRequest(__instance.carToDelete.GetNetId());
+        if (Inventory.Instance.PlayerMoney < __instance.removePrice)
+            return true;
+        if (__instance.carToDelete.Networked().HasPlayers)
+        {
+            CommsRadioController.PlayAudioFromRadio(__instance.cancelSound, __instance.transform);
+            __instance.ClearFlags();
+            return false;
+        }
+
         CommsRadioController.PlayAudioFromCar(__instance.removeCarSound, __instance.carToDelete, true);
         CommsRadioController.PlayAudioFromRadio(__instance.confirmSound, __instance.transform);
+        NetworkLifecycle.Instance.Client.SendTrainDeleteRequest(__instance.carToDelete.GetNetId());
         __instance.ClearFlags();
         return false;
     }
@@ -33,9 +38,9 @@ public static class CommsRadioCarDeleterPatch
     [HarmonyPatch(nameof(CommsRadioCarDeleter.OnUpdate))]
     private static bool OnUpdate_Prefix(CommsRadioCarDeleter __instance)
     {
-        if (NetworkLifecycle.Instance.IsHost() && NetworkLifecycle.Instance.Server.PlayerCount == 1)
-            return true;
         if (__instance.state != CommsRadioCarDeleter.State.ScanCarToDelete)
+            return true;
+        if (NetworkLifecycle.Instance.IsHost() && NetworkLifecycle.Instance.Server.PlayerCount == 1)
             return true;
         if (!Physics.Raycast(__instance.signalOrigin.position, __instance.signalOrigin.forward, out __instance.hit, CommsRadioCarDeleter.SIGNAL_RANGE, __instance.trainCarMask))
             return true;

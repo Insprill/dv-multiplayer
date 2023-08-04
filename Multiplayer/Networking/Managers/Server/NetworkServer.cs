@@ -8,7 +8,6 @@ using DV.ThingTypes;
 using DV.WeatherSystem;
 using LiteNetLib;
 using LiteNetLib.Utils;
-using Multiplayer.Components;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
 using Multiplayer.Components.Networking.World;
@@ -121,9 +120,6 @@ public class NetworkServer : NetworkManager
 
     public override void OnNetworkLatencyUpdate(NetPeer peer, int latency)
     {
-        if (TryGetServerPlayer(peer, out ServerPlayer player))
-            player.Ping = latency;
-
         ClientboundPingUpdatePacket clientboundPingUpdatePacket = new() {
             Id = (byte)peer.Id,
             Ping = latency
@@ -322,21 +318,6 @@ public class NetworkServer : NetworkManager
 
         SendPacket(peer, new ClientboundBeginWorldSyncPacket(), DeliveryMethod.ReliableOrdered);
 
-        // Send existing players
-        foreach (ServerPlayer player in serverPlayers.Values)
-        {
-            if (player.Id == peer.Id)
-                continue;
-            SendPacket(peer, new ClientboundPlayerJoinedPacket {
-                Id = player.Id,
-                Username = player.Username
-            }, DeliveryMethod.ReliableOrdered);
-            SendPacket(peer, new ClientboundPlayerCarPacket {
-                Id = player.Id,
-                CarId = player.Car == null ? ushort.MaxValue : player.Car.GetNetId()
-            }, DeliveryMethod.ReliableOrdered);
-        }
-
         // Send weather state
         SendPacket(peer, WeatherDriver.Instance.GetSaveData().ToObject<ClientboundWeatherPacket>(), DeliveryMethod.ReliableOrdered);
 
@@ -353,6 +334,20 @@ public class NetworkServer : NetworkManager
             SendPacket(peer, ClientboundSpawnTrainSetPacket.FromTrainSet(set), DeliveryMethod.ReliableOrdered);
         }
 
+        // Send existing players
+        foreach (ServerPlayer player in ServerPlayers)
+        {
+            if (player.Id == peer.Id)
+                continue;
+            SendPacket(peer, new ClientboundPlayerJoinedPacket {
+                Id = player.Id,
+                Username = player.Username,
+                TrainCar = player.CarId,
+                Position = player.RawPosition,
+                Rotation = player.RawRotationY
+            }, DeliveryMethod.ReliableOrdered);
+        }
+
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
     }
@@ -360,7 +355,10 @@ public class NetworkServer : NetworkManager
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)
     {
         if (TryGetServerPlayer(peer, out ServerPlayer player))
-            player.Position = packet.Position + WorldMover.currentMove;
+        {
+            player.RawPosition = packet.Position;
+            player.RawRotationY = packet.RotationY;
+        }
 
         ClientboundPlayerPositionPacket clientboundPacket = new() {
             Id = (byte)peer.Id,
@@ -375,11 +373,11 @@ public class NetworkServer : NetworkManager
 
     private void OnServerboundPlayerCarPacket(ServerboundPlayerCarPacket packet, NetPeer peer)
     {
+        if (packet.CarId != 0 && !NetworkedTrainCar.Get(packet.CarId, out NetworkedTrainCar _))
+            return;
+
         if (TryGetServerPlayer(peer, out ServerPlayer player))
-        {
-            TrainComponentLookup.Instance.TrainFromNetId(packet.CarId, out TrainCar trainCar);
-            player.Car = trainCar;
-        }
+            player.CarId = packet.CarId;
 
         ClientboundPlayerCarPacket clientboundPacket = new() {
             Id = (byte)peer.Id,
@@ -458,7 +456,7 @@ public class NetworkServer : NetworkManager
 
     private void OnServerboundTrainSyncRequestPacket(ServerboundTrainSyncRequestPacket packet)
     {
-        if (TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
+        if (NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             networkedTrainCar.Server_DirtyAllState();
     }
 
@@ -466,9 +464,9 @@ public class NetworkServer : NetworkManager
     {
         if (!TryGetServerPlayer(peer, out ServerPlayer player))
             return;
-
-        if (!TrainComponentLookup.Instance.NetworkedTrainFromNetId(packet.NetId, out NetworkedTrainCar networkedTrainCar))
+        if (!NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             return;
+
         if (networkedTrainCar.HasPlayers)
         {
             LogWarning($"{player.Username} tried to delete a train with players in it!");

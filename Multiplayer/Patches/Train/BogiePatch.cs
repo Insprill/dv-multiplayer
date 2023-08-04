@@ -1,5 +1,4 @@
 using HarmonyLib;
-using Multiplayer.Components;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
 using Multiplayer.Utils;
@@ -30,7 +29,7 @@ public static class Bogie_SetTrack_Patch
 {
     private static void Prefix(Bogie __instance, int newTrackDirection)
     {
-        if (!TrainComponentLookup.Instance.NetworkedTrainFromTrain(__instance.Car, out NetworkedTrainCar networkedTrainCar))
+        if (!__instance.Car.TryNetworked(out NetworkedTrainCar networkedTrainCar))
             return; // When the car first gets spawned in by CarSpawner#SpawnExistingCar, this method gets called before the NetworkedTrainCar component is added to the car.
         if (__instance.Car.Bogies[0] == __instance)
             networkedTrainCar.Bogie1TrackDirection = newTrackDirection;

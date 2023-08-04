@@ -1,7 +1,8 @@
 using DV.Simulation.Brake;
 using HarmonyLib;
-using Multiplayer.Components;
 using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.Train;
+using Multiplayer.Utils;
 
 namespace Multiplayer.Patches.World;
 
@@ -12,7 +13,10 @@ public static class HoseAndCock_SetCock_Patch
     {
         if (UnloadWatcher.isUnloading || NetworkLifecycle.Instance.IsProcessingPacket)
             return;
-        if (TrainComponentLookup.Instance.CouplerFromHose(__instance, out Coupler coupler))
-            NetworkLifecycle.Instance.Client?.SendCockState(coupler, open);
+        Coupler coupler = NetworkedTrainCar.GetCoupler(__instance);
+        NetworkedTrainCar networkedTrainCar = coupler.train.Networked();
+        if (networkedTrainCar.IsDestroying)
+            return;
+        NetworkLifecycle.Instance.Client?.SendCockState(networkedTrainCar.NetId, coupler, open);
     }
 }

@@ -1,3 +1,4 @@
+using Multiplayer.Components.Networking.Train;
 using Multiplayer.Editor.Components.Player;
 using UnityEngine;
 
@@ -95,8 +96,7 @@ public class NetworkedPlayer : MonoBehaviour
 
     public void UpdateCar(ushort netId)
     {
-        TrainComponentLookup.Instance.TrainFromNetId(netId, out TrainCar trainCar);
-        isOnCar = trainCar != null;
+        isOnCar = NetworkedTrainCar.GetTrainCar(netId, out TrainCar trainCar);
         selfTransform.SetParent(isOnCar ? trainCar.transform : null, true);
         targetPos = isOnCar ? transform.localPosition : selfTransform.position;
         targetRotation = isOnCar ? transform.localRotation : selfTransform.rotation;

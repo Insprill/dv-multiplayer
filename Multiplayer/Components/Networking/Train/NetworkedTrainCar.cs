@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,16 +10,46 @@ using Multiplayer.Components.Networking.Player;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Utils;
-using UnityEngine;
 
 namespace Multiplayer.Components.Networking.Train;
 
-public class NetworkedTrainCar : MonoBehaviour
+public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
 {
-    private static readonly IdPool<ushort> IdPool = new();
+    #region Lookup Cache
 
-    [NonSerialized]
-    public ushort NetId;
+    private static readonly Dictionary<TrainCar, NetworkedTrainCar> trainCarsToNetworkedTrainCars = new();
+    private static readonly Dictionary<HoseAndCock, Coupler> hoseToCoupler = new();
+
+    public static bool Get(ushort netId, out NetworkedTrainCar obj)
+    {
+        bool b = Get(netId, out IdMonoBehaviour<ushort, NetworkedTrainCar> rawObj);
+        obj = (NetworkedTrainCar)rawObj;
+        return b;
+    }
+
+    public static bool GetTrainCar(ushort netId, out TrainCar obj)
+    {
+        bool b = Get(netId, out NetworkedTrainCar networkedTrainCar);
+        obj = b ? networkedTrainCar.TrainCar : null;
+        return b;
+    }
+
+    public static Coupler GetCoupler(HoseAndCock hoseAndCock)
+    {
+        return hoseToCoupler[hoseAndCock];
+    }
+
+    public static NetworkedTrainCar GetFromTrainCar(TrainCar trainCar)
+    {
+        return trainCarsToNetworkedTrainCars[trainCar];
+    }
+
+    public static bool TryGetFromTrainCar(TrainCar trainCar, out NetworkedTrainCar networkedTrainCar)
+    {
+        return trainCarsToNetworkedTrainCars.TryGetValue(trainCar, out networkedTrainCar);
+    }
+
+    #endregion
 
     public TrainCar TrainCar;
     public bool HasPlayers => PlayerManager.Car == TrainCar || GetComponentInChildren<NetworkedPlayer>() != null;
@@ -44,6 +73,8 @@ public class NetworkedTrainCar : MonoBehaviour
     private bool healthDirty;
     private bool sendCouplers;
 
+    public bool IsDestroying;
+
     #region Client
 
     private bool client_Initialized;
@@ -53,21 +84,24 @@ public class NetworkedTrainCar : MonoBehaviour
 
     #endregion
 
-    internal void Awake()
+    protected override bool IsIdServerAuthoritative => true;
+
+    protected override void Awake()
     {
+        base.Awake();
+
         TrainCar = GetComponent<TrainCar>();
+        trainCarsToNetworkedTrainCars[TrainCar] = this;
+
         bogie1 = TrainCar.Bogies[0];
         bogie2 = TrainCar.Bogies[1];
 
         if (NetworkLifecycle.Instance.IsHost())
         {
-            NetId = IdPool.NextId;
-            TrainComponentLookup.Instance.RegisterTrainCar(this);
             NetworkTrainsetWatcher.Instance.CheckInstance(); // Ensure the NetworkTrainsetWatcher is initialized
         }
         else
         {
-            TrainComponentLookup.Instance.RegisterTrainCar(this);
             Client_trainSpeedQueue = TrainCar.GetOrAddComponent<TrainSpeedQueue>();
             StartCoroutine(Client_InitLater());
         }
@@ -76,6 +110,9 @@ public class NetworkedTrainCar : MonoBehaviour
     private void Start()
     {
         brakeSystem = TrainCar.brakeSystem;
+
+        foreach (Coupler coupler in TrainCar.couplers)
+            hoseToCoupler[coupler.hoseAndCock] = coupler;
 
         SimController simController = GetComponent<SimController>();
         if (simController != null)
@@ -114,6 +151,9 @@ public class NetworkedTrainCar : MonoBehaviour
         NetworkLifecycle.Instance.OnTick -= Server_OnTick;
         if (UnloadWatcher.isUnloading)
             return;
+        trainCarsToNetworkedTrainCars.Remove(TrainCar);
+        foreach (Coupler coupler in TrainCar.couplers)
+            hoseToCoupler.Remove(coupler.hoseAndCock);
         brakeSystem.HandbrakePositionChanged -= Common_OnHandbrakePositionChanged;
         brakeSystem.BrakeCylinderReleased -= Common_OnBrakeCylinderReleased;
         if (NetworkLifecycle.Instance.IsHost())
@@ -126,8 +166,6 @@ public class NetworkedTrainCar : MonoBehaviour
                 TrainCar.logicCar.CargoLoaded -= Server_OnCargoLoaded;
                 TrainCar.logicCar.CargoUnloaded -= Server_OnCargoUnloaded;
             }
-
-            IdPool.ReleaseId(NetId);
         }
 
         Destroy(this);
@@ -204,8 +242,8 @@ public class NetworkedTrainCar : MonoBehaviour
         if (TrainCar.rearCoupler.hoseAndCock.IsHoseConnected)
             NetworkLifecycle.Instance.Client.SendHoseConnected(TrainCar.rearCoupler, TrainCar.rearCoupler.coupledTo, false);
 
-        NetworkLifecycle.Instance.Client.SendCockState(TrainCar.frontCoupler, TrainCar.frontCoupler.IsCockOpen);
-        NetworkLifecycle.Instance.Client.SendCockState(TrainCar.rearCoupler, TrainCar.rearCoupler.IsCockOpen);
+        NetworkLifecycle.Instance.Client.SendCockState(NetId, TrainCar.frontCoupler, TrainCar.frontCoupler.IsCockOpen);
+        NetworkLifecycle.Instance.Client.SendCockState(NetId, TrainCar.rearCoupler, TrainCar.rearCoupler.IsCockOpen);
     }
 
     private void Server_SendCargoState()

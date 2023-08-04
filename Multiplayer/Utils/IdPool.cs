@@ -34,4 +34,10 @@ public class IdPool<T> where T : struct
     {
         releasedIds.Enqueue(id);
     }
+
+    public void Reset()
+    {
+        currentId = default;
+        releasedIds.Clear();
+    }
 }

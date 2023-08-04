@@ -1,6 +1,8 @@
 using DV.MultipleUnit;
 using HarmonyLib;
 using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.Train;
+using Multiplayer.Utils;
 
 namespace Multiplayer.Patches.World;
 
@@ -22,6 +24,9 @@ public static class MultipleUnitCable_Disconnect_Patch
     {
         if (NetworkLifecycle.Instance.IsProcessingPacket || UnloadWatcher.isUnloading)
             return;
-        NetworkLifecycle.Instance.Client?.SendMuDisconnected(__instance, playAudio);
+        NetworkedTrainCar networkedTrainCar = __instance.muModule.train.Networked();
+        if (networkedTrainCar.IsDestroying)
+            return;
+        NetworkLifecycle.Instance.Client?.SendMuDisconnected(networkedTrainCar.NetId, __instance, playAudio);
     }
 }

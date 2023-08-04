@@ -39,7 +39,7 @@ public static class MovementSyncPatch
 
     private static void OnCarChanged(TrainCar trainCar)
     {
-        NetworkLifecycle.Instance.Client.SendPlayerCar(trainCar == null ? ushort.MaxValue : trainCar.GetNetId());
+        NetworkLifecycle.Instance.Client.SendPlayerCar(trainCar == null ? (ushort)0 : trainCar.GetNetId());
     }
 
     private static void OnTick(uint obj)
