@@ -63,6 +63,7 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<ServerboundTimeAdvancePacket, NetPeer>(OnServerboundTimeAdvancePacket);
         netPacketProcessor.SubscribeReusable<ServerboundTrainSyncRequestPacket>(OnServerboundTrainSyncRequestPacket);
         netPacketProcessor.SubscribeReusable<ServerboundTrainDeleteRequestPacket, NetPeer>(OnServerboundTrainDeleteRequestPacket);
+        netPacketProcessor.SubscribeReusable<ServerboundTrainRerailRequestPacket, NetPeer>(OnServerboundTrainRerailRequestPacket);
         netPacketProcessor.SubscribeReusable<CommonChangeJunctionPacket, NetPeer>(OnCommonChangeJunctionPacket);
         netPacketProcessor.SubscribeReusable<CommonRotateTurntablePacket, NetPeer>(OnCommonRotateTurntablePacket);
         netPacketProcessor.SubscribeReusable<CommonTrainCouplePacket, NetPeer>(OnCommonTrainCouplePacket);
@@ -200,6 +201,16 @@ public class NetworkServer : NetworkManager
         SendPacketToAll(new ClientboundCarHealthUpdatePacket {
             NetId = netId,
             Health = health
+        }, DeliveryMethod.ReliableOrdered, selfPeer);
+    }
+
+    public void SendRerailTrainCar(ushort netId, ushort rerailTrack, Vector3 worldPos, Vector3 forward)
+    {
+        SendPacketToAll(new ClientboundRerailTrainPacket {
+            NetId = netId,
+            TrackId = rerailTrack,
+            Position = worldPos,
+            Forward = forward
         }, DeliveryMethod.ReliableOrdered, selfPeer);
     }
 
@@ -493,6 +504,27 @@ public class NetworkServer : NetworkManager
         }
 
         CarSpawner.Instance.DeleteCar(trainCar);
+    }
+
+    private void OnServerboundTrainRerailRequestPacket(ServerboundTrainRerailRequestPacket packet, NetPeer peer)
+    {
+        if (!TryGetServerPlayer(peer, out ServerPlayer player))
+            return;
+        if (!NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
+            return;
+        if (!NetworkedRailTrack.Get(packet.TrackId, out NetworkedRailTrack networkedRailTrack))
+            return;
+
+        TrainCar trainCar = networkedTrainCar.TrainCar;
+        Vector3 position = packet.Position + WorldMover.currentMove;
+        float cost = RerailController.CalculatePrice((networkedTrainCar.transform.position - position).magnitude, trainCar.carType, Globals.G.GameParams.RerailMaxPrice);
+        if (!Inventory.Instance.RemoveMoney(cost))
+        {
+            LogWarning($"{player.Username} tried to rerail a train without enough money to do so!");
+            return;
+        }
+
+        trainCar.Rerail(networkedRailTrack.RailTrack, position, packet.Forward);
     }
 
     #endregion

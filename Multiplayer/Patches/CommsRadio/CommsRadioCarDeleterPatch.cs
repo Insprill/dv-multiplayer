@@ -1,3 +1,4 @@
+using System.Collections;
 using DV;
 using DV.InventorySystem;
 using HarmonyLib;
@@ -27,12 +28,23 @@ public static class CommsRadioCarDeleterPatch
             return false;
         }
 
-        CommsRadioController.PlayAudioFromCar(__instance.removeCarSound, __instance.carToDelete, true);
-        CommsRadioController.PlayAudioFromRadio(__instance.confirmSound, __instance.transform);
         NetworkLifecycle.Instance.Client.SendTrainDeleteRequest(__instance.carToDelete.GetNetId());
+
+        CoroutineManager.Instance.StartCoroutine(PlaySoundsLater(__instance, __instance.carToDelete.transform.position, __instance.removePrice > 0));
         __instance.ClearFlags();
         return false;
     }
+
+    private static IEnumerator PlaySoundsLater(CommsRadioCarDeleter __instance, Vector3 trainPosition, bool playMoneyRemovedSound = true)
+    {
+        yield return new WaitForSecondsRealtime(NetworkLifecycle.Instance.Client.Ping * 2);
+        if (playMoneyRemovedSound && __instance.moneyRemovedSound != null)
+            __instance.moneyRemovedSound.Play2D();
+        // The TrainCar may already be deleted when we're done waiting, so we play the sound manually.
+        __instance.removeCarSound.Play(trainPosition, minDistance: CommsRadioController.CAR_AUDIO_SOURCE_MIN_DISTANCE, parent: WorldMover.Instance.originShiftParent);
+        CommsRadioController.PlayAudioFromRadio(__instance.confirmSound, __instance.transform);
+    }
+
 
     [HarmonyPrefix]
     [HarmonyPatch(nameof(CommsRadioCarDeleter.OnUpdate))]

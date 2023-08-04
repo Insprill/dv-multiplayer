@@ -1,6 +1,9 @@
 using HarmonyLib;
+using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
+using Multiplayer.Components.Networking.World;
 using Multiplayer.Utils;
+using UnityEngine;
 
 namespace Multiplayer.Patches.World;
 
@@ -26,5 +29,16 @@ public static class TrainCarPatch
         if (CarSpawner.Instance.PoolSetupInProgress)
             return;
         __instance.GetOrAddComponent<NetworkedTrainCar>();
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(nameof(TrainCar.Rerail))]
+    private static void Rerail_Prefix(TrainCar __instance, RailTrack rerailTrack, Vector3 worldPos, Vector3 forward)
+    {
+        if (!NetworkLifecycle.Instance.IsHost() || NetworkLifecycle.Instance.IsProcessingPacket)
+            return;
+        if (!__instance.derailed || !__instance.TryNetworked(out NetworkedTrainCar networkedTrainCar))
+            return;
+        NetworkLifecycle.Instance.Server.SendRerailTrainCar(networkedTrainCar.NetId, NetworkedRailTrack.GetFromRailTrack(rerailTrack).NetId, worldPos - WorldMover.currentMove, forward);
     }
 }

@@ -35,7 +35,7 @@ public class NetworkClient : NetworkManager
     public readonly ClientPlayerManager PlayerManager;
 
     // One way ping in milliseconds
-    private int ping;
+    public int Ping { get; private set; }
     private NetPeer serverPeer;
 
     public NetworkClient(Settings settings) : base(settings)
@@ -91,6 +91,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonSimFlowPacket>(OnCommonSimFlowPacket);
         netPacketProcessor.SubscribeReusable<ClientboundCargoStatePacket>(OnClientboundCargoStatePacket);
         netPacketProcessor.SubscribeReusable<ClientboundCarHealthUpdatePacket>(OnClientboundCarHealthUpdatePacket);
+        netPacketProcessor.SubscribeReusable<ClientboundRerailTrainPacket>(OnClientboundRerailTrainPacket);
     }
 
     #region Net Events
@@ -144,7 +145,7 @@ public class NetworkClient : NetworkManager
 
     public override void OnNetworkLatencyUpdate(NetPeer peer, int latency)
     {
-        ping = latency;
+        Ping = latency;
     }
 
     public override void OnConnectionRequest(ConnectionRequest request)
@@ -201,7 +202,7 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundTickSyncPacket(ClientboundTickSyncPacket packet)
     {
-        NetworkLifecycle.Instance.Tick = (uint)(packet.ServerTick + ping / 2.0f * (1f / NetworkLifecycle.TICK_RATE));
+        NetworkLifecycle.Instance.Tick = (uint)(packet.ServerTick + Ping / 2.0f * (1f / NetworkLifecycle.TICK_RATE));
     }
 
     private void OnClientboundServerLoadingPacket(ClientboundServerLoadingPacket packet)
@@ -492,6 +493,15 @@ public class NetworkClient : NetworkManager
             carDamage.RepairCar(difference);
     }
 
+    private void OnClientboundRerailTrainPacket(ClientboundRerailTrainPacket packet)
+    {
+        if (!NetworkedTrainCar.GetTrainCar(packet.NetId, out TrainCar trainCar))
+            return;
+        if (!NetworkedRailTrack.Get(packet.TrackId, out NetworkedRailTrack networkedRailTrack))
+            return;
+        trainCar.Rerail(networkedRailTrack.RailTrack, packet.Position + WorldMover.currentMove, packet.Forward);
+    }
+
     #endregion
 
     #region Senders
@@ -662,6 +672,16 @@ public class NetworkClient : NetworkManager
     {
         SendPacketToServer(new ServerboundTrainDeleteRequestPacket {
             NetId = netId
+        }, DeliveryMethod.ReliableUnordered);
+    }
+
+    public void SendTrainRerailRequest(ushort netId, ushort trackId, Vector3 position, Vector3 forward)
+    {
+        SendPacketToServer(new ServerboundTrainRerailRequestPacket {
+            NetId = netId,
+            TrackId = trackId,
+            Position = position,
+            Forward = forward
         }, DeliveryMethod.ReliableUnordered);
     }
 
