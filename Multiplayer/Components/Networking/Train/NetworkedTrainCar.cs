@@ -382,11 +382,13 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         if (movementPart.IsRigidbodySnapshot)
         {
             TrainCar.Derail();
+            TrainCar.stress.ResetTrainStress();
             Client_trainRigidbodyQueue.ReceiveSnapshot(movementPart.RigidbodySnapshot, tick);
         }
         else
         {
             Client_trainSpeedQueue.ReceiveSnapshot(movementPart.Speed, tick);
+            TrainCar.stress.slowBuildUpStress = movementPart.SlowBuildUpStress;
             client_bogie1Queue.ReceiveSnapshot(movementPart.Bogie1, tick);
             client_bogie2Queue.ReceiveSnapshot(movementPart.Bogie2, tick);
         }

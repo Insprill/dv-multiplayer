@@ -6,14 +6,16 @@ public readonly struct TrainsetMovementPart
 {
     public readonly bool IsRigidbodySnapshot;
     public readonly float Speed;
+    public readonly float SlowBuildUpStress;
     public readonly BogieData Bogie1;
     public readonly BogieData Bogie2;
     public readonly RigidbodySnapshot RigidbodySnapshot;
 
-    public TrainsetMovementPart(float speed, BogieData bogie1, BogieData bogie2)
+    public TrainsetMovementPart(float speed, float slowBuildUpStress, BogieData bogie1, BogieData bogie2)
     {
         IsRigidbodySnapshot = false;
         Speed = speed;
+        SlowBuildUpStress = slowBuildUpStress;
         Bogie1 = bogie1;
         Bogie2 = bogie2;
     }
@@ -37,6 +39,7 @@ public readonly struct TrainsetMovementPart
         }
 
         writer.Put(data.Speed);
+        writer.Put(data.SlowBuildUpStress);
         BogieData.Serialize(writer, data.Bogie1);
         BogieData.Serialize(writer, data.Bogie2);
     }
@@ -47,6 +50,7 @@ public readonly struct TrainsetMovementPart
         return isRigidbodySnapshot
             ? new TrainsetMovementPart(RigidbodySnapshot.Deserialize(reader))
             : new TrainsetMovementPart(
+                reader.GetFloat(),
                 reader.GetFloat(),
                 BogieData.Deserialize(reader),
                 BogieData.Deserialize(reader)
