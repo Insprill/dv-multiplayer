@@ -4,6 +4,7 @@ using HarmonyLib;
 using JetBrains.Annotations;
 using Multiplayer.Components.Networking;
 using Multiplayer.Editor;
+using Multiplayer.Patches.Mods;
 using Multiplayer.Patches.World;
 using UnityChan;
 using UnityEngine;
@@ -39,6 +40,13 @@ public static class Multiplayer
             harmony = new Harmony(ModEntry.Info.Id);
             harmony.PatchAll();
             SimComponent_Tick_Patch.Patch(harmony);
+
+            UnityModManager.ModEntry remoteDispatch = UnityModManager.FindMod("RemoteDispatch");
+            if (remoteDispatch?.Enabled == true)
+            {
+                Log("Found RemoteDispatch, patching...");
+                RemoteDispatchPatch.Patch(harmony, remoteDispatch.Assembly);
+            }
 
             if (!LoadAssets())
                 return false;
