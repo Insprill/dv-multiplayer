@@ -31,6 +31,8 @@ public class StartGameData_ServerSave : AStartGameData
         saveGameData.SetBool(SaveGameKeys.Tutorial_01_completed, true);
         saveGameData.SetBool(SaveGameKeys.Tutorial_02_completed, true);
         saveGameData.SetBool(SaveGameKeys.Tutorial_03_completed, true);
+        saveGameData.SetBool(SaveGameKeys.Derail_Popup_Shown, true);
+        saveGameData.SetBool(SaveGameKeys.Damage_Popup_Shown, true);
 
         CareerManagerDebtControllerPatch.HasDebt = packet.HasDebt;
     }
