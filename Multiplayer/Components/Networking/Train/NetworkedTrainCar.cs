@@ -11,6 +11,7 @@ using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Utils;
+using UnityEngine;
 
 namespace Multiplayer.Components.Networking.Train;
 
@@ -201,6 +202,34 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
             dirtyFuses.Add(fuseId);
     }
 
+    public bool Server_ValidateClientSimFlowPacket(ServerPlayer player, CommonSimFlowPacket packet)
+    {
+        // Only allow control ports to be updated by clients
+        if (hasSimFlow)
+            foreach (string portId in packet.PortIds)
+                if (simulationFlow.TryGetPort(portId, out Port port) && port.valueType != PortValueType.CONTROL)
+                {
+                    NetworkLifecycle.Instance.Server.LogWarning($"Player {player.Username} tried to send a non-control port!");
+                    Common_DirtyPorts(packet.PortIds);
+                    return false;
+                }
+
+        // Only allow the player to update ports on the car they are in/near
+        if (player.CarId == packet.NetId)
+            return true;
+
+        // Some ports can be updated by the player even if they are not in the car, like doors and windows.
+        // Only deny the request if the player is more than 5 meters away from any point of the car.
+        float carLength = CarSpawner.Instance.carLiveryToCarLength[TrainCar.carLivery];
+        if ((player.RawPosition + WorldMover.currentMove - transform.position).sqrMagnitude <= carLength * carLength)
+            return true;
+
+        NetworkLifecycle.Instance.Server.LogWarning($"Player {player.Username} tried to send a sim flow packet for a car they are not in!");
+        Common_DirtyPorts(packet.PortIds);
+        Common_DirtyFuses(packet.FuseIds);
+        return false;
+    }
+
     private void Server_BogieTrackChanged(RailTrack arg1, Bogie arg2)
     {
         BogieTracksDirty = true;
@@ -289,6 +318,40 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         NetworkLifecycle.Instance.Client.SendHandbrakePositionChanged(NetId, brakeSystem.handbrakePosition);
     }
 
+    public void Common_DirtyPorts(string[] portIds)
+    {
+        if (!hasSimFlow)
+            return;
+
+        foreach (string portId in portIds)
+        {
+            if (!simulationFlow.TryGetPort(portId, out Port _))
+            {
+                Multiplayer.LogWarning($"Tried to dirty port {portId} on {TrainCar.ID} but it doesn't exist!");
+                continue;
+            }
+
+            dirtyPorts.Add(portId);
+        }
+    }
+
+    public void Common_DirtyFuses(string[] fuseIds)
+    {
+        if (!hasSimFlow)
+            return;
+
+        foreach (string fuseId in fuseIds)
+        {
+            if (!simulationFlow.TryGetFuse(fuseId, out Fuse _))
+            {
+                Multiplayer.LogWarning($"Tried to dirty port {fuseId} on {TrainCar.ID} but it doesn't exist!");
+                continue;
+            }
+
+            dirtyFuses.Add(fuseId);
+        }
+    }
+
     private void Common_SendSimFlow()
     {
         if (!hasSimFlow)
@@ -342,8 +405,8 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
 
     public void Common_UpdateSimFlow(CommonSimFlowPacket packet)
     {
-        if (simulationFlow == null)
-            return; // ?
+        if (!hasSimFlow)
+            return;
 
         for (int i = 0; i < packet.PortIds.Length; i++)
         {

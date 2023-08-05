@@ -509,6 +509,13 @@ public class NetworkServer : NetworkManager
 
     private void OnCommonSimFlowPacket(CommonSimFlowPacket packet, NetPeer peer)
     {
+        if (!TryGetServerPlayer(peer, out ServerPlayer player))
+            return;
+        if (!NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
+            return;
+        if (!NetworkLifecycle.Instance.IsHost(peer) && !networkedTrainCar.Server_ValidateClientSimFlowPacket(player, packet))
+            return;
+
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
     }
 
