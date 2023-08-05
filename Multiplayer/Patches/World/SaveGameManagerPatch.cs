@@ -51,6 +51,8 @@ public static class SaveGameManager_UpdateInternalData_Patch
 {
     private static void Postfix(SaveGameManager __instance)
     {
-        NetworkedSaveGameManager.Instance.UpdateInternalData(__instance.data);
+        if (!NetworkLifecycle.Instance.IsHost())
+            return;
+        NetworkedSaveGameManager.Instance.Server_UpdateInternalData(__instance.data);
     }
 }

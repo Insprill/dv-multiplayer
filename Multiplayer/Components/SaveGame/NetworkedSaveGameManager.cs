@@ -1,4 +1,6 @@
+using DV.InventorySystem;
 using DV.JObjectExtstensions;
+using DV.ThingTypes;
 using DV.Utils;
 using JetBrains.Annotations;
 using Multiplayer.Components.Networking;
@@ -14,13 +16,49 @@ public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameMana
     protected override void Awake()
     {
         base.Awake();
-        if (NetworkLifecycle.Instance.IsHost())
+        if (!NetworkLifecycle.Instance.IsHost())
             return;
-        Multiplayer.LogError($"{nameof(NetworkedSaveGameManager)} should only exist on the host! Destroying self.");
-        Destroy(this);
+        Inventory.Instance.MoneyChanged += Server_OnMoneyChanged;
+        LicenseManager.Instance.LicenseAcquired += Server_OnLicenseAcquired;
+        LicenseManager.Instance.JobLicenseAcquired += Server_OnJobLicenseAcquired;
     }
 
-    public void UpdateInternalData(SaveGameData data)
+    protected override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (UnloadWatcher.isUnloading)
+            return;
+        if (!NetworkLifecycle.Instance.IsHost())
+            return;
+        Inventory.Instance.MoneyChanged -= Server_OnMoneyChanged;
+        LicenseManager.Instance.LicenseAcquired -= Server_OnLicenseAcquired;
+        LicenseManager.Instance.JobLicenseAcquired -= Server_OnJobLicenseAcquired;
+        LicenseManager.Instance.GarageUnlocked -= Server_OnGarageUnlocked;
+    }
+
+    #region Server
+
+    private static void Server_OnMoneyChanged(double oldAmount, double newAmount)
+    {
+        NetworkLifecycle.Instance.Server.SendMoney((float)newAmount);
+    }
+
+    private static void Server_OnLicenseAcquired(GeneralLicenseType_v2 license)
+    {
+        NetworkLifecycle.Instance.Server.SendLicense(license.id, false);
+    }
+
+    private static void Server_OnJobLicenseAcquired(JobLicenseType_v2 license)
+    {
+        NetworkLifecycle.Instance.Server.SendLicense(license.id, true);
+    }
+
+    private static void Server_OnGarageUnlocked(GarageType_v2 garage)
+    {
+        NetworkLifecycle.Instance.Server.SendGarage(garage.id);
+    }
+
+    public void Server_UpdateInternalData(SaveGameData data)
     {
         JObject json = data.GetJObject(KEY) ?? new JObject();
 
@@ -35,10 +73,12 @@ public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameMana
         data.SetJObject(KEY, json);
     }
 
-    public JObject GetPlayerData(SaveGameData data, string username)
+    public JObject Server_GetPlayerData(SaveGameData data, string username)
     {
         return data?.GetJObject(KEY)?.GetJObject($"Player_{username}");
     }
+
+    #endregion
 
     [UsedImplicitly]
     public new static string AllowAutoCreate()

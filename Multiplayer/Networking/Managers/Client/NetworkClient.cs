@@ -1,8 +1,10 @@
 using System.Text;
 using DV;
 using DV.Damage;
+using DV.InventorySystem;
 using DV.Logic.Job;
 using DV.MultipleUnit;
+using DV.ServicePenalty.UI;
 using DV.ThingTypes;
 using DV.UI;
 using DV.UIFramework;
@@ -15,11 +17,13 @@ using Multiplayer.Components.Networking.World;
 using Multiplayer.Components.SaveGame;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Packets.Clientbound;
+using Multiplayer.Networking.Packets.Clientbound.SaveGame;
 using Multiplayer.Networking.Packets.Clientbound.Train;
 using Multiplayer.Networking.Packets.Clientbound.World;
 using Multiplayer.Networking.Packets.Common;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Networking.Packets.Serverbound;
+using Multiplayer.Patches.SaveGame;
 using Multiplayer.Utils;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -94,6 +98,10 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundRerailTrainPacket>(OnClientboundRerailTrainPacket);
         netPacketProcessor.SubscribeReusable<ClientboundWindowsBrokenPacket>(OnClientboundWindowsBrokenPacket);
         netPacketProcessor.SubscribeReusable<ClientboundWindowsRepairedPacket>(OnClientboundWindowsRepairedPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundMoneyPacket>(OnClientboundMoneyPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundLicenseAcquiredPacket>(OnClientboundLicenseAcquiredPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundGarageUnlockPacket>(OnClientboundGarageUnlockPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundDebtStatusPacket>(OnClientboundDebtStatusPacket);
     }
 
     #region Net Events
@@ -530,6 +538,36 @@ public class NetworkClient : NetworkManager
         windowsController.RepairWindows();
     }
 
+    private void OnClientboundMoneyPacket(ClientboundMoneyPacket packet)
+    {
+        LogDebug(() => $"Received new money amount ${packet.Amount}");
+        Inventory.Instance.SetMoney(packet.Amount);
+    }
+
+    private void OnClientboundLicenseAcquiredPacket(ClientboundLicenseAcquiredPacket packet)
+    {
+        LogDebug(() => $"Received new {(packet.IsJobLicense ? "job" : "general")} license {packet.Id}");
+
+        if (packet.IsJobLicense)
+            LicenseManager.Instance.AcquireJobLicense(Globals.G.Types.jobLicenses.Find(l => l.id == packet.Id));
+        else
+            LicenseManager.Instance.AcquireGeneralLicense(Globals.G.Types.generalLicenses.Find(l => l.id == packet.Id));
+
+        foreach (CareerManagerLicensesScreen screen in Object.FindObjectsOfType<CareerManagerLicensesScreen>())
+            screen.PopulateLicensesTextsFromIndex(screen.indexOfFirstDisplayedLicense);
+    }
+
+    private void OnClientboundGarageUnlockPacket(ClientboundGarageUnlockPacket packet)
+    {
+        LogDebug(() => $"Received new garage {packet.Id}");
+        LicenseManager.Instance.UnlockGarage(Globals.G.types.garages.Find(g => g.id == packet.Id));
+    }
+
+    private void OnClientboundDebtStatusPacket(ClientboundDebtStatusPacket packet)
+    {
+        CareerManagerDebtControllerPatch.HasDebt = packet.HasDebt;
+    }
+
     #endregion
 
     #region Senders
@@ -710,6 +748,14 @@ public class NetworkClient : NetworkManager
             TrackId = trackId,
             Position = position,
             Forward = forward
+        }, DeliveryMethod.ReliableUnordered);
+    }
+
+    public void SendLicensePurchaseRequest(string id, bool isJobLicense)
+    {
+        SendPacketToServer(new ServerboundLicensePurchaseRequestPacket {
+            Id = id,
+            IsJobLicense = isJobLicense
         }, DeliveryMethod.ReliableUnordered);
     }
 

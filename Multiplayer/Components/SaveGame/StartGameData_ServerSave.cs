@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using DV.UserManagement;
 using Multiplayer.Networking.Packets.Clientbound;
+using Multiplayer.Patches.SaveGame;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
@@ -11,11 +12,12 @@ public class StartGameData_ServerSave : AStartGameData
 {
     private SaveGameData saveGameData;
 
-    private Vector3 position;
-    private Vector3 rotation;
+    private ClientboundSaveGameDataPacket packet;
 
     public void SetFromPacket(ClientboundSaveGameDataPacket packet)
     {
+        this.packet = packet.Clone();
+
         saveGameData = SaveGameManager.MakeEmptySave();
         saveGameData.SetString(SaveGameKeys.Game_mode, packet.GameMode);
         DifficultyToUse = DifficultyDataUtils.GetDifficultyFromJSON(JObject.Parse(packet.SerializedDifficulty), false);
@@ -26,12 +28,11 @@ public class StartGameData_ServerSave : AStartGameData
         saveGameData.SetStringArray(SaveGameKeys.Licenses_General, packet.AcquiredGeneralLicenses);
         saveGameData.SetStringArray(SaveGameKeys.Garages, packet.UnlockedGarages);
 
-        position = packet.Position;
-        rotation = new Vector3(0, packet.Rotation, 0);
-
         saveGameData.SetBool(SaveGameKeys.Tutorial_01_completed, true);
         saveGameData.SetBool(SaveGameKeys.Tutorial_02_completed, true);
         saveGameData.SetBool(SaveGameKeys.Tutorial_03_completed, true);
+
+        CareerManagerDebtControllerPatch.HasDebt = packet.HasDebt;
     }
 
     public override void Initialize()
@@ -49,13 +50,31 @@ public class StartGameData_ServerSave : AStartGameData
     public override IEnumerator DoLoad(Transform playerContainer)
     {
         Transform playerTransform = playerContainer.transform;
-        playerTransform.position = position + WorldMover.currentMove;
-        playerTransform.eulerAngles = rotation;
+        playerTransform.position = PlayerManager.IsPlayerPositionValid(packet.Position) ? packet.Position + WorldMover.currentMove : LevelInfo.Instance.defaultSpawnPosition;
+        playerTransform.eulerAngles = new Vector3(0, packet.Rotation, 0);
+
+        LicenseManager.Instance.LoadData(saveGameData);
 
         if (saveGameData.GetString(SaveGameKeys.Game_mode) == "FreeRoam")
             LicenseManager.Instance.GrabAllUnlockables();
         else
             StartingItemsController.Instance.AddStartingItems(saveGameData, true);
+
+        // if (packet.Debt_existing_locos != null)
+        //     LocoDebtController.Instance.LoadExistingLocosDebtsSaveData(packet.Debt_existing_locos.Select(JObject.Parse).ToArray());
+        // if (packet.Debt_deleted_locos != null)
+        //     LocoDebtController.Instance.LoadDestroyedLocosDebtsSaveData(packet.Debt_deleted_locos.Select(JObject.Parse).ToArray());
+        // if (packet.Debt_existing_jobs != null)
+        //     LocoDebtController.Instance.LoadExistingLocosDebtsSaveData(packet.Debt_existing_jobs.Select(JObject.Parse).ToArray());
+        // if (packet.Debt_staged_jobs != null)
+        //     JobDebtController.Instance.LoadStagedJobsDebtsSaveData(packet.Debt_staged_jobs.Select(JObject.Parse).ToArray());
+        // if (!string.IsNullOrEmpty(packet.Debt_existing_jobless_cars))
+        //     JobDebtController.Instance.LoadExistingJoblessCarsDebtsSaveData(JObject.Parse(packet.Debt_existing_jobless_cars));
+        // if (!string.IsNullOrEmpty(packet.Debt_deleted_jobless_cars))
+        //     JobDebtController.Instance.LoadDeletedJoblessCarDebtsSaveData(JObject.Parse(packet.Debt_deleted_jobless_cars));
+        // if (!string.IsNullOrEmpty(packet.Debt_insurance))
+        //     CareerManagerDebtController.Instance.feeQuota.LoadSaveData(JObject.Parse(packet.Debt_insurance));
+
         carsAndJobsLoadingFinished = true;
         yield break;
     }
