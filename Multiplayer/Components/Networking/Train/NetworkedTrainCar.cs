@@ -11,7 +11,6 @@ using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Utils;
-using UnityEngine;
 
 namespace Multiplayer.Components.Networking.Train;
 
@@ -404,8 +403,9 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
             return;
         if (float.IsNaN(port.prevValue) && float.IsNaN(port.Value))
             return;
-        if (Mathf.Abs(port.prevValue - port.Value) < 0.01f)
-            return;
+        // todo: check this against the last value that was synced over the network
+        // if (Mathf.Abs(port.prevValue - port.Value) < 0.001f)
+        // return;
         dirtyPorts.Add(port.id);
     }
 
