@@ -9,7 +9,7 @@ public class NetworkedWorldMap : MonoBehaviour
     private WorldMap worldMap;
     private MapMarkersController markersController;
     private GameObject textPrefab;
-    private readonly Dictionary<byte, Transform> playerIndicators = new();
+    private readonly Dictionary<byte, WorldMapIndicatorRefs> playerIndicators = new();
 
     private void Awake()
     {
@@ -36,28 +36,36 @@ public class NetworkedWorldMap : MonoBehaviour
 
     private void OnPlayerConnected(byte id, NetworkedPlayer player)
     {
-        Transform indicator = new GameObject($"{player}'s Indicator") {
+        Transform root = new GameObject($"{player.Username}'s Indicator") {
             transform = {
-                parent = worldMap.playerIndicator.parent
+                parent = worldMap.playerIndicator.parent,
+                localPosition = Vector3.zero,
+                localEulerAngles = Vector3.zero
             }
         }.transform;
+        WorldMapIndicatorRefs refs = root.gameObject.AddComponent<WorldMapIndicatorRefs>();
 
-        Instantiate(worldMap.playerIndicator.gameObject, indicator);
+        GameObject indicator = Instantiate(worldMap.playerIndicator.gameObject, root);
+        indicator.transform.localPosition = Vector3.zero;
+        refs.indicator = indicator.transform;
 
-        GameObject textGo = Instantiate(textPrefab, indicator);
+        GameObject textGo = Instantiate(textPrefab, root);
         textGo.transform.localPosition = new Vector3(0, 0.001f, 0);
+        textGo.transform.localEulerAngles = new Vector3(90f, 0, 0);
+        refs.text = textGo.GetComponent<RectTransform>();
         TMP_Text text = textGo.GetComponent<TMP_Text>();
         text.text = player.Username;
-        text.fontSize /= 1.15f;
+        text.alignment = TextAlignmentOptions.Center;
+        text.fontSize /= 1.25f;
 
-        playerIndicators[id] = indicator;
+        playerIndicators[id] = refs;
     }
 
     private void OnPlayerDisconnected(byte id, NetworkedPlayer player)
     {
-        if (!playerIndicators.TryGetValue(id, out Transform indicator))
+        if (!playerIndicators.TryGetValue(id, out WorldMapIndicatorRefs refs))
             return;
-        Destroy(indicator.gameObject);
+        Destroy(refs.gameObject);
         playerIndicators.Remove(id);
     }
 
@@ -70,7 +78,7 @@ public class NetworkedWorldMap : MonoBehaviour
 
     public void UpdatePlayers()
     {
-        foreach (KeyValuePair<byte, Transform> kvp in playerIndicators)
+        foreach (KeyValuePair<byte, WorldMapIndicatorRefs> kvp in playerIndicators)
         {
             if (!NetworkLifecycle.Instance.Client.PlayerManager.TryGetPlayer(kvp.Key, out NetworkedPlayer networkedPlayer))
             {
@@ -79,18 +87,23 @@ public class NetworkedWorldMap : MonoBehaviour
                 continue;
             }
 
-            Transform indicatorTransform = kvp.Value;
-            Transform playerTransform = networkedPlayer.transform;
+            WorldMapIndicatorRefs refs = kvp.Value;
 
             bool active = worldMap.gameParams.PlayerMarkerDisplayed;
-            if (indicatorTransform.gameObject.activeSelf != active)
-                indicatorTransform.gameObject.SetActive(active);
+            if (refs.gameObject.activeSelf != active)
+                refs.gameObject.SetActive(active);
+            if (!active)
+                return;
+
+            Transform playerTransform = networkedPlayer.transform;
 
             Vector3 normalized = Vector3.ProjectOnPlane(playerTransform.forward, Vector3.up).normalized;
             if (normalized != Vector3.zero)
-                indicatorTransform.localRotation = Quaternion.LookRotation(normalized);
+                refs.indicator.localRotation = Quaternion.LookRotation(normalized);
 
-            indicatorTransform.localPosition = markersController.GetMapPosition(playerTransform.position + WorldMover.currentMove, worldMap.triggerExtentsXZ);
+            Vector3 position = markersController.GetMapPosition(playerTransform.position - WorldMover.currentMove, worldMap.triggerExtentsXZ);
+            refs.indicator.localPosition = position;
+            refs.text.localPosition = position with { y = position.y + 0.025f };
         }
     }
 }
