@@ -100,21 +100,13 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     {
         if (show)
         {
-            IEnumerable<string> currentplayerlist = GetPlayerlist();
-            Playerlist.Show(currentplayerlist);
+            Playerlist.Show(Client);
         }
         else
             Playerlist.Hide();
     }
 
-    private IEnumerable<string> GetPlayerlist()
-    {
-        if (!IsClientRunning || Client == null) return new[] { "Not in game" };
-        List<string> playerlist = Client.PlayerManager.Players.Select(x => $"{x.Username} ({x.GetPing().ToString()}ms)").ToList();
-        // The Player of the Client is not in the PlayerManager, so we need to add it seperatly
-        playerlist.Add($"{Multiplayer.Settings.Username} ({Client.Ping.ToString()}ms)");
-        return playerlist;
-    }
+
 
     public void TriggerMainMenuEventLater()
     {
