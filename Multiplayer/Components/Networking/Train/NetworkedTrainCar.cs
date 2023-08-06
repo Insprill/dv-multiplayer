@@ -127,11 +127,11 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
             dirtyPorts = new HashSet<string>(simulationFlow.fullPortIdToPort.Count);
             foreach (KeyValuePair<string, Port> kvp in simulationFlow.fullPortIdToPort)
                 if (kvp.Value.valueType == PortValueType.CONTROL || NetworkLifecycle.Instance.IsHost())
-                    kvp.Value.ValueUpdatedInternally += _ => { Common_OnPortUpdated(kvp.Key); }; // todo: secure this
+                    kvp.Value.ValueUpdatedInternally += _ => { Common_OnPortUpdated(kvp.Value); };
 
             dirtyFuses = new HashSet<string>(simulationFlow.fullFuseIdToFuse.Count);
             foreach (KeyValuePair<string, Fuse> kvp in simulationFlow.fullFuseIdToFuse)
-                kvp.Value.StateUpdated += _ => { Common_OnFuseUpdated(kvp.Key); };
+                kvp.Value.StateUpdated += _ => { Common_OnFuseUpdated(kvp.Value); };
         }
 
         brakeSystem.HandbrakePositionChanged += Common_OnHandbrakePositionChanged;
@@ -202,7 +202,7 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
             dirtyFuses.Add(fuseId);
     }
 
-    public bool Server_ValidateClientSimFlowPacket(ServerPlayer player, CommonSimFlowPacket packet)
+    public bool Server_ValidateClientSimFlowPacket(ServerPlayer player, CommonTrainPortsPacket packet)
     {
         // Only allow control ports to be updated by clients
         if (hasSimFlow)
@@ -226,7 +226,6 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
 
         NetworkLifecycle.Instance.Server.LogWarning($"Player {player.Username} tried to send a sim flow packet for a car they are not in!");
         Common_DirtyPorts(packet.PortIds);
-        Common_DirtyFuses(packet.FuseIds);
         return false;
     }
 
@@ -305,7 +304,8 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         if (UnloadWatcher.isUnloading)
             return;
         Common_SendHandbrakePosition();
-        Common_SendSimFlow();
+        Common_SendFuses();
+        Common_SendPorts();
     }
 
     private void Common_SendHandbrakePosition()
@@ -352,27 +352,36 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         }
     }
 
-    private void Common_SendSimFlow()
+    private void Common_SendPorts()
     {
-        if (!hasSimFlow)
-            return;
-        if (dirtyPorts.Count == 0 && dirtyFuses.Count == 0)
+        if (!hasSimFlow || dirtyPorts.Count == 0)
             return;
 
         int i = 0;
         string[] portIds = dirtyPorts.ToArray();
         float[] portValues = new float[portIds.Length];
-        foreach (string portId in dirtyPorts) portValues[i++] = simulationFlow.fullPortIdToPort[portId].Value;
-
-        i = 0;
-        string[] fuseIds = dirtyFuses.ToArray();
-        bool[] fuseValues = new bool[fuseIds.Length];
-        foreach (string fuseId in dirtyFuses) fuseValues[i++] = simulationFlow.fullFuseIdToFuse[fuseId].State;
+        foreach (string portId in dirtyPorts)
+            portValues[i++] = simulationFlow.fullPortIdToPort[portId].Value;
 
         dirtyPorts.Clear();
+
+        NetworkLifecycle.Instance.Client.SendPorts(NetId, portIds, portValues);
+    }
+
+    private void Common_SendFuses()
+    {
+        if (!hasSimFlow || dirtyFuses.Count == 0)
+            return;
+
+        int i = 0;
+        string[] fuseIds = dirtyFuses.ToArray();
+        bool[] fuseValues = new bool[fuseIds.Length];
+        foreach (string fuseId in dirtyFuses)
+            fuseValues[i++] = simulationFlow.fullFuseIdToFuse[fuseId].State;
+
         dirtyFuses.Clear();
 
-        NetworkLifecycle.Instance.Client.SendSimFlow(NetId, portIds, portValues, fuseIds, fuseValues);
+        NetworkLifecycle.Instance.Client.SendFuses(NetId, fuseIds, fuseValues);
     }
 
     private void Common_OnHandbrakePositionChanged((float, bool) data)
@@ -389,21 +398,26 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         NetworkLifecycle.Instance.Client.SendBrakeCylinderReleased(NetId);
     }
 
-    private void Common_OnPortUpdated(string portId)
+    private void Common_OnPortUpdated(Port port)
     {
         if (UnloadWatcher.isUnloading || NetworkLifecycle.Instance.IsProcessingPacket)
             return;
-        dirtyPorts.Add(portId);
+        if (float.IsNaN(port.prevValue) && float.IsNaN(port.Value))
+            return;
+        if (Mathf.Abs(port.prevValue - port.Value) < 0.01f)
+            return;
+        Multiplayer.LogDebug(() => $"Sending port {port.id}. {port.prevValue} {port.Value} {Mathf.Abs(port.prevValue - port.Value)}");
+        dirtyPorts.Add(port.id);
     }
 
-    private void Common_OnFuseUpdated(string portId)
+    private void Common_OnFuseUpdated(Fuse fuse)
     {
         if (UnloadWatcher.isUnloading || NetworkLifecycle.Instance.IsProcessingPacket)
             return;
-        dirtyFuses.Add(portId);
+        dirtyFuses.Add(fuse.id);
     }
 
-    public void Common_UpdateSimFlow(CommonSimFlowPacket packet)
+    public void Common_UpdatePorts(CommonTrainPortsPacket packet)
     {
         if (!hasSimFlow)
             return;
@@ -417,6 +431,12 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
             else
                 port.Value = value;
         }
+    }
+
+    public void Common_UpdateFuses(CommonTrainFusesPacket packet)
+    {
+        if (!hasSimFlow)
+            return;
 
         for (int i = 0; i < packet.FuseIds.Length; i++)
             simulationFlow.fullFuseIdToFuse[packet.FuseIds[i]].ChangeState(packet.FuseValues[i]);

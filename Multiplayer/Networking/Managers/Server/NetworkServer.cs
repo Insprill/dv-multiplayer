@@ -78,7 +78,8 @@ public class NetworkServer : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonCockFiddlePacket, NetPeer>(OnCommonCockFiddlePacket);
         netPacketProcessor.SubscribeReusable<CommonBrakeCylinderReleasePacket, NetPeer>(OnCommonBrakeCylinderReleasePacket);
         netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket, NetPeer>(OnCommonHandbrakePositionPacket);
-        netPacketProcessor.SubscribeReusable<CommonSimFlowPacket, NetPeer>(OnCommonSimFlowPacket);
+        netPacketProcessor.SubscribeReusable<CommonTrainPortsPacket, NetPeer>(OnCommonTrainPortsPacket);
+        netPacketProcessor.SubscribeReusable<CommonTrainFusesPacket, NetPeer>(OnCommonTrainFusesPacket);
     }
 
     private void OnLoaded()
@@ -507,7 +508,7 @@ public class NetworkServer : NetworkManager
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
     }
 
-    private void OnCommonSimFlowPacket(CommonSimFlowPacket packet, NetPeer peer)
+    private void OnCommonTrainPortsPacket(CommonTrainPortsPacket packet, NetPeer peer)
     {
         if (!TryGetServerPlayer(peer, out ServerPlayer player))
             return;
@@ -516,6 +517,11 @@ public class NetworkServer : NetworkManager
         if (!NetworkLifecycle.Instance.IsHost(peer) && !networkedTrainCar.Server_ValidateClientSimFlowPacket(player, packet))
             return;
 
+        SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
+    }
+
+    private void OnCommonTrainFusesPacket(CommonTrainFusesPacket packet, NetPeer peer)
+    {
         SendPacketToAll(packet, DeliveryMethod.ReliableOrdered, peer);
     }
 

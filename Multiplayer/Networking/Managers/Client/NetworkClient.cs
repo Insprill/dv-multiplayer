@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text;
 using DV;
 using DV.Damage;
@@ -92,7 +93,8 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<CommonCockFiddlePacket>(OnCommonCockFiddlePacket);
         netPacketProcessor.SubscribeReusable<CommonBrakeCylinderReleasePacket>(OnCommonBrakeCylinderReleasePacket);
         netPacketProcessor.SubscribeReusable<CommonHandbrakePositionPacket>(OnCommonHandbrakePositionPacket);
-        netPacketProcessor.SubscribeReusable<CommonSimFlowPacket>(OnCommonSimFlowPacket);
+        netPacketProcessor.SubscribeReusable<CommonTrainPortsPacket>(OnCommonSimFlowPacket);
+        netPacketProcessor.SubscribeReusable<CommonTrainFusesPacket>(OnCommonTrainFusesPacket);
         netPacketProcessor.SubscribeReusable<ClientboundCargoStatePacket>(OnClientboundCargoStatePacket);
         netPacketProcessor.SubscribeReusable<ClientboundCarHealthUpdatePacket>(OnClientboundCarHealthUpdatePacket);
         netPacketProcessor.SubscribeReusable<ClientboundRerailTrainPacket>(OnClientboundRerailTrainPacket);
@@ -458,12 +460,20 @@ public class NetworkClient : NetworkManager
         trainCar.brakeSystem.SetHandbrakePosition(packet.Position);
     }
 
-    private void OnCommonSimFlowPacket(CommonSimFlowPacket packet)
+    private void OnCommonSimFlowPacket(CommonTrainPortsPacket packet)
     {
         if (!NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
             return;
 
-        networkedTrainCar.Common_UpdateSimFlow(packet);
+        networkedTrainCar.Common_UpdatePorts(packet);
+    }
+
+    private void OnCommonTrainFusesPacket(CommonTrainFusesPacket packet)
+    {
+        if (!NetworkedTrainCar.Get(packet.NetId, out NetworkedTrainCar networkedTrainCar))
+            return;
+
+        networkedTrainCar.Common_UpdateFuses(packet);
     }
 
     private void OnClientboundCargoStatePacket(ClientboundCargoStatePacket packet)
@@ -716,15 +726,23 @@ public class NetworkClient : NetworkManager
         }, DeliveryMethod.ReliableOrdered);
     }
 
-    public void SendSimFlow(ushort netId, string[] portIds, float[] portValues, string[] fuseIds, bool[] fuseValues)
+    public void SendPorts(ushort netId, string[] portIds, float[] portValues)
     {
-        SendPacketToServer(new CommonSimFlowPacket {
+        LogDebug(() => $"Sending {string.Join(", ", portIds.Select((id, i) => $"{id}={portValues[i]}"))}");
+        SendPacketToServer(new CommonTrainPortsPacket {
             NetId = netId,
             PortIds = portIds,
-            PortValues = portValues,
+            PortValues = portValues
+        }, DeliveryMethod.ReliableOrdered);
+    }
+
+    public void SendFuses(ushort netId, string[] fuseIds, bool[] fuseValues)
+    {
+        SendPacketToServer(new CommonTrainFusesPacket {
+            NetId = netId,
             FuseIds = fuseIds,
             FuseValues = fuseValues
-        }, DeliveryMethod.ReliableOrdered);
+        }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendTrainSyncRequest(ushort netId)
