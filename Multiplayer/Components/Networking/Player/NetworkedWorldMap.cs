@@ -57,6 +57,7 @@ public class NetworkedWorldMap : MonoBehaviour
         text.text = player.Username;
         text.alignment = TextAlignmentOptions.Center;
         text.fontSize /= 1.25f;
+        text.autoSizeTextContainer = true;
 
         playerIndicators[id] = refs;
     }
