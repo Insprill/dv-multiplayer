@@ -8,6 +8,7 @@ namespace LiteNetLib.Utils
     {
         private static IReadOnlyDictionary<Type, byte> PacketIdDict;
 
+        public static byte PacketCount => (byte)(PacketIdDict?.Count ?? 0);
         public static byte CurrentlyProcessingPacket { get; private set; }
 
         public static IReadOnlyDictionary<Type, byte> RegisterPacketTypes()
@@ -30,16 +31,20 @@ namespace LiteNetLib.Utils
         }
 
         protected delegate void SubscribeDelegate(NetDataReader reader, object userData);
+
+        private readonly NetManager _netManager;
         private readonly NetSerializer _netSerializer;
         private readonly Dictionary<byte, SubscribeDelegate> _callbacks = new Dictionary<byte, SubscribeDelegate>();
 
-        public NetPacketProcessor()
+        public NetPacketProcessor(NetManager netManager)
         {
+            _netManager = netManager;
             _netSerializer = new NetSerializer();
         }
 
-        public NetPacketProcessor(int maxStringLength)
+        public NetPacketProcessor(NetManager netManager, int maxStringLength)
         {
+            _netManager = netManager;
             _netSerializer = new NetSerializer(maxStringLength);
         }
 
@@ -130,12 +135,20 @@ namespace LiteNetLib.Utils
         {
             WriteId<T>(writer);
             _netSerializer.Serialize(writer, packet);
+            if (!_netManager.EnableStatistics)
+                return;
+            _netManager.Statistics.IncrementPacketsWritten(GetId<T>());
+            _netManager.Statistics.AddBytesWritten(GetId<T>(), writer.Length);
         }
 
         public void WriteNetSerializable<T>(NetDataWriter writer, ref T packet) where T : INetSerializable
         {
             WriteId<T>(writer);
             packet.Serialize(writer);
+            if (!_netManager.EnableStatistics)
+                return;
+            _netManager.Statistics.IncrementPacketsWritten(GetId<T>());
+            _netManager.Statistics.AddBytesWritten(GetId<T>(), writer.Length);
         }
 
         /// <summary>

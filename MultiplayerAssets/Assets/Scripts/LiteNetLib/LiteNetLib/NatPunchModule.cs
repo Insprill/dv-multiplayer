@@ -80,7 +80,7 @@ namespace LiteNetLib
         private readonly ConcurrentQueue<SuccessEventData> _successEvents = new ConcurrentQueue<SuccessEventData>();
         private readonly NetDataReader _cacheReader = new NetDataReader();
         private readonly NetDataWriter _cacheWriter = new NetDataWriter();
-        private readonly NetPacketProcessor _netPacketProcessor = new NetPacketProcessor(MaxTokenLength);
+        private readonly NetPacketProcessor _netPacketProcessor;
         private INatPunchListener _natPunchListener;
         public const int MaxTokenLength = 256;
 
@@ -92,6 +92,7 @@ namespace LiteNetLib
         internal NatPunchModule(NetManager socket)
         {
             _socket = socket;
+            _netPacketProcessor = new NetPacketProcessor(_socket, MaxTokenLength);
             _netPacketProcessor.SubscribeReusable<NatIntroduceResponsePacket>(OnNatIntroductionResponse);
             _netPacketProcessor.SubscribeReusable<NatIntroduceRequestPacket, IPEndPoint>(OnNatIntroductionRequest);
             _netPacketProcessor.SubscribeReusable<NatPunchPacket, IPEndPoint>(OnNatPunch);

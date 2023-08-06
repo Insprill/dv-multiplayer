@@ -25,7 +25,7 @@ public abstract class NetworkManager : INetEventListener
         netManager = new NetManager(this) {
             DisconnectTimeout = 10000
         };
-        netPacketProcessor = new NetPacketProcessor();
+        netPacketProcessor = new NetPacketProcessor(netManager);
         RegisterNestedTypes();
         OnSettingsUpdated(settings);
         Settings.OnSettingsUpdated += OnSettingsUpdated;

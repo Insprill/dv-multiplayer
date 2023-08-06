@@ -40,6 +40,8 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public bool ShowAdvancedSettings;
     [Draw("Show Stats", Tooltip = "Whether to show network statistics.", VisibleOn = "ShowAdvancedSettings|true")]
     public bool ShowStats;
+    [Draw("Stats List Size", Tooltip = "How many packets to list in the network statistics gui.", VisibleOn = "ShowStats|true")]
+    public int StatsListSize = 3;
     [Draw("Debug Logging", Tooltip = "Whether to log extra information. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
     public bool DebugLogging;
     [Draw("Enable Log File", Tooltip = "Whether to create a separate file for logs. This is useful for debugging, but should otherwise be kept off.", VisibleOn = "ShowAdvancedSettings|true")]
