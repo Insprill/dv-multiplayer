@@ -25,16 +25,15 @@ public class PlayerlistGUI : MonoBehaviour
     {
         if (!showPlayerlist)
             return;
-        GUILayout.BeginArea(new Rect((Screen.width/2)-50, 10 , 100, 100));
-        GUILayout.BeginVertical(GUI.skin.box);
 
-        GUILayout.Label("Players", UnityModManager.UI.bold);
+        GUILayout.Window(157031520, new Rect((Screen.width/2)-125, 25, 250, 0), DrawPlayerlist, "Online Players");
+    }
+
+    private void DrawPlayerlist(int windowId)
+    {
         foreach (string player in currentPlayerlist)
         {
             GUILayout.Label(player);
         }
-
-        GUILayout.EndVertical();
-        GUILayout.EndArea ();
     }
 }
