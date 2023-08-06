@@ -25,7 +25,7 @@ public class NetworkedBogie : TickedQueue<BogieData>
         if (bogie.HasDerailed)
             return;
 
-        if (snapshot.HasDerailed)
+        if (snapshot.HasDerailed || !bogie.track)
         {
             bogie.Derail();
             return;
@@ -43,6 +43,6 @@ public class NetworkedBogie : TickedQueue<BogieData>
 
         int physicsSteps = Mathf.FloorToInt((NetworkLifecycle.Instance.Tick - (float)snapshotTick) / NetworkLifecycle.TICK_RATE / Time.fixedDeltaTime) + 1;
         for (int i = 0; i < physicsSteps; i++)
-            bogie.FixedUpdate(); // 💀
+            bogie.UpdatePointSetTraveller();
     }
 }
