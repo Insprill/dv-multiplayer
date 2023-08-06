@@ -728,7 +728,6 @@ public class NetworkClient : NetworkManager
 
     public void SendPorts(ushort netId, string[] portIds, float[] portValues)
     {
-        LogDebug(() => $"Sending {string.Join(", ", portIds.Select((id, i) => $"{id}={portValues[i]}"))}");
         SendPacketToServer(new CommonTrainPortsPacket {
             NetId = netId,
             PortIds = portIds,

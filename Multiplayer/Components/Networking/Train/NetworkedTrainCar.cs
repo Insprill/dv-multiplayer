@@ -406,7 +406,6 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
             return;
         if (Mathf.Abs(port.prevValue - port.Value) < 0.01f)
             return;
-        Multiplayer.LogDebug(() => $"Sending port {port.id}. {port.prevValue} {port.Value} {Mathf.Abs(port.prevValue - port.Value)}");
         dirtyPorts.Add(port.id);
     }
 
