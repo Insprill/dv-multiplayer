@@ -41,10 +41,15 @@ public class NetworkedWorldMap : MonoBehaviour
                 parent = worldMap.playerIndicator.parent
             }
         }.transform;
+
         Instantiate(worldMap.playerIndicator.gameObject, indicator);
-        TMP_Text text = Instantiate(textPrefab, indicator).GetComponent<TMP_Text>();
+
+        GameObject textGo = Instantiate(textPrefab, indicator);
+        textGo.transform.localPosition = new Vector3(0, 0.001f, 0);
+        TMP_Text text = textGo.GetComponent<TMP_Text>();
         text.text = player.Username;
-        text.fontSize /= 1.25f;
+        text.fontSize /= 1.15f;
+
         playerIndicators[id] = indicator;
     }
 
@@ -85,7 +90,7 @@ public class NetworkedWorldMap : MonoBehaviour
             if (normalized != Vector3.zero)
                 indicatorTransform.localRotation = Quaternion.LookRotation(normalized);
 
-            indicatorTransform.localPosition = markersController.GetMapPosition(playerTransform.position, worldMap.triggerExtentsXZ);
+            indicatorTransform.localPosition = markersController.GetMapPosition(playerTransform.position + WorldMover.currentMove, worldMap.triggerExtentsXZ);
         }
     }
 }

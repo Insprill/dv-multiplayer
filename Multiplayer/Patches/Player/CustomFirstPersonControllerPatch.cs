@@ -6,23 +6,23 @@ using UnityEngine;
 namespace Multiplayer.Patches.Player;
 
 [HarmonyPatch(typeof(CustomFirstPersonController))]
-public static class MovementSyncPatch
+public static class CustomFirstPersonControllerPatch
 {
     private static CustomFirstPersonController fps;
-    private static Transform fpsTransform;
 
     private static Vector3 lastPosition;
     private static float lastRotationY;
     private static bool sentFinalPosition;
 
     private static bool isJumping;
+    private static bool isOnCar;
 
     [HarmonyPostfix]
     [HarmonyPatch(nameof(CustomFirstPersonController.Awake))]
     private static void CharacterMovement(CustomFirstPersonController __instance)
     {
         fps = __instance;
-        fpsTransform = fps.transform;
+        isOnCar = PlayerManager.Car != null;
         NetworkLifecycle.Instance.OnTick += OnTick;
         PlayerManager.CarChanged += OnCarChanged;
     }
@@ -39,14 +39,14 @@ public static class MovementSyncPatch
 
     private static void OnCarChanged(TrainCar trainCar)
     {
-        NetworkLifecycle.Instance.Client.SendPlayerCar(trainCar == null ? (ushort)0 : trainCar.GetNetId());
+        isOnCar = trainCar != null;
+        NetworkLifecycle.Instance.Client.SendPlayerCar(!isOnCar ? (ushort)0 : trainCar.GetNetId());
     }
 
-    private static void OnTick(uint obj)
+    private static void OnTick(uint tick)
     {
-        bool isOnCar = PlayerManager.Car != null;
-        Vector3 position = isOnCar ? fpsTransform.localPosition : fpsTransform.position - WorldMover.currentMove;
-        float rotationY = (isOnCar ? fpsTransform.localEulerAngles : fpsTransform.eulerAngles).y;
+        Vector3 position = isOnCar ? PlayerManager.PlayerTransform.localPosition : PlayerManager.GetWorldAbsolutePlayerPosition();
+        float rotationY = (isOnCar ? PlayerManager.PlayerTransform.localEulerAngles : PlayerManager.PlayerTransform.eulerAngles).y;
 
         bool positionOrRotationChanged = lastPosition != position || !Mathf.Approximately(lastRotationY, rotationY);
         if (!positionOrRotationChanged && sentFinalPosition)
@@ -55,7 +55,7 @@ public static class MovementSyncPatch
         lastPosition = position;
         lastRotationY = rotationY;
         sentFinalPosition = !positionOrRotationChanged;
-        NetworkLifecycle.Instance.Client.SendPlayerPosition(lastPosition, fpsTransform.InverseTransformDirection(fps.m_MoveDir), lastRotationY, isJumping, isOnCar, isJumping || sentFinalPosition);
+        NetworkLifecycle.Instance.Client.SendPlayerPosition(lastPosition, PlayerManager.PlayerTransform.InverseTransformDirection(fps.m_MoveDir), lastRotationY, isJumping, isOnCar, isJumping || sentFinalPosition);
         isJumping = false;
     }
 
