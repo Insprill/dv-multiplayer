@@ -1,11 +1,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using DV.Scenarios.Common;
 using DV.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using Multiplayer.Components.Networking.Player;
 using Multiplayer.Networking.Listeners;
 using Multiplayer.Utils;
 using UnityEngine;
@@ -31,6 +33,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     public bool IsProcessingPacket => Client.IsProcessingPacket;
 
     private NetworkStatsGui Stats;
+    private PlayerlistGUI Playerlist;
     private readonly ExecutionTimer tickTimer = new();
     private readonly ExecutionTimer tickWatchdog = new(0.25f);
 
@@ -57,9 +60,11 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     protected override void Awake()
     {
         base.Awake();
+        Playerlist = gameObject.AddComponent<PlayerlistGUI>();
         Stats = gameObject.AddComponent<NetworkStatsGui>();
         RegisterPackets();
         Settings.OnSettingsUpdated += OnSettingsUpdated;
+        Settings.OnPlayerlistVisibilityUpdate += OnPlayerlistVisibilityUpdate;
         SceneManager.sceneLoaded += (scene, _) =>
         {
             if (scene.buildIndex != (int)DVScenes.MainMenu)
@@ -89,6 +94,26 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
             Stats.Show(Client.Statistics, Server?.Statistics);
         else
             Stats.Hide();
+    }
+
+    private void OnPlayerlistVisibilityUpdate(bool show)
+    {
+        if (show)
+        {
+            IEnumerable<string> currentplayerlist = GetPlayerlist();
+            Playerlist.Show(currentplayerlist);
+        }
+        else
+            Playerlist.Hide();
+    }
+
+    private IEnumerable<string> GetPlayerlist()
+    {
+        if (!IsClientRunning || Client == null) return new[] { "Not in game" };
+        List<string> playerlist = Client.PlayerManager.Players.Select(x => x.Username).ToList();
+        playerlist.Add(Multiplayer.Settings.Username);
+        return playerlist;
+
     }
 
     public void TriggerMainMenuEventLater()
