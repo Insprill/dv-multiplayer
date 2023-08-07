@@ -220,7 +220,7 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         // Some ports can be updated by the player even if they are not in the car, like doors and windows.
         // Only deny the request if the player is more than 5 meters away from any point of the car.
         float carLength = CarSpawner.Instance.carLiveryToCarLength[TrainCar.carLivery];
-        if ((player.RawPosition + WorldMover.currentMove - transform.position).sqrMagnitude <= carLength * carLength)
+        if ((player.WorldPosition - transform.position).sqrMagnitude <= carLength * carLength)
             return true;
 
         NetworkLifecycle.Instance.Server.LogWarning($"Player {player.Username} tried to send a sim flow packet for a car they are not in!");

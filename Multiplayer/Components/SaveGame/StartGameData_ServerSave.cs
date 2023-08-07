@@ -52,7 +52,7 @@ public class StartGameData_ServerSave : AStartGameData
     public override IEnumerator DoLoad(Transform playerContainer)
     {
         Transform playerTransform = playerContainer.transform;
-        playerTransform.position = PlayerManager.IsPlayerPositionValid(packet.Position) ? packet.Position + WorldMover.currentMove : LevelInfo.Instance.defaultSpawnPosition;
+        playerTransform.position = PlayerManager.IsPlayerPositionValid(packet.Position) ? packet.Position : LevelInfo.Instance.defaultSpawnPosition;
         playerTransform.eulerAngles = new Vector3(0, packet.Rotation, 0);
 
         LicenseManager.Instance.LoadData(saveGameData);

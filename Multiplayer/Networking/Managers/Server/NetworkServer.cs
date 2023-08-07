@@ -40,6 +40,7 @@ public class NetworkServer : NetworkManager
     public int PlayerCount => netManager.ConnectedPeersCount;
 
     private static NetPeer selfPeer => NetworkLifecycle.Instance.Client?.selfPeer;
+    public static byte SelfId => (byte)selfPeer.Id;
     private readonly ModInfo[] serverMods;
 
     public readonly IDifficulty Difficulty;
@@ -114,6 +115,7 @@ public class NetworkServer : NetworkManager
     public override void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
     {
         byte id = (byte)peer.Id;
+        Log($"Player {(serverPlayers.TryGetValue(id, out ServerPlayer player) ? player : id)} disconnected: {disconnectInfo.Reason}");
 
         if (WorldStreamingInit.isLoaded)
             SaveGameManager.Instance.UpdateInternalData();
@@ -285,7 +287,7 @@ public class NetworkServer : NetworkManager
             return;
         }
 
-        Log($"Processing login packet for {packet.Username} ({guid.ToString()}) {(Multiplayer.Settings.LogIps ? $" at {request.RemoteEndPoint.Address}" : "")}");
+        Log($"Processing login packet for {packet.Username} ({guid.ToString()}){(Multiplayer.Settings.LogIps ? $" at {request.RemoteEndPoint.Address}" : "")}");
 
         if (Multiplayer.Settings.Password != packet.Password)
         {
@@ -429,6 +431,8 @@ public class NetworkServer : NetworkManager
 
         // All data has been sent, allow the client to load into the world.
         SendPacket(peer, new ClientboundRemoveLoadingScreenPacket(), DeliveryMethod.ReliableOrdered);
+
+        serverPlayer.IsLoaded = true;
     }
 
     private void OnServerboundPlayerPositionPacket(ServerboundPlayerPositionPacket packet, NetPeer peer)

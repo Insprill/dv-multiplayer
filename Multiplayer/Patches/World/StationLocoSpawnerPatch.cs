@@ -55,7 +55,7 @@ public static class StationLocoSpawner_Start_Patch
     private static bool IsAnyoneWithinRange(StationLocoSpawner stationLocoSpawner, Vector3 targetPosition)
     {
         foreach (ServerPlayer serverPlayer in NetworkLifecycle.Instance.Server.ServerPlayers)
-            if ((serverPlayer.RawPosition - targetPosition).sqrMagnitude < stationLocoSpawner.spawnLocoPlayerSqrDistanceFromTrack)
+            if ((serverPlayer.WorldPosition - targetPosition).sqrMagnitude < stationLocoSpawner.spawnLocoPlayerSqrDistanceFromTrack)
                 return true;
         return false;
     }
