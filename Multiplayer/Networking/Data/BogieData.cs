@@ -23,10 +23,11 @@ public readonly struct BogieData
 
     public static BogieData FromBogie(Bogie bogie, bool includeTrack, int trackDirection)
     {
+        bool includesTrackData = includeTrack && !bogie.HasDerailed && bogie.track;
         return new BogieData(
-            (byte)((includeTrack && !bogie.HasDerailed ? 1 : 0) | (bogie.HasDerailed ? 2 : 0)),
+            (byte)((includesTrackData ? 1 : 0) | (bogie.HasDerailed ? 2 : 0)),
             bogie.traveller?.Span ?? -1.0,
-            includeTrack && !bogie.HasDerailed ? bogie.track.Networked().NetId : (ushort)0,
+            includesTrackData ? bogie.track.Networked().NetId : (ushort)0,
             trackDirection
         );
     }
