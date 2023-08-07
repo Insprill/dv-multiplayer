@@ -10,13 +10,14 @@ namespace Multiplayer;
 [DrawFields(DrawFieldMask.OnlyDrawAttr)]
 public class Settings : UnityModManager.ModSettings, IDrawable
 {
-    private const byte MAX_USERNAME_LENGTH = 24;
+    public const byte MAX_USERNAME_LENGTH = 24;
 
     public static Action<Settings> OnSettingsUpdated;
 
     [Header("Player")]
     [Draw("Username", Tooltip = "Your username in-game")]
     public string Username = "Player";
+    public string Guid = System.Guid.NewGuid().ToString();
 
     [Space(10)]
     [Header("Server")]
@@ -87,5 +88,14 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public void OnChange()
     {
         // yup
+    }
+
+    public Guid GetGuid()
+    {
+        if (System.Guid.TryParse(Guid, out Guid guid))
+            return guid;
+        guid = System.Guid.NewGuid();
+        Guid = guid.ToString();
+        return guid;
     }
 }

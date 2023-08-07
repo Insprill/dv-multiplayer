@@ -1,3 +1,4 @@
+using System;
 using DV.InventorySystem;
 using DV.JObjectExtstensions;
 using DV.ThingTypes;
@@ -11,7 +12,8 @@ namespace Multiplayer.Components.SaveGame;
 
 public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameManager>
 {
-    private const string KEY = "Multiplayer";
+    private const string ROOT_KEY = "Multiplayer";
+    private const string PLAYERS_KEY = "Players";
 
     protected override void Awake()
     {
@@ -60,22 +62,24 @@ public class NetworkedSaveGameManager : SingletonBehaviour<NetworkedSaveGameMana
 
     public void Server_UpdateInternalData(SaveGameData data)
     {
-        JObject json = data.GetJObject(KEY) ?? new JObject();
+        JObject root = data.GetJObject(ROOT_KEY) ?? new JObject();
+        JObject players = root.GetJObject(PLAYERS_KEY) ?? new JObject();
 
         foreach (NetworkedPlayer player in NetworkLifecycle.Instance.Client.PlayerManager.Players)
         {
             JObject playerData = new();
             playerData.SetVector3(SaveGameKeys.Player_position, player.transform.position - WorldMover.currentMove);
             playerData.SetFloat(SaveGameKeys.Player_rotation, player.transform.rotation.y);
-            json.SetJObject($"Player_{player.Username}", playerData);
+            players.SetJObject(player.Guid.ToString(), playerData);
         }
 
-        data.SetJObject(KEY, json);
+        root.SetJObject(PLAYERS_KEY, players);
+        data.SetJObject(ROOT_KEY, root);
     }
 
-    public JObject Server_GetPlayerData(SaveGameData data, string username)
+    public JObject Server_GetPlayerData(SaveGameData data, Guid guid)
     {
-        return data?.GetJObject(KEY)?.GetJObject($"Player_{username}");
+        return data?.GetJObject(ROOT_KEY)?.GetJObject(PLAYERS_KEY)?.GetJObject(guid.ToString());
     }
 
     #endregion

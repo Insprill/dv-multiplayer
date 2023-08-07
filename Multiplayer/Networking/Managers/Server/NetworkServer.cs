@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using DV;
@@ -7,6 +8,7 @@ using DV.Scenarios.Common;
 using DV.ServicePenalty;
 using DV.ThingTypes;
 using DV.WeatherSystem;
+using Humanizer;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using Multiplayer.Components.Networking;
@@ -268,7 +270,22 @@ public class NetworkServer : NetworkManager
 
     private void OnServerboundClientLoginPacket(ServerboundClientLoginPacket packet, ConnectionRequest request)
     {
-        Log($"Processing login packet{(Multiplayer.Settings.LogIps ? $" from {request.RemoteEndPoint.Address}" : "")}");
+        packet.Username = packet.Username.Truncate(Settings.MAX_USERNAME_LENGTH);
+
+        Guid guid;
+        try
+        {
+            guid = new Guid(packet.Guid);
+        }
+        catch (ArgumentException)
+        {
+            // This can only happen if the sent GUID is tampered with, in which case, we aren't worried about showing a message.
+            Log($"Invalid GUID from {packet.Username}{(Multiplayer.Settings.LogIps ? $" at {request.RemoteEndPoint.Address}" : "")}");
+            request.Reject();
+            return;
+        }
+
+        Log($"Processing login packet for {packet.Username} ({guid.ToString()}) {(Multiplayer.Settings.LogIps ? $" at {request.RemoteEndPoint.Address}" : "")}");
 
         if (Multiplayer.Settings.Password != packet.Password)
         {
@@ -319,7 +336,8 @@ public class NetworkServer : NetworkManager
 
         ServerPlayer serverPlayer = new() {
             Id = (byte)peer.Id,
-            Username = packet.Username
+            Username = packet.Username,
+            Guid = guid
         };
 
         serverPlayers.Add(serverPlayer.Id, serverPlayer);
@@ -362,7 +380,8 @@ public class NetworkServer : NetworkManager
         ServerPlayer serverPlayer = serverPlayers[peerId];
         ClientboundPlayerJoinedPacket clientboundPlayerJoinedPacket = new() {
             Id = peerId,
-            Username = serverPlayer.Username
+            Username = serverPlayer.Username,
+            Guid = serverPlayer.Guid.ToByteArray()
         };
         SendPacketToAll(clientboundPlayerJoinedPacket, DeliveryMethod.ReliableOrdered, peer);
 
@@ -401,6 +420,7 @@ public class NetworkServer : NetworkManager
             SendPacket(peer, new ClientboundPlayerJoinedPacket {
                 Id = player.Id,
                 Username = player.Username,
+                Guid = player.Guid.ToByteArray(),
                 TrainCar = player.CarId,
                 Position = player.RawPosition,
                 Rotation = player.RawRotationY

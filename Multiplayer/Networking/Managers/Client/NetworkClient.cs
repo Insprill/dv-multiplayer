@@ -1,4 +1,4 @@
-using System.Linq;
+using System;
 using System.Text;
 using DV;
 using DV.Damage;
@@ -29,6 +29,7 @@ using Multiplayer.Utils;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityModManagerNet;
+using Object = UnityEngine.Object;
 
 namespace Multiplayer.Networking.Listeners;
 
@@ -53,6 +54,7 @@ public class NetworkClient : NetworkManager
         netManager.Start();
         ServerboundClientLoginPacket serverboundClientLoginPacket = new() {
             Username = Multiplayer.Settings.Username,
+            Guid = Multiplayer.Settings.GetGuid().ToByteArray(),
             Password = password,
             BuildMajorVersion = (ushort)BuildInfo.BUILD_VERSION_MAJOR,
             Mods = ModInfo.FromModEntries(UnityModManager.modEntries)
@@ -185,8 +187,8 @@ public class NetworkClient : NetworkManager
 
     private void OnClientboundPlayerJoinedPacket(ClientboundPlayerJoinedPacket packet)
     {
-        Log($"Received player joined packet (Id: {packet.Id}, Username: {packet.Username})");
-        PlayerManager.AddPlayer(packet.Id, packet.Username);
+        Guid guid = new(packet.Guid);
+        PlayerManager.AddPlayer(packet.Id, packet.Username, guid);
         PlayerManager.UpdateCar(packet.Id, packet.TrainCar);
         PlayerManager.UpdatePosition(packet.Id, packet.Position, Vector3.zero, packet.Rotation, false, packet.TrainCar != 0);
     }

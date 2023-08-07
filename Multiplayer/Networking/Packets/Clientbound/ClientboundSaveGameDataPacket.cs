@@ -41,7 +41,7 @@ public class ClientboundSaveGameDataPacket
         JObject difficulty = new();
         DifficultyDataUtils.SetDifficultyToJSON(difficulty, NetworkLifecycle.Instance.Server.Difficulty);
 
-        JObject playerData = NetworkedSaveGameManager.Instance.Server_GetPlayerData(data, player.Username);
+        JObject playerData = NetworkedSaveGameManager.Instance.Server_GetPlayerData(data, player.Guid);
 
         return new ClientboundSaveGameDataPacket {
             GameMode = data.GetString(SaveGameKeys.Game_mode),
