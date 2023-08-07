@@ -100,7 +100,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     {
         if (show)
         {
-            Playerlist.Show(Client);
+            Playerlist.Show();
         }
         else
             Playerlist.Hide();

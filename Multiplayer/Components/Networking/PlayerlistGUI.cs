@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Cysharp.Threading.Tasks;
+using DV.Utils;
 using JetBrains.Annotations;
 using Multiplayer.Networking.Listeners;
 using UnityEngine;
@@ -11,13 +13,10 @@ namespace Multiplayer.Components.Networking;
 
 public class PlayerlistGUI : MonoBehaviour
 {
-    [CanBeNull]
-    private NetworkClient _client;
     private bool showPlayerlist;
 
-    public void Show([CanBeNull] NetworkClient client)
+    public void Show()
     {
-        _client = client;
         showPlayerlist = true;
     }
 
@@ -44,10 +43,10 @@ public class PlayerlistGUI : MonoBehaviour
 
     private IEnumerable<string> GetPlayerlist()
     {
-        if (_client is not { IsRunning: true }) return new[] { "Not in game" };
-        List<string> playerlist = _client.PlayerManager.Players.Select(x => $"{x.Username} ({x.GetPing().ToString()}ms)").ToList();
+        if (!NetworkLifecycle.Instance.IsClientRunning) return new[] { "Not in game" };
+        List<string> playerlist = NetworkLifecycle.Instance.Client.PlayerManager.Players.Select(x => $"{x.Username} ({x.GetPing().ToString()}ms)").ToList();
         // The Player of the Client is not in the PlayerManager, so we need to add it seperatly
-        playerlist.Add($"{Multiplayer.Settings.Username} ({_client.Ping.ToString()}ms)");
+        playerlist.Add($"{Multiplayer.Settings.Username} ({NetworkLifecycle.Instance.Client.Ping.ToString()}ms)");
         return playerlist;
     }
 }
