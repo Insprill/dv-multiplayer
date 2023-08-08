@@ -13,7 +13,7 @@ public static class Locale
     private const string DEFAULT_LOCALE_FILE = "locale.csv";
 
     private const string DEFAULT_LANGUAGE = "English";
-    private const string MISSING_TRANSLATION = "[ MISSING TRANSLATION ]";
+    public const string MISSING_TRANSLATION = "[ MISSING TRANSLATION ]";
     public const string PREFIX = "multiplayer/";
 
     private const string PREFIX_MAIN_MENU = $"{PREFIX}mm";
@@ -24,7 +24,7 @@ public static class Locale
     #region Main Menu
 
     public static string MAIN_MENU__JOIN_SERVER => Get(MAIN_MENU__JOIN_SERVER_KEY);
-    private const string MAIN_MENU__JOIN_SERVER_KEY = $"{PREFIX_MAIN_MENU}/join_server";
+    public const string MAIN_MENU__JOIN_SERVER_KEY = $"{PREFIX_MAIN_MENU}/join_server";
 
     #endregion
 

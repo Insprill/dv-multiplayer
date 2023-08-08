@@ -2,7 +2,6 @@
 using DV.UI;
 using HarmonyLib;
 using Multiplayer.Utils;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,19 +21,26 @@ public static class MainMenuController_Awake_Patch
             return;
         }
 
+        button.SetActive(false);
         MultiplayerButton = Object.Instantiate(button, button.transform.parent);
+        button.SetActive(true);
+
         MultiplayerButton.transform.SetSiblingIndex(button.transform.GetSiblingIndex() + 1);
         MultiplayerButton.name = "ButtonSelectable Multiplayer";
 
-        Object.Destroy(MultiplayerButton.GetComponentInChildren<Localize>());
+        Localize localize = MultiplayerButton.GetComponentInChildren<Localize>();
+        localize.key = Locale.MAIN_MENU__JOIN_SERVER_KEY;
 
-        TMP_Text text = MultiplayerButton.GetComponentInChildren<TMP_Text>();
-        text.text = Locale.MAIN_MENU__JOIN_SERVER;
+        // Reset existing localization components that were added when the Sessions button was initialized.
+        Object.Destroy(MultiplayerButton.GetComponentInChildren<I2.Loc.Localize>());
+        UIElementTooltip tooltip = MultiplayerButton.GetComponent<UIElementTooltip>();
+        tooltip.disabledKey = null;
+        tooltip.enabledKey = null;
 
         GameObject icon = MultiplayerButton.FindChildByName("icon");
         if (icon == null)
         {
-            Multiplayer.LogError("Failed to find icon on Sessions button!");
+            Multiplayer.LogError("Failed to find icon on Sessions button, destroying the Multiplayer button!");
             Object.Destroy(MultiplayerButton);
             return;
         }

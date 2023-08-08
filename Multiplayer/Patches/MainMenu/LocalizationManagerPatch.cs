@@ -3,14 +3,18 @@ using I2.Loc;
 
 namespace Multiplayer.Patches.MainMenu;
 
-[HarmonyPatch(typeof(LocalizationManager), nameof(LocalizationManager.GetTranslation))]
-public static class LocalizationManager_GetTranslation_Patch
+[HarmonyPatch(typeof(LocalizationManager))]
+public static class LocalizationManagerPatch
 {
-    private static bool Prefix(ref string __result, string Term)
+    [HarmonyPrefix]
+    [HarmonyPatch(nameof(LocalizationManager.TryGetTranslation))]
+    private static bool TryGetTranslation_Prefix(ref bool __result, string Term, out string Translation)
     {
+        Translation = string.Empty;
         if (!Term.StartsWith(Locale.PREFIX))
             return true;
-        __result = Locale.Get(Term);
+        Translation = Locale.Get(Term);
+        __result = Translation == Locale.MISSING_TRANSLATION;
         return false;
     }
 }
