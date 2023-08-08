@@ -110,7 +110,11 @@ public static class Locale
         Dictionary<string, string> localeDict = csv[locale];
         string actualKey = key.StartsWith(PREFIX) ? key.Substring(PREFIX.Length) : key;
         if (localeDict.TryGetValue(actualKey, out string value))
-            return value == string.Empty ? Get(actualKey, DEFAULT_LANGUAGE) : value;
+        {
+            if (value == string.Empty)
+                return overrideLanguage == null && locale != DEFAULT_LANGUAGE ? Get(actualKey, DEFAULT_LANGUAGE) : MISSING_TRANSLATION;
+            return value;
+        }
 
         Multiplayer.LogDebug(() => $"Failed to find locale key '{actualKey}'!");
         return MISSING_TRANSLATION;
