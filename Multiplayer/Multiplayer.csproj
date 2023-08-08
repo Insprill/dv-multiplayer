@@ -71,7 +71,6 @@
         <Reference Include="UnityEngine.AudioModule" />
         <Reference Include="UnityEngine.CoreModule" />
         <Reference Include="UnityEngine.IMGUIModule" />
-        <Reference Include="UnityEngine.InputLegacyModule" />
         <Reference Include="UnityEngine.JSONSerializeModule" />
         <Reference Include="UnityEngine.PhysicsModule" />
         <Reference Include="UnityEngine.UI" />
