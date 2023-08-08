@@ -82,7 +82,7 @@ public static class Locale
         Multiplayer.LogDebug(() => $"Locale dump:{Csv.Dump(csv)}");
     }
 
-    public static string Get(string key)
+    public static string Get(string key, string overrideLanguage = null)
     {
         if (!initializeAttempted)
             throw new InvalidOperationException("Not initialized");
@@ -90,7 +90,7 @@ public static class Locale
         if (csv == null)
             return MISSING_TRANSLATION;
 
-        string locale = LocalizationManager.CurrentLanguage;
+        string locale = overrideLanguage ?? LocalizationManager.CurrentLanguage;
         if (!csv.ContainsKey(locale))
         {
             if (locale == DEFAULT_LANGUAGE)
@@ -107,7 +107,7 @@ public static class Locale
         Dictionary<string, string> localeDict = csv[locale];
         string actualKey = key.StartsWith(PREFIX) ? key.Substring(PREFIX.Length) : key;
         if (localeDict.TryGetValue(actualKey, out string value))
-            return value;
+            return value == string.Empty ? Get(actualKey, DEFAULT_LANGUAGE) : value;
 
         Multiplayer.LogDebug(() => $"Failed to find locale key '{actualKey}'!");
         return MISSING_TRANSLATION;
