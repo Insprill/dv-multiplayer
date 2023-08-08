@@ -13,7 +13,7 @@ public static class RightPaneController_OnEnable_Patch
 {
     private static void Prefix(RightPaneController __instance)
     {
-        if (__instance.FindChildByName("PaneRight Multiplayer"))
+        if (__instance.HasChildWithName("PaneRight Multiplayer"))
             return;
         GameObject launcher = __instance.FindChildByName("PaneRight Launcher");
         if (launcher == null)
