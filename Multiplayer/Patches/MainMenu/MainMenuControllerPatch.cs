@@ -29,7 +29,7 @@ public static class MainMenuController_Awake_Patch
         Object.Destroy(MultiplayerButton.GetComponentInChildren<Localize>());
 
         TMP_Text text = MultiplayerButton.GetComponentInChildren<TMP_Text>();
-        text.text = "Join Server";
+        text.text = Locale.MAIN_MENU__JOIN_SERVER;
 
         GameObject icon = MultiplayerButton.FindChildByName("icon");
         if (icon == null)

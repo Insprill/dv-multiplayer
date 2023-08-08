@@ -11,7 +11,7 @@ public static class CareerManagerFeesScreenPatch
     {
         if (NetworkLifecycle.Instance.IsHost())
             return true;
-        __instance.infoScreen.SetInfoData(__instance.mainScreen, CareerManagerLocalization.FEES, "Only the host can manage fees!");
+        __instance.infoScreen.SetInfoData(__instance.mainScreen, CareerManagerLocalization.FEES, Locale.CAREER_MANAGER__FEES_HOST_ONLY);
         __instance.screenSwitcher.SetActiveDisplay(__instance.infoScreen);
         return false;
     }

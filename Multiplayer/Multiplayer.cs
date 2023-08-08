@@ -36,6 +36,8 @@ public static class Multiplayer
         {
             File.Delete(LOG_FILE);
 
+            Locale.Load(ModEntry.Path);
+
             Log("Patching...");
             harmony = new Harmony(ModEntry.Info.Id);
             harmony.PatchAll();

@@ -178,9 +178,9 @@ public class NetworkClient : NetworkManager
             Popup popup = MainMenuThingsAndStuff.Instance.ShowOkPopup();
             if (popup == null)
                 return;
-            string text = $"{packet.Reason}";
+            string text = Locale.Get(packet.ReasonKey, packet.ReasonArgs);
             if (packet.Extra.Length != 0 || packet.Missing.Length != 0)
-                text += $"\n\nMissing mods:\n{string.Join("\n - ", packet.Missing)}\n\nExtra mods:\n{string.Join("\n - ", packet.Extra)}";
+                text += Locale.Get(Locale.DISCONN_REASON__MOD_LIST, string.Join("\n - ", packet.Missing), string.Join("\n - ", packet.Extra));
             popup.labelTMPro.text = text;
         });
     }

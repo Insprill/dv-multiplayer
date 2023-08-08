@@ -38,7 +38,7 @@ public class MultiplayerPane : MonoBehaviour
         if (popup == null)
             return;
 
-        popup.labelTMPro.text = "Enter IP Address";
+        popup.labelTMPro.text = Locale.SERVER_BROWSER__IP;
 
         popup.Closed += result =>
         {
@@ -50,7 +50,7 @@ public class MultiplayerPane : MonoBehaviour
 
             if (!IPv4.IsMatch(result.data) && !IPv6.IsMatch(result.data))
             {
-                ShowOkPopup("Invalid IP Address!", ShowIpPopup);
+                ShowOkPopup(Locale.SERVER_BROWSER__IP_INVALID, ShowIpPopup);
                 return;
             }
 
@@ -66,7 +66,7 @@ public class MultiplayerPane : MonoBehaviour
         if (popup == null)
             return;
 
-        popup.labelTMPro.text = "Enter the port (7777 by default)";
+        popup.labelTMPro.text = Locale.SERVER_BROWSER__PORT;
 
         popup.Closed += result =>
         {
@@ -78,7 +78,7 @@ public class MultiplayerPane : MonoBehaviour
 
             if (!PORT.IsMatch(result.data))
             {
-                ShowOkPopup("Invalid Port!", ShowPortPopup);
+                ShowOkPopup(Locale.SERVER_BROWSER__PORT_INVALID, ShowPortPopup);
                 return;
             }
 
@@ -94,7 +94,7 @@ public class MultiplayerPane : MonoBehaviour
         if (popup == null)
             return;
 
-        popup.labelTMPro.text = "Enter the password";
+        popup.labelTMPro.text = Locale.SERVER_BROWSER__PASSWORD;
 
         popup.Closed += result =>
         {

@@ -293,7 +293,7 @@ public class NetworkServer : NetworkManager
         {
             LogWarning("Denied login due to invalid password!");
             ClientboundServerDenyPacket denyPacket = new() {
-                Reason = "Invalid password!"
+                ReasonKey = Locale.DISCONN_REASON__INVALID_PASSWORD_KEY
             };
             request.Reject(WritePacket(denyPacket));
             return;
@@ -303,7 +303,8 @@ public class NetworkServer : NetworkManager
         {
             LogWarning($"Denied login to incorrect game version! Got: {packet.BuildMajorVersion}, expected: {BuildInfo.BUILD_VERSION_MAJOR}");
             ClientboundServerDenyPacket denyPacket = new() {
-                Reason = $"Game version mismatch! Server build: {BuildInfo.BUILD_VERSION_MAJOR}, your build: {packet.BuildMajorVersion}."
+                ReasonKey = Locale.DISCONN_REASON__GAME_VERSION_KEY,
+                ReasonArgs = new[] { BuildInfo.BUILD_VERSION_MAJOR.ToString(), packet.BuildMajorVersion.ToString() }
             };
             request.Reject(WritePacket(denyPacket));
             return;
@@ -313,7 +314,7 @@ public class NetworkServer : NetworkManager
         {
             LogWarning("Denied login due to server being full!");
             ClientboundServerDenyPacket denyPacket = new() {
-                Reason = "Server is full!"
+                ReasonKey = Locale.DISCONN_REASON__FULL_SERVER_KEY
             };
             request.Reject(WritePacket(denyPacket));
             return;
@@ -326,7 +327,7 @@ public class NetworkServer : NetworkManager
             ModInfo[] extra = clientMods.Except(serverMods).ToArray();
             LogWarning($"Denied login due to mod mismatch! {missing.Length} missing, {extra.Length} extra");
             ClientboundServerDenyPacket denyPacket = new() {
-                Reason = "Mod mismatch!",
+                ReasonKey = Locale.DISCONN_REASON__MODS_KEY,
                 Missing = missing,
                 Extra = extra
             };
