@@ -32,6 +32,8 @@ public static class Locale
 
     public static string SERVER_BROWSER__TITLE => Get(SERVER_BROWSER__TITLE_KEY);
     public const string SERVER_BROWSER__TITLE_KEY = $"{PREFIX_SERVER_BROWSER}/title";
+    public static string SERVER_BROWSER__MANUAL_CONNECT => Get(SERVER_BROWSER__MANUAL_CONNECT_KEY);
+    public const string SERVER_BROWSER__MANUAL_CONNECT_KEY = $"{PREFIX_SERVER_BROWSER}/manual_connect";
 
     public static string SERVER_BROWSER__IP => Get(SERVER_BROWSER__IP_KEY);
     private const string SERVER_BROWSER__IP_KEY = $"{PREFIX_SERVER_BROWSER}/ip";
