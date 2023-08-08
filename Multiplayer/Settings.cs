@@ -84,11 +84,6 @@ public class Settings : UnityModManager.ModSettings, IDrawable
         Save(this, modEntry);
     }
 
-    private bool IsKeyPressed(KeyCode keyCode)
-    {
-        return Input.GetKey(keyCode);
-    }
-
     public void OnChange()
     {
         // yup
