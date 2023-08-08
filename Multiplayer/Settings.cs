@@ -11,10 +11,8 @@ namespace Multiplayer;
 public class Settings : UnityModManager.ModSettings, IDrawable
 {
     private const byte MAX_USERNAME_LENGTH = 24;
-    private bool _playerlistShown;
 
     public static Action<Settings> OnSettingsUpdated;
-    public static Action<bool> OnPlayerlistVisibilityUpdate;
 
     [Header("Player")]
     [Draw("Username", Tooltip = "Your username in-game")]
@@ -67,10 +65,6 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     [Draw("Maximum Latency (ms)", VisibleOn = "SimulateLatency|true")]
     public int SimulationMaxLatency = 100;
 
-    [Header("Keybinds")]
-    [Draw("Open Playerlist")]
-    public KeyBinding OpenPlayerlist = new() { keyCode = KeyCode.RightControl };
-
     public void Draw(UnityModManager.ModEntry modEntry)
     {
         Settings self = this;
@@ -88,20 +82,6 @@ public class Settings : UnityModManager.ModSettings, IDrawable
         if (!UnloadWatcher.isQuitting)
             OnSettingsUpdated?.Invoke(this);
         Save(this, modEntry);
-    }
-
-    public void Update(UnityModManager.ModEntry modEntry, float _)
-    {
-        if (Input.GetKeyDown(OpenPlayerlist.keyCode) && !_playerlistShown)
-        {
-            OnPlayerlistVisibilityUpdate.Invoke(true);
-            _playerlistShown = true;
-        }
-        else if(Input.GetKeyUp(OpenPlayerlist.keyCode) && _playerlistShown)
-        {
-            OnPlayerlistVisibilityUpdate.Invoke(false);
-            _playerlistShown = false;
-        }
     }
 
     private bool IsKeyPressed(KeyCode keyCode)

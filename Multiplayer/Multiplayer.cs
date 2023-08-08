@@ -29,7 +29,6 @@ public static class Multiplayer
         Settings = Settings.Load<Settings>(modEntry);
         ModEntry.OnGUI = Settings.Draw;
         ModEntry.OnSaveGUI = Settings.Save;
-        ModEntry.OnUpdate = Settings.Update;
 
         Harmony harmony = null;
 

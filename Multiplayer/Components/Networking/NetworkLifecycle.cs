@@ -1,13 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using DV.Scenarios.Common;
 using DV.Utils;
 using LiteNetLib;
 using LiteNetLib.Utils;
-using Multiplayer.Components.Networking.Player;
 using Multiplayer.Networking.Listeners;
 using Multiplayer.Utils;
 using UnityEngine;
@@ -32,8 +30,8 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 
     public bool IsProcessingPacket => Client.IsProcessingPacket;
 
+    private PlayerListGUI playerList;
     private NetworkStatsGui Stats;
-    private PlayerlistGUI Playerlist;
     private readonly ExecutionTimer tickTimer = new();
     private readonly ExecutionTimer tickWatchdog = new(0.25f);
 
@@ -60,11 +58,11 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     protected override void Awake()
     {
         base.Awake();
-        Playerlist = gameObject.AddComponent<PlayerlistGUI>();
+        playerList = gameObject.AddComponent<PlayerListGUI>();
         Stats = gameObject.AddComponent<NetworkStatsGui>();
         RegisterPackets();
+        WorldStreamingInit.LoadingFinished += () => { playerList.RegisterListeners(); };
         Settings.OnSettingsUpdated += OnSettingsUpdated;
-        Settings.OnPlayerlistVisibilityUpdate += OnPlayerlistVisibilityUpdate;
         SceneManager.sceneLoaded += (scene, _) =>
         {
             if (scene.buildIndex != (int)DVScenes.MainMenu)
@@ -95,18 +93,6 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         else
             Stats.Hide();
     }
-
-    private void OnPlayerlistVisibilityUpdate(bool show)
-    {
-        if (show)
-        {
-            Playerlist.Show();
-        }
-        else
-            Playerlist.Hide();
-    }
-
-
 
     public void TriggerMainMenuEventLater()
     {
