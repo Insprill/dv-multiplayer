@@ -30,6 +30,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 
     public bool IsProcessingPacket => Client.IsProcessingPacket;
 
+    private PlayerListGUI playerList;
     private NetworkStatsGui Stats;
     private readonly ExecutionTimer tickTimer = new();
     private readonly ExecutionTimer tickWatchdog = new(0.25f);
@@ -57,8 +58,10 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     protected override void Awake()
     {
         base.Awake();
+        playerList = gameObject.AddComponent<PlayerListGUI>();
         Stats = gameObject.AddComponent<NetworkStatsGui>();
         RegisterPackets();
+        WorldStreamingInit.LoadingFinished += () => { playerList.RegisterListeners(); };
         Settings.OnSettingsUpdated += OnSettingsUpdated;
         SceneManager.sceneLoaded += (scene, _) =>
         {

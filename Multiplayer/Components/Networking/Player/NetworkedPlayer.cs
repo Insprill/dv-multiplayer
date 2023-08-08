@@ -14,6 +14,7 @@ public class NetworkedPlayer : MonoBehaviour
 
     private AnimationHandler animationHandler;
     private NameTag nameTag;
+    private int ping;
 
     private string username;
 
@@ -60,6 +61,12 @@ public class NetworkedPlayer : MonoBehaviour
     public void SetPing(int ping)
     {
         nameTag.SetPing(ping);
+        this.ping = ping;
+    }
+
+    public int GetPing()
+    {
+        return ping;
     }
 
     private void Update()
