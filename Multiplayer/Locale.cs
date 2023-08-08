@@ -30,8 +30,11 @@ public static class Locale
 
     #region Server Browser
 
-    private const string SERVER_BROWSER__IP_KEY = $"{PREFIX_SERVER_BROWSER}/ip";
+    public static string SERVER_BROWSER__TITLE => Get(SERVER_BROWSER__TITLE_KEY);
+    public const string SERVER_BROWSER__TITLE_KEY = $"{PREFIX_SERVER_BROWSER}/title";
+
     public static string SERVER_BROWSER__IP => Get(SERVER_BROWSER__IP_KEY);
+    private const string SERVER_BROWSER__IP_KEY = $"{PREFIX_SERVER_BROWSER}/ip";
     public static string SERVER_BROWSER__IP_INVALID => Get(SERVER_BROWSER__IP_INVALID_KEY);
     private const string SERVER_BROWSER__IP_INVALID_KEY = $"{PREFIX_SERVER_BROWSER}/ip_invalid";
     public static string SERVER_BROWSER__PORT => Get(SERVER_BROWSER__PORT_KEY);

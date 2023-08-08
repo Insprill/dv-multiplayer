@@ -1,4 +1,5 @@
-﻿using DV.UI;
+﻿using DV.Localization;
+using DV.UI;
 using DV.UIFramework;
 using HarmonyLib;
 using Multiplayer.Components.MainMenu;
@@ -28,13 +29,22 @@ public static class RightPaneController_OnEnable_Patch
         multiplayerPane.name = "PaneRight Multiplayer";
         __instance.menuController.controlledMenus.Add(multiplayerPane.GetComponent<UIMenu>());
         MainMenuController_Awake_Patch.MultiplayerButton.GetComponent<UIMenuRequester>().requestedMenuIndex = __instance.menuController.controlledMenus.Count - 1;
-        MainMenuController_Awake_Patch.MultiplayerButton.SetActive(true);
 
         Object.Destroy(multiplayerPane.GetComponent<LauncherController>());
         Object.Destroy(multiplayerPane.FindChildByName("Thumb Background"));
         Object.Destroy(multiplayerPane.FindChildByName("Thumbnail"));
         Object.Destroy(multiplayerPane.FindChildByName("Savegame Details Background"));
         Object.Destroy(multiplayerPane.FindChildByName("ButtonTextIcon Run"));
+
+        GameObject titleObj = multiplayerPane.FindChildByName("Title");
+        if (titleObj == null)
+        {
+            Multiplayer.LogError("Failed to find title object!");
+            return;
+        }
+
+        titleObj.GetComponentInChildren<Localize>().key = Locale.SERVER_BROWSER__TITLE_KEY;
+        Object.Destroy(titleObj.GetComponentInChildren<I2.Loc.Localize>());
 
         multiplayerPane.AddComponent<MultiplayerPane>();
 
@@ -49,5 +59,6 @@ public static class RightPaneController_OnEnable_Patch
         });
 
         multiplayerPane.SetActive(true);
+        MainMenuController_Awake_Patch.MultiplayerButton.SetActive(true);
     }
 }
