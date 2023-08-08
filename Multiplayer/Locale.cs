@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using I2.Loc;
 using Multiplayer.Utils;
 
@@ -56,8 +55,10 @@ public static class Locale
     public const string DISCONN_REASON__FULL_SERVER_KEY = $"{PREFIX_DISCONN_REASON}/full_server";
     public static string DISCONN_REASON__MODS => Get(DISCONN_REASON__MODS_KEY);
     public const string DISCONN_REASON__MODS_KEY = $"{PREFIX_DISCONN_REASON}/mods";
-    public static string DISCONN_REASON__MOD_LIST => Get(DISCONN_REASON__MOD_LIST_KEY);
-    public const string DISCONN_REASON__MOD_LIST_KEY = $"{PREFIX_DISCONN_REASON}/mod_list";
+    public static string DISCONN_REASON__MODS_MISSING => Get(DISCONN_REASON__MODS_MISSING_KEY);
+    public const string DISCONN_REASON__MODS_MISSING_KEY = $"{PREFIX_DISCONN_REASON}/mods_missing";
+    public static string DISCONN_REASON__MODS_EXTRA => Get(DISCONN_REASON__MODS_EXTRA_KEY);
+    public const string DISCONN_REASON__MODS_EXTRA_KEY = $"{PREFIX_DISCONN_REASON}/mods_extra";
 
     #endregion
 
@@ -127,6 +128,7 @@ public static class Locale
 
     public static string Get(string key, params string[] placeholders)
     {
-        return Get(key, placeholders.Cast<object>());
+        // ReSharper disable once CoVariantArrayConversion
+        return Get(key, (object[])placeholders);
     }
 }

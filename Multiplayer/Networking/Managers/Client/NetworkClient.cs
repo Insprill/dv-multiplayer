@@ -179,8 +179,21 @@ public class NetworkClient : NetworkManager
             if (popup == null)
                 return;
             string text = Locale.Get(packet.ReasonKey, packet.ReasonArgs);
-            if (packet.Extra.Length != 0 || packet.Missing.Length != 0)
-                text += Locale.Get(Locale.DISCONN_REASON__MOD_LIST, string.Join("\n - ", packet.Missing), string.Join("\n - ", packet.Extra));
+
+            if (packet.Missing.Length != 0 || packet.Extra.Length != 0)
+            {
+                text += "\n\n";
+                if (packet.Missing.Length != 0)
+                {
+                    text += Locale.Get(Locale.DISCONN_REASON__MODS_MISSING_KEY, placeholders: string.Join("\n - ", packet.Missing));
+                    if (packet.Extra.Length != 0)
+                        text += "\n";
+                }
+
+                if (packet.Extra.Length != 0)
+                    text += Locale.Get(Locale.DISCONN_REASON__MODS_EXTRA_KEY, placeholders: string.Join("\n - ", packet.Extra));
+            }
+
             popup.labelTMPro.text = text;
         });
     }
