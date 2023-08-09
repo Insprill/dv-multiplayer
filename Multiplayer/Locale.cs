@@ -19,6 +19,8 @@ public static class Locale
     private const string PREFIX_SERVER_BROWSER = $"{PREFIX}sb";
     private const string PREFIX_DISCONN_REASON = $"{PREFIX}dr";
     private const string PREFIX_CAREER_MANAGER = $"{PREFIX}carman";
+    private const string PREFIX_PLAYER_LIST = $"{PREFIX}plist";
+    private const string PREFIX_LOADING_INFO = $"{PREFIX}linfo";
 
     #region Main Menu
 
@@ -66,6 +68,23 @@ public static class Locale
 
     public static string CAREER_MANAGER__FEES_HOST_ONLY => Get(CAREER_MANAGER__FEES_HOST_ONLY_KEY);
     private const string CAREER_MANAGER__FEES_HOST_ONLY_KEY = $"{PREFIX_CAREER_MANAGER}/fees_host_only";
+
+    #endregion
+
+    #region Player List
+
+    public static string PLAYER_LIST__TITLE => Get(PLAYER_LIST__TITLE_KEY);
+    private const string PLAYER_LIST__TITLE_KEY = $"{PREFIX_PLAYER_LIST}/title";
+
+    #endregion
+
+    #region Loading Info
+
+    public static string LOADING_INFO__WAIT_FOR_SERVER => Get(LOADING_INFO__WAIT_FOR_SERVER_KEY);
+    private const string LOADING_INFO__WAIT_FOR_SERVER_KEY = $"{PREFIX_LOADING_INFO}/wait_for_server";
+
+    public static string LOADING_INFO__SYNC_WORLD_STATE => Get(LOADING_INFO__SYNC_WORLD_STATE_KEY);
+    private const string LOADING_INFO__SYNC_WORLD_STATE_KEY = $"{PREFIX_LOADING_INFO}/sync_world_state";
 
     #endregion
 
