@@ -4,7 +4,7 @@ Key,Description,English,Bulgarian,Chinese (Simplified),Chinese (Traditional),Cze
 ,"If a translation has a comma, the entire line MUST be wrapped in double quotes! Most editors (Excel, LibreCalc) will do this for you.",,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,Main Menu,,,,,,,,,,,,,,,,,,,,,,,,,,
-mm/join_server,The 'Join Server' button in the main menu.,Join Server,,,,,,,,,Spiel beitreten,,,,,,,,,,,,,,,,Entra nel Server,,,,,,,,,,,,,,,,
+mm/join_server,The 'Join Server' button in the main menu.,Join Server,,,,,,,,,Spiel beitreten,,,,,,,,,,,,,,,,
 mm/join_server__tooltip,The tooltip shown when hovering over the 'Join Server' button.,Join a multiplayer session.,,,,,,,,,Trete einer Mehrspielersitzung bei.,,,,,,,,,,,,,,,,
 mm/join_server__tooltip_disabled,Unused,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,
