@@ -243,7 +243,7 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        displayLoadingInfo.OnLoadingStatusChanged("Waiting for server to load", false, 100);
+        displayLoadingInfo.OnLoadingStatusChanged(Locale.LOADING_INFO__WAIT_FOR_SERVER, false, 100);
     }
 
     private void OnClientboundGameParamsPacket(ClientboundGameParamsPacket packet)
@@ -288,7 +288,7 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        displayLoadingInfo.OnLoadingStatusChanged("Syncing world state", false, 100);
+        displayLoadingInfo.OnLoadingStatusChanged(Locale.LOADING_INFO__SYNC_WORLD_STATE, false, 100);
     }
 
     private void OnClientboundWeatherPacket(ClientboundWeatherPacket packet)

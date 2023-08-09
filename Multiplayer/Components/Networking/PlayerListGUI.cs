@@ -23,7 +23,7 @@ public class PlayerListGUI : MonoBehaviour
         if (!showPlayerList)
             return;
 
-        GUILayout.Window(157031520, new Rect(Screen.width / 2.0f - 125, 25, 250, 0), DrawPlayerList, "Online Players");
+        GUILayout.Window(157031520, new Rect(Screen.width / 2.0f - 125, 25, 250, 0), DrawPlayerList, Locale.PLAYER_LIST__TITLE);
     }
 
     private static void DrawPlayerList(int windowId)
