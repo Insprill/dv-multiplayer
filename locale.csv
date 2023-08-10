@@ -2,6 +2,7 @@ Key,Description,English,Bulgarian,Chinese (Simplified),Chinese (Traditional),Cze
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,"Do not translate ‘{x}’ with x being a number, or ‘\n’.",,,,,,,,,,,,,,,,,,,,,,,,,,
 ,"If a translation has a comma, the entire line MUST be wrapped in double quotes! Most editors (Excel, LibreCalc) will do this for you.",,,,,,,,,,,,,,,,,,,,,,,,,,
+,"When saving the file, ensure to save it using UTF-8 encoding!",,,,,,,,,,,,,,,,,,,,,,,,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,Main Menu,,,,,,,,,,,,,,,,,,,,,,,,,,
 mm/join_server,The 'Join Server' button in the main menu.,Join Server,,,,,,,,,Spiel beitreten,,,Entra in un Server,,,,,,,,,,Unirse a un servidor,,,
