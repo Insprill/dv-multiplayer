@@ -28,7 +28,7 @@ dr/mods_extra,The list of extra mods.,Extra Mods:\n- {0},,,,,,,,,Zusätzliche Mo
 carman/fees_host_only,Text shown when a client tries to manage fees.,Only the host can manage fees!,,,,,,,,,Nur der Host kann Gebühren verwalten!,,,Solo l’Host può gestire gli addebiti!,,,,,,,,,,¡Solo el anfitrión puede administrar las tarifas!,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,Player List,,,,,,,,,,,,,,,,,,,,,,,,,,
-plist/title,The title of the player list.,Online Players,,,,,,,,,,,,Giocatori Online,,,,,,,,,,Jugadores en línea,,,
+plist/title,The title of the player list.,Online Players,,,,,,,,,Verbundene Spieler,,,Giocatori Online,,,,,,,,,,Jugadores en línea,,,
 ,,,,,,,,,,,,,,,,,,,,,,,,,,,
 ,Loading Info,,,,,,,,,,,,,,,,,,,,,,,,,,
 linfo/wait_for_server,Text shown in the loading screen.,Waiting for server to load,,,,,,,,,Warte auf das Laden des Servers,,,In attesa del caricamento del Server,,,,,,,,,,Esperando a que cargue el servidor...,,,
