@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using DV;
 using DV.Damage;
@@ -11,6 +12,7 @@ using DV.UI;
 using DV.UIFramework;
 using DV.WeatherSystem;
 using LiteNetLib;
+using Multiplayer.Components;
 using Multiplayer.Components.MainMenu;
 using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
@@ -52,7 +54,8 @@ public class NetworkClient : NetworkManager
     public void Start(string address, int port, string password)
     {
         netManager.Start();
-        ServerboundClientLoginPacket serverboundClientLoginPacket = new() {
+        ServerboundClientLoginPacket serverboundClientLoginPacket = new()
+        {
             Username = Multiplayer.Settings.Username,
             Guid = Multiplayer.Settings.GetGuid().ToByteArray(),
             Password = password,
@@ -106,6 +109,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundLicenseAcquiredPacket>(OnClientboundLicenseAcquiredPacket);
         netPacketProcessor.SubscribeReusable<ClientboundGarageUnlockPacket>(OnClientboundGarageUnlockPacket);
         netPacketProcessor.SubscribeReusable<ClientboundDebtStatusPacket>(OnClientboundDebtStatusPacket);
+        netPacketProcessor.SubscribeReusable<ClientboudJobPacket>(OnClientboundJobPacket);
     }
 
     #region Net Events
@@ -593,6 +597,38 @@ public class NetworkClient : NetworkManager
         CareerManagerDebtControllerPatch.HasDebt = packet.HasDebt;
     }
 
+    private void OnClientboundJobPacket(ClientboudJobPacket packet)
+    {
+        if (!StationComponentLookup.Instance.StationControllerFromId(packet.StationId, out StationController station))
+        {
+            LogError("Received job packet but couldn't find station!");
+            return;
+        }
+
+        Multiplayer.Log("Received job packet");
+
+        foreach (var job in packet.Jobs)
+        {
+            var tasks = new List<Task>();
+            foreach (TaskBeforeDataData taskBeforeDataData in job.Tasks)
+                tasks.Add(TaskBeforeDataData.ToTask(taskBeforeDataData));
+
+            StationsChainDataData chainData = job.ChainData;
+
+            Job newJob = new Job(
+                tasks,
+                (JobType)job.JobType,
+                job.TimeLimit,
+                job.InitialWage,
+                new StationsChainData(chainData.ChainOriginYardId, chainData.ChainDestinationYardId),
+                job.ID,
+                (JobLicenses)job.RequiredLicenses
+            );
+
+            station.logicStation.AddJobToStation(newJob);
+        }
+    }
+
     #endregion
 
     #region Senders
@@ -615,7 +651,8 @@ public class NetworkClient : NetworkManager
 
     public void SendPlayerPosition(Vector3 position, Vector3 moveDir, float rotationY, bool isJumping, bool isOnCar, bool reliable)
     {
-        SendPacketToServer(new ServerboundPlayerPositionPacket {
+        SendPacketToServer(new ServerboundPlayerPositionPacket
+        {
             Position = position,
             MoveDir = new Vector2(moveDir.x, moveDir.z),
             RotationY = rotationY,
@@ -625,21 +662,24 @@ public class NetworkClient : NetworkManager
 
     public void SendPlayerCar(ushort carId)
     {
-        SendPacketToServer(new ServerboundPlayerCarPacket {
+        SendPacketToServer(new ServerboundPlayerCarPacket
+        {
             CarId = carId
         }, DeliveryMethod.ReliableOrdered);
     }
 
     public void SendTimeAdvance(float amountOfTimeToSkipInSeconds)
     {
-        SendPacketToServer(new ServerboundTimeAdvancePacket {
+        SendPacketToServer(new ServerboundTimeAdvancePacket
+        {
             amountOfTimeToSkipInSeconds = amountOfTimeToSkipInSeconds
         }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendJunctionSwitched(ushort netId, byte selectedBranch, Junction.SwitchMode mode)
     {
-        SendPacketToServer(new CommonChangeJunctionPacket {
+        SendPacketToServer(new CommonChangeJunctionPacket
+        {
             NetId = netId,
             SelectedBranch = selectedBranch,
             Mode = (byte)mode
@@ -648,7 +688,8 @@ public class NetworkClient : NetworkManager
 
     public void SendTurntableRotation(byte netId, float rotation)
     {
-        SendPacketToServer(new CommonRotateTurntablePacket {
+        SendPacketToServer(new CommonRotateTurntablePacket
+        {
             NetId = netId,
             rotation = rotation
         }, DeliveryMethod.ReliableOrdered);
@@ -656,7 +697,8 @@ public class NetworkClient : NetworkManager
 
     public void SendTrainCouple(Coupler coupler, Coupler otherCoupler, bool playAudio, bool viaChainInteraction)
     {
-        SendPacketToServer(new CommonTrainCouplePacket {
+        SendPacketToServer(new CommonTrainCouplePacket
+        {
             NetId = coupler.train.GetNetId(),
             IsFrontCoupler = coupler.isFrontCoupler,
             OtherNetId = otherCoupler.train.GetNetId(),
@@ -668,7 +710,8 @@ public class NetworkClient : NetworkManager
 
     public void SendTrainUncouple(Coupler coupler, bool playAudio, bool dueToBrokenCouple, bool viaChainInteraction)
     {
-        SendPacketToServer(new CommonTrainUncouplePacket {
+        SendPacketToServer(new CommonTrainUncouplePacket
+        {
             NetId = coupler.train.GetNetId(),
             IsFrontCoupler = coupler.isFrontCoupler,
             PlayAudio = playAudio,
@@ -679,7 +722,8 @@ public class NetworkClient : NetworkManager
 
     public void SendHoseConnected(Coupler coupler, Coupler otherCoupler, bool playAudio)
     {
-        SendPacketToServer(new CommonHoseConnectedPacket {
+        SendPacketToServer(new CommonHoseConnectedPacket
+        {
             NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
             OtherNetId = otherCoupler.train.GetNetId(),
@@ -690,7 +734,8 @@ public class NetworkClient : NetworkManager
 
     public void SendHoseDisconnected(Coupler coupler, bool playAudio)
     {
-        SendPacketToServer(new CommonHoseDisconnectedPacket {
+        SendPacketToServer(new CommonHoseDisconnectedPacket
+        {
             NetId = coupler.train.GetNetId(),
             IsFront = coupler.isFrontCoupler,
             PlayAudio = playAudio
@@ -699,7 +744,8 @@ public class NetworkClient : NetworkManager
 
     public void SendMuConnected(MultipleUnitCable cable, MultipleUnitCable otherCable, bool playAudio)
     {
-        SendPacketToServer(new CommonMuConnectedPacket {
+        SendPacketToServer(new CommonMuConnectedPacket
+        {
             NetId = cable.muModule.train.GetNetId(),
             IsFront = cable.isFront,
             OtherNetId = otherCable.muModule.train.GetNetId(),
@@ -710,7 +756,8 @@ public class NetworkClient : NetworkManager
 
     public void SendMuDisconnected(ushort netId, MultipleUnitCable cable, bool playAudio)
     {
-        SendPacketToServer(new CommonMuDisconnectedPacket {
+        SendPacketToServer(new CommonMuDisconnectedPacket
+        {
             NetId = netId,
             IsFront = cable.isFront,
             PlayAudio = playAudio
@@ -719,7 +766,8 @@ public class NetworkClient : NetworkManager
 
     public void SendCockState(ushort netId, Coupler coupler, bool isOpen)
     {
-        SendPacketToServer(new CommonCockFiddlePacket {
+        SendPacketToServer(new CommonCockFiddlePacket
+        {
             NetId = netId,
             IsFront = coupler.isFrontCoupler,
             IsOpen = isOpen
@@ -728,14 +776,16 @@ public class NetworkClient : NetworkManager
 
     public void SendBrakeCylinderReleased(ushort netId)
     {
-        SendPacketToServer(new CommonBrakeCylinderReleasePacket {
+        SendPacketToServer(new CommonBrakeCylinderReleasePacket
+        {
             NetId = netId
         }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendHandbrakePositionChanged(ushort netId, float position)
     {
-        SendPacketToServer(new CommonHandbrakePositionPacket {
+        SendPacketToServer(new CommonHandbrakePositionPacket
+        {
             NetId = netId,
             Position = position
         }, DeliveryMethod.ReliableOrdered);
@@ -743,7 +793,8 @@ public class NetworkClient : NetworkManager
 
     public void SendPorts(ushort netId, string[] portIds, float[] portValues)
     {
-        SendPacketToServer(new CommonTrainPortsPacket {
+        SendPacketToServer(new CommonTrainPortsPacket
+        {
             NetId = netId,
             PortIds = portIds,
             PortValues = portValues
@@ -752,7 +803,8 @@ public class NetworkClient : NetworkManager
 
     public void SendFuses(ushort netId, string[] fuseIds, bool[] fuseValues)
     {
-        SendPacketToServer(new CommonTrainFusesPacket {
+        SendPacketToServer(new CommonTrainFusesPacket
+        {
             NetId = netId,
             FuseIds = fuseIds,
             FuseValues = fuseValues
@@ -761,21 +813,24 @@ public class NetworkClient : NetworkManager
 
     public void SendTrainSyncRequest(ushort netId)
     {
-        SendPacketToServer(new ServerboundTrainSyncRequestPacket {
+        SendPacketToServer(new ServerboundTrainSyncRequestPacket
+        {
             NetId = netId
         }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendTrainDeleteRequest(ushort netId)
     {
-        SendPacketToServer(new ServerboundTrainDeleteRequestPacket {
+        SendPacketToServer(new ServerboundTrainDeleteRequestPacket
+        {
             NetId = netId
         }, DeliveryMethod.ReliableUnordered);
     }
 
     public void SendTrainRerailRequest(ushort netId, ushort trackId, Vector3 position, Vector3 forward)
     {
-        SendPacketToServer(new ServerboundTrainRerailRequestPacket {
+        SendPacketToServer(new ServerboundTrainRerailRequestPacket
+        {
             NetId = netId,
             TrackId = trackId,
             Position = position,
@@ -785,7 +840,8 @@ public class NetworkClient : NetworkManager
 
     public void SendLicensePurchaseRequest(string id, bool isJobLicense)
     {
-        SendPacketToServer(new ServerboundLicensePurchaseRequestPacket {
+        SendPacketToServer(new ServerboundLicensePurchaseRequestPacket
+        {
             Id = id,
             IsJobLicense = isJobLicense
         }, DeliveryMethod.ReliableUnordered);
