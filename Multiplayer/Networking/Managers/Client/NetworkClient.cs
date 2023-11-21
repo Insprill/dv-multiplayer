@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using DV;
 using DV.Damage;
@@ -109,7 +110,7 @@ public class NetworkClient : NetworkManager
         netPacketProcessor.SubscribeReusable<ClientboundLicenseAcquiredPacket>(OnClientboundLicenseAcquiredPacket);
         netPacketProcessor.SubscribeReusable<ClientboundGarageUnlockPacket>(OnClientboundGarageUnlockPacket);
         netPacketProcessor.SubscribeReusable<ClientboundDebtStatusPacket>(OnClientboundDebtStatusPacket);
-        netPacketProcessor.SubscribeReusable<ClientboudJobPacket>(OnClientboundJobPacket);
+        netPacketProcessor.SubscribeReusable<ClientboundJobPacket>(OnClientboundJobPacket);
     }
 
     #region Net Events
@@ -597,7 +598,7 @@ public class NetworkClient : NetworkManager
         CareerManagerDebtControllerPatch.HasDebt = packet.HasDebt;
     }
 
-    private void OnClientboundJobPacket(ClientboudJobPacket packet)
+    private void OnClientboundJobPacket(ClientboundJobPacket packet)
     {
         if (!StationComponentLookup.Instance.StationControllerFromId(packet.StationId, out StationController station))
         {
@@ -605,7 +606,7 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        Multiplayer.Log("Received job packet");
+        Multiplayer.Log($"Received job packet. Job count:{packet.Jobs.Count()}");
 
         foreach (var job in packet.Jobs)
         {
@@ -624,6 +625,10 @@ public class NetworkClient : NetworkManager
                 job.ID,
                 (JobLicenses)job.RequiredLicenses
             );
+
+            //Multiplayer.Log($"Job with ID: {job.ID} already exists in station?: {station.logicStation.availableJobs.Contains(newJob)}");
+            //maybe newJob is not creating properly, try reading the ID to test.
+            Multiplayer.Log($"Job with ID: {newJob.ID} already exists in station?: {station.logicStation.availableJobs.Contains(newJob)}");
 
             station.logicStation.AddJobToStation(newJob);
         }

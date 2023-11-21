@@ -291,11 +291,11 @@ public class NetworkServer : NetworkManager
 
             jobDatas[i] = data;
 
-            Multiplayer.Log("JOB ID: " + jobs[i].ID);
+            Multiplayer.Log("Sending Job with ID: " + jobs[i].ID);
             Multiplayer.Log(JsonConvert.SerializeObject(data));
         }
 
-        SendPacketToAll(new ClientboudJobPacket
+        SendPacketToAll(new ClientboundJobPacket
         {
             StationId = stationId,
             Jobs = jobDatas,
