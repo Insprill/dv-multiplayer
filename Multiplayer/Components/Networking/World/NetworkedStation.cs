@@ -1,7 +1,15 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography;
 using DV.Logic.Job;
+using DV.Scenarios;
+using Multiplayer.Components.Networking.Train;
+using Multiplayer.Networking.Data;
+using PlaceholderSoftware.WetStuff.Debugging;
 using UnityEngine;
+using Car = DV.Logic.Job.Car;
 
 namespace Multiplayer.Components.Networking.World;
 
@@ -12,6 +20,7 @@ public class NetworkedStation : MonoBehaviour
 
     public void AddJob(Job job)
     {
+        Multiplayer.Log("NetworkedStation.AddJob()");
         jobs.Add(job);
     }
 
@@ -35,21 +44,72 @@ public class NetworkedStation : MonoBehaviour
 
         if (NetworkLifecycle.Instance.IsHost())
         {
-            stationController.logicStation.JobAddedToStation += OnJobAddedToStation;
+            //stationController.logicStation.JobAddedToStation += OnJobAddedToStation;
             NetworkLifecycle.Instance.OnTick += Server_OnTick;
         }
 
         Multiplayer.Log("NetworkedStation.Awake() done");
     }
 
-    private void OnJobAddedToStation()
+   
+   //private void OnJobAddedToStation()
+   // {
+   //     Multiplayer.Log("OnJobAddedToStation");
+
+   //     UpdateCarPlates(job.tasks);
+                
+   // }
+
+    public static void UpdateCarPlates(List<DV.Logic.Job.Task> tasks,string jobId)
     {
-        foreach (var job in stationController.logicStation.availableJobs)
+        Task task = tasks.First();
+        List<Car> cars = null;
+
+        if (task is WarehouseTask)
         {
-            jobs.Add(job);
+            Multiplayer.Log("NetworkedStation.UpdateCarPlates() WarehouseTask");
+            cars = ((WarehouseTask)task).cars;
+        }else if (task is TransportTask)
+        {
+            Multiplayer.Log("NetworkedStation.UpdateCarPlates() TransportTask");
+            cars = ((TransportTask)task).cars;
+        }else if(task is SequentialTasks)
+        {
+            Multiplayer.Log("NetworkedStation.UpdateCarPlates() SequentialTasks");
+            List<Task> seqTask = [((SequentialTasks)task).currentTask.Value];
+
+            Multiplayer.Log("NetworkedStation.UpdateCarPlates() Calling UpdateCarPlates()");
+            //drill down
+            UpdateCarPlates(seqTask, jobId);
+        }else if(task is ParallelTasks)
+        {
+            //not implemented
+            Multiplayer.Log("NetworkedStation.UpdateCarPlates() ParallelTasks - not implemented");
         }
 
-        Multiplayer.Log("NetworkedStation.OnJobAddedToStation()");
+        if (cars != null)
+        {
+            Multiplayer.Log("NetworkedStation.UpdateCarPlates() Cars count: " + cars.Count);
+
+            foreach (Trainset trainset in Trainset.allSets)
+            {
+                foreach(TrainCar traincar in trainset.cars)
+                {
+                    foreach(Car car in cars)
+                    {
+                        Multiplayer.Log("NetworkedStation.UpdateCarPlates() car.ID: " + car.ID + " traincar.ID: " + traincar.ID);
+                        if (car.ID == traincar.ID)
+                        {
+                            Multiplayer.Log("NetworkedStation.UpdateCarPlates() Calling  traincar.UpdateJobIdOnCarPlates()");
+                            traincar.UpdateJobIdOnCarPlates(jobId);
+                        }
+                    }
+                    
+                }
+            }
+
+        }
+
     }
 
     private void Server_OnTick(uint tick)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using DV;
 using DV.Damage;
@@ -12,6 +13,7 @@ using DV.ThingTypes;
 using DV.UI;
 using DV.UIFramework;
 using DV.WeatherSystem;
+using HarmonyLib;
 using LiteNetLib;
 using Multiplayer.Components;
 using Multiplayer.Components.MainMenu;
@@ -628,9 +630,13 @@ public class NetworkClient : NetworkManager
 
             //Multiplayer.Log($"Job with ID: {job.ID} already exists in station?: {station.logicStation.availableJobs.Contains(newJob)}");
             //maybe newJob is not creating properly, try reading the ID to test.
-            Multiplayer.Log($"Job with ID: {newJob.ID} already exists in station?: {station.logicStation.availableJobs.Contains(newJob)}");
+            Multiplayer.Log($"Attempting to add Job with ID {newJob.ID} to station.\r\nExisting jobs are: {station.logicStation.availableJobs.Select(x=>x.ID + "\r\n\t").ToArray().Join()}\r\nDoes the Job already exist in station? {station.logicStation.availableJobs.Where(x => x.ID == newJob.ID).Count() > 0}");
 
             station.logicStation.AddJobToStation(newJob);
+
+            Multiplayer.Log("NetworkedStation.AddJob() Calling UpdateCarPlates()");
+            NetworkedStation.UpdateCarPlates(tasks, job.ID);
+
         }
     }
 
