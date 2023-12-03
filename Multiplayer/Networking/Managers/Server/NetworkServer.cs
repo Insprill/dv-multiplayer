@@ -461,6 +461,29 @@ public class NetworkServer : NetworkManager
             SendPacket(peer, ClientboundSpawnTrainSetPacket.FromTrainSet(set), DeliveryMethod.ReliableOrdered);
         }
 
+        //send jobs - do we need a job manager/job IDs to make this easier?
+        foreach(StationController station in StationController.allStations)
+        {
+            List<JobData> jobData = new List<JobData>();
+
+            foreach(Job job in station.logicStation.availableJobs)
+            {
+                jobData.Add(JobData.FromJob(job));
+            }
+
+            SendPacket(peer,
+                        new ClientboundJobPacket
+                            {
+                                Jobs = jobData.ToArray(),
+                                StationId = station.logicStation.ID,
+                                ModInfo = new[] { new ModInfo("6727318026738916", "1.0") } //why do we do this??
+                            },
+                        DeliveryMethod.ReliableOrdered
+                    );
+                
+        }
+
+
         // Send existing players
         foreach (ServerPlayer player in ServerPlayers)
         {

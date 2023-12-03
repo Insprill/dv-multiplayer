@@ -2,14 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using DV.Logic.Job;
-using DV.Scenarios;
-using Multiplayer.Components.Networking.Train;
-using Multiplayer.Networking.Data;
-using PlaceholderSoftware.WetStuff.Debugging;
 using UnityEngine;
-using Car = DV.Logic.Job.Car;
 
 namespace Multiplayer.Components.Networking.World;
 
@@ -87,6 +81,9 @@ public class NetworkedStation : MonoBehaviour
             Multiplayer.Log("NetworkedStation.UpdateCarPlates() ParallelTasks - not implemented");
         }
 
+        /*
+         * This section could be optimised/refactored
+         */
         if (cars != null)
         {
             Multiplayer.Log("NetworkedStation.UpdateCarPlates() Cars count: " + cars.Count);
