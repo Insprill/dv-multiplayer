@@ -2,7 +2,7 @@ using Multiplayer.Networking.Data;
 
 namespace Multiplayer.Networking.Packets.Clientbound;
 
-public class ClientboudJobPacket
+public class ClientboundJobPacket
 {
     public string StationId { get; set; }
     public JobData[] Jobs { get; set; }

@@ -8,6 +8,7 @@
     <ItemGroup>
         <PackageReference Include="Krafs.Publicizer" Version="2.2.1" />
         <Publicize Include="Assembly-CSharp" IncludeCompilerGeneratedMembers="false" />
+        <Publicize Include="DV.CharacterController" IncludeCompilerGeneratedMembers="false" />
         <Publicize Include="DV.Simulation" IncludeCompilerGeneratedMembers="false" />
         <Publicize Include="DV.Utils:DV.Utils.SingletonBehaviour`1._instance" />
     </ItemGroup>
@@ -17,6 +18,7 @@
         <Reference Include="Assembly-CSharp" />
         <Reference Include="CommandTerminal" />
         <Reference Include="DV.BrakeSystem" />
+        <Reference Include="DV.CharacterController" />
         <Reference Include="DV.Common" />
         <Reference Include="DV.ControllerAnchors" />
         <Reference Include="DV.Highlighting" />
@@ -86,8 +88,6 @@
 
         <!-- Copy to game install folder -->
         <Exec Condition="Exists('$(DvInstallDir)') And '$(OS)' == 'Windows_NT'" Command="powershell -executionpolicy bypass -Command &quot;(../package.ps1 -NoArchive -OutputDirectory '$(DvInstallDir)\Mods')&quot;" />
-        <Exec Condition="Exists('$(DvInstallDir)') And '$(OS)' == 'Windows_NT'" Command="powershell -executionpolicy bypass -Command &quot;(../package.ps1 -NoArchive -OutputDirectory 'D:\SteamLibrary\steamapps\common\Derail Valley 2\Mods')&quot;" />
-        <Exec Condition="Exists('$(DvInstallDir)') And '$(OS)' == 'Windows_NT'" Command="powershell -executionpolicy bypass -Command &quot;(../openScript.ps1)&quot;" />
         <Exec Condition="Exists('$(DvInstallDir)') And '$(OS)' != 'Windows_NT'" Command="pwsh  -Command &quot;(../package.ps1 -NoArchive -OutputDirectory '$(DvInstallDir)/Mods')&quot;" />
     </Target>
 </Project>
