@@ -61,7 +61,7 @@ The mod will be released on Nexus once it's ready.
 Before building, make sure you have <a href="https://dotnet.microsoft.com/en-us/download">.NET 7</a>, <a href="https://github.com/PowerShell/PowerShell#get-powershell">PowerShell 7</a>, <a href="https://visualstudio.microsoft.com/">Visual Studio</a>, and <a href="https://unity.com/releases/editor/archive">Unity 2019.4.40f1</a> installed. You'll also need the <a href="https://unity.com/download">Unity Hub</a> in order to open Unity.
 
 <ol>
-  <li>Download the zip of the repository and extract it to a memorable location.</li>
+  <li>Clone the repository to a memorable location.</li>
   <li>Open the Unity Hub, click <code>Open</code>, then select the <code>MultiplayerAssets</code> folder. This should open Unity <strong>2019.4.40f1</strong>. Make sure that it is this version <em>exactly</em>, otherwise things will break.</li>
   <li>In Unity, go to the top and click <code>Multiplayer > Build Assets and Scripts</code>.</li>
   <li>
