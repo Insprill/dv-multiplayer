@@ -21,14 +21,22 @@ public class Settings : UnityModManager.ModSettings, IDrawable
 
     [Space(10)]
     [Header("Server")]
-    [Draw("Default Remote IP", Tooltip = "The default server IP when joining as a client.")]
-    public string DefaultRemoteIP = "";
     [Draw("Password", Tooltip = "The password required to join your server. Leave blank for no password.")]
     public string Password = "";
     [Draw("Max Players", Tooltip = "The maximum number of players that can join your server, including yourself.")]
     public int MaxPlayers = 4;
     [Draw("Port", Tooltip = "The port that your server will listen on. You generally don't need to change this.")]
     public int Port = 7777;
+
+    [Space(10)]
+    [Header("Last Server Connected to by IP")]
+    [Draw("Last Remote IP", Tooltip = "The IP for the last server connected to by IP.")]
+    public string LastRemoteIP = "";
+    [Draw("Last Remote Port", Tooltip = "The port for the last server connected to by IP.")]
+    public int LastRemotePort = 7777;
+    [Draw("Last Remote Password", Tooltip = "The password for the last server connected to by IP.")]
+    public string LastRemotePassword = "";
+    
 
     [Space(10)]
     [Header("Preferences")]
