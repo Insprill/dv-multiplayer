@@ -58,7 +58,7 @@ public class StartGameData_ServerSave : AStartGameData
         LicenseManager.Instance.LoadData(saveGameData);
 
         if (saveGameData.GetString(SaveGameKeys.Game_mode) == "FreeRoam")
-            LicenseManager.Instance.GrabAllUnlockables();
+            LicenseManager.Instance.GrabAllGameModeSpecificUnlockables(SaveGameKeys.Game_mode);
         else
             StartingItemsController.Instance.AddStartingItems(saveGameData, true);
 
@@ -90,4 +90,9 @@ public class StartGameData_ServerSave : AStartGameData
     {
         return false;
     }
+
+    public override void MakeCurrent()
+    {
+    }
 }
+

@@ -63,6 +63,7 @@ public class MainMenuThingsAndStuff : SingletonBehaviour<MainMenuThingsAndStuff>
     [CanBeNull]
     public Popup ShowRenamePopup()
     {
+        Debug.Log("public Popup ShowRenamePopup() ...");
         return ShowPopup(renamePopupPrefab);
     }
 
