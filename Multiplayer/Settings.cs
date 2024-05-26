@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Humanizer;
 using UnityEngine;
 using UnityModManagerNet;
@@ -27,6 +27,16 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public int MaxPlayers = 4;
     [Draw("Port", Tooltip = "The port that your server will listen on. You generally don't need to change this.")]
     public int Port = 7777;
+
+    [Space(10)]
+    [Header("Last Server Connected to by IP")]
+    [Draw("Last Remote IP", Tooltip = "The IP for the last server connected to by IP.")]
+    public string LastRemoteIP = "";
+    [Draw("Last Remote Port", Tooltip = "The port for the last server connected to by IP.")]
+    public int LastRemotePort = 7777;
+    [Draw("Last Remote Password", Tooltip = "The password for the last server connected to by IP.")]
+    public string LastRemotePassword = "";
+
 
     [Space(10)]
     [Header("Preferences")]

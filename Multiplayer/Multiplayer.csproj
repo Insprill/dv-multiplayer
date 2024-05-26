@@ -80,6 +80,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Remove="Patches\World\WorldStreamingInitPatch.cs" />
+        <Compile Remove="Utils\Csvnew.cs" />
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">

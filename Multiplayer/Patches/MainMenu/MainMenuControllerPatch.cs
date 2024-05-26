@@ -1,50 +1,68 @@
-﻿using DV.Localization;
+using DV.Localization;
 using DV.UI;
 using HarmonyLib;
 using Multiplayer.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Multiplayer.Patches.MainMenu;
-
-[HarmonyPatch(typeof(MainMenuController), "Awake")]
-public static class MainMenuController_Awake_Patch
+namespace Multiplayer.Patches.MainMenu
 {
-    public static GameObject MultiplayerButton;
-
-    private static void Prefix(MainMenuController __instance)
+    [HarmonyPatch(typeof(MainMenuController), "Awake")]
+    public static class MainMenuController_Awake_Patch
     {
-        GameObject button = __instance.FindChildByName("ButtonSelectable Sessions");
-        if (button == null)
+        public static GameObject multiplayerButton;
+
+        private static void Prefix(MainMenuController __instance)
         {
-            Multiplayer.LogError("Failed to find Sessions button!");
-            return;
+            // Find the Sessions button to base the Multiplayer button on
+            GameObject sessionsButton = __instance.FindChildByName("ButtonSelectable Sessions");
+            if (sessionsButton == null)
+            {
+                Multiplayer.LogError("Failed to find Sessions button!");
+                return;
+            }
+
+            // Deactivate the sessions button temporarily to duplicate it
+            sessionsButton.SetActive(false);
+            multiplayerButton = Object.Instantiate(sessionsButton, sessionsButton.transform.parent);
+            sessionsButton.SetActive(true);
+
+            // Configure the new Multiplayer button
+            multiplayerButton.transform.SetSiblingIndex(sessionsButton.transform.GetSiblingIndex() + 1);
+            multiplayerButton.name = "ButtonSelectable Multiplayer";
+
+            // Set the localization key for the new button
+            Localize localize = multiplayerButton.GetComponentInChildren<Localize>();
+            localize.key = Locale.MAIN_MENU__JOIN_SERVER_KEY;
+
+            // Remove existing localization components to reset them
+            Object.Destroy(multiplayerButton.GetComponentInChildren<I2.Loc.Localize>());
+            ResetTooltip(multiplayerButton);
+
+            // Set the icon for the new Multiplayer button
+            SetButtonIcon(multiplayerButton);
+
+            multiplayerButton.SetActive(true);
         }
 
-        button.SetActive(false);
-        MultiplayerButton = Object.Instantiate(button, button.transform.parent);
-        button.SetActive(true);
-
-        MultiplayerButton.transform.SetSiblingIndex(button.transform.GetSiblingIndex() + 1);
-        MultiplayerButton.name = "ButtonSelectable Multiplayer";
-
-        Localize localize = MultiplayerButton.GetComponentInChildren<Localize>();
-        localize.key = Locale.MAIN_MENU__JOIN_SERVER_KEY;
-
-        // Reset existing localization components that were added when the Sessions button was initialized.
-        Object.Destroy(MultiplayerButton.GetComponentInChildren<I2.Loc.Localize>());
-        UIElementTooltip tooltip = MultiplayerButton.GetComponent<UIElementTooltip>();
-        tooltip.disabledKey = null;
-        tooltip.enabledKey = null;
-
-        GameObject icon = MultiplayerButton.FindChildByName("icon");
-        if (icon == null)
+        private static void ResetTooltip(GameObject button)
         {
-            Multiplayer.LogError("Failed to find icon on Sessions button, destroying the Multiplayer button!");
-            Object.Destroy(MultiplayerButton);
-            return;
+            UIElementTooltip tooltip = button.GetComponent<UIElementTooltip>();
+            tooltip.disabledKey = null;
+            tooltip.enabledKey = null;
         }
 
-        icon.GetComponent<Image>().sprite = Multiplayer.AssetIndex.multiplayerIcon;
+        private static void SetButtonIcon(GameObject button)
+        {
+            GameObject icon = button.FindChildByName("icon");
+            if (icon == null)
+            {
+                Multiplayer.LogError("Failed to find icon on Sessions button, destroying the Multiplayer button!");
+                Object.Destroy(multiplayerButton);
+                return;
+            }
+
+            icon.GetComponent<Image>().sprite = Multiplayer.AssetIndex.multiplayerIcon;
+        }
     }
 }
