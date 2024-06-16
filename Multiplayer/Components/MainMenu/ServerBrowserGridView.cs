@@ -20,13 +20,16 @@ namespace Multiplayer.Components.MainMenu
         private void Awake()
         {
             Debug.Log("serverBrowserGridview Awake");
+
+            this.dummyElementPrefab.SetActive(false);
+
+            //swap controller
             this.dummyElementPrefab.SetActive(false);
             GameObject.Destroy(this.dummyElementPrefab.GetComponent<SaveLoadViewElement>());
             this.dummyElementPrefab.AddComponent<ServerBrowserElement>();
 
             this.dummyElementPrefab.SetActive(true);
-            // GameObject defaultPrefab = GameObject.Find("SaveLoadViewElement");
-            // this.dummyElementPrefab = Instantiate(defaultPrefab);
+            this.viewElementPrefab = this.dummyElementPrefab;
         }
     }
 }

@@ -20,6 +20,9 @@ namespace Multiplayer.Components.MainMenu
         //
         // 
         string Name { get; set; }
-
+        int MaxPlayers { get; set; }
+        int CurrentPlayers { get; set; }
+        int Ping { get; set; }
+        bool HasPassword { get; set; }
     }
 }
