@@ -1,14 +1,12 @@
 using System;
-using System.Net;
 using System.Text.RegularExpressions;
+using DV.Common;
 using DV.Localization;
 using DV.UI;
 using DV.UIFramework;
+using DV.Util;
 using DV.Utils;
-using Multiplayer.Components.MainMenu;
-using Multiplayer;
 using Multiplayer.Components.Networking;
-using Multiplayer.Patches.MainMenu;
 using Multiplayer.Utils;
 using TMPro;
 using UnityEngine;
@@ -24,12 +22,16 @@ namespace Multiplayer.Components.MainMenu
 
         private string ipAddress;
         private ushort portNumber;
-        private ButtonDV directButton;
+        //private ButtonDV directButton;
+
+        private ObservableCollectionExt<IServerBrowserGameDetails> gridViewModel = new ObservableCollectionExt<IServerBrowserGameDetails>();
+        private ServerBrowserGridView gridView;
 
         private void Awake()
         {
             Multiplayer.Log("MultiplayerPane Awake()");
             SetupMultiplayerButtons();
+            SetupServerBrowser();
         }
 
         private void SetupMultiplayerButtons()
@@ -75,8 +77,41 @@ namespace Multiplayer.Components.MainMenu
             //buttonRefresh.SetActive(true);
         }
 
+        private void SetupServerBrowser()
+        {
+            /*GameObject.Destroy(this.FindChildByName("GRID VIEW"));
+            GameObject Viewport = GameObject.Find("Viewport");
+
+            GameObject serverBrowserGridView = new GameObject("GRID VIEW", typeof (ServerBrowserGridView));
+            serverBrowserGridView.transform.SetParent(Viewport.transform);
+            gridView = serverBrowserGridView.GetComponent<ServerBrowserGridView>();
+            Debug.Log("found Grid View");
+
+            RectTransform rt = serverBrowserGridView.GetComponent<RectTransform>();
+            rt.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 0, 5292);
+            rt.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Left, 0, 662);
+            */
+            GameObject GridviewGO = this.FindChildByName("GRID VIEW");
+            SaveLoadGridView slgv = GridviewGO.GetComponent<SaveLoadGridView>();
+            GridviewGO.SetActive(false);
+            
+            gridView = GridviewGO.AddComponent<ServerBrowserGridView>();
+            gridView.dummyElementPrefab = Instantiate(slgv.viewElementPrefab);
+            gridView.dummyElementPrefab.name = "prefabServerBrowser";
+            GameObject.Destroy(slgv);
+            GridviewGO.SetActive(true);
+
+            
+            //gridView.dummyElementPrefab = null;
+            //gridViewModel.Add();
+
+
+
+        }
+
         private GameObject FindButton(string name)
         {
+
             return GameObject.Find(name);
         }
 
@@ -178,7 +213,7 @@ namespace Multiplayer.Components.MainMenu
             {
                 if (result.closedBy == PopupClosedByAction.Abortion) return;
 
-                directButton.enabled = false;
+                //directButton.enabled = false;
                 SingletonBehaviour<NetworkLifecycle>.Instance.StartClient(ipAddress, portNumber, result.data);
 
                 Multiplayer.Settings.LastRemoteIP = ipAddress;
@@ -237,6 +272,13 @@ namespace Multiplayer.Components.MainMenu
             // Implement host action logic here
             Debug.Log("Host button clicked.");
             // Add your code to handle hosting a game
+            gridView.showDummyElement = true;
+            gridViewModel.Clear();
+            //gridView.dummyElementPrefab = ;
+
+            Debug.Log($"gridViewPrefab exists : {gridView.dummyElementPrefab != null} showDummyElement : {gridView.showDummyElement}");
+            gridView.SetModel(gridViewModel);
+
         }
 
         private void JoinAction()
