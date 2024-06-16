@@ -1,20 +1,27 @@
 using HarmonyLib;
 using I2.Loc;
 
-namespace Multiplayer.Patches.MainMenu;
-
-[HarmonyPatch(typeof(LocalizationManager))]
-public static class LocalizationManagerPatch
+namespace Multiplayer.Patches.MainMenu
 {
-    [HarmonyPrefix]
-    [HarmonyPatch(nameof(LocalizationManager.TryGetTranslation))]
-    private static bool TryGetTranslation_Prefix(ref bool __result, string Term, out string Translation)
+    [HarmonyPatch(typeof(LocalizationManager))]
+    public static class LocalizationManagerPatch
     {
-        Translation = string.Empty;
-        if (!Term.StartsWith(Locale.PREFIX))
-            return true;
-        Translation = Locale.Get(Term);
-        __result = Translation == Locale.MISSING_TRANSLATION;
-        return false;
+        [HarmonyPrefix]
+        [HarmonyPatch(nameof(LocalizationManager.TryGetTranslation))]
+        private static bool TryGetTranslation_Prefix(ref bool __result, string Term, out string Translation)
+        {
+            Translation = string.Empty;
+
+            // Check if the term starts with the specified locale prefix
+            if (!Term.StartsWith(Locale.PREFIX))
+                return true;
+
+            // Attempt to get the translation for the term
+            Translation = Locale.Get(Term);
+
+            // If the translation is missing, set the result to true and skip the original method
+            __result = Translation == Locale.MISSING_TRANSLATION;
+            return false;
+        }
     }
 }

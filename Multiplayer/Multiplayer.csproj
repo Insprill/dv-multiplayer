@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <TargetFramework>net48</TargetFramework>
         <LangVersion>latest</LangVersion>
@@ -73,13 +73,11 @@
         <Reference Include="UnityEngine.AssetBundleModule" />
         <Reference Include="UnityEngine.AudioModule" />
         <Reference Include="UnityEngine.CoreModule" />
+        <Reference Include="UnityEngine.ImageConversionModule" />
         <Reference Include="UnityEngine.IMGUIModule" />
         <Reference Include="UnityEngine.JSONSerializeModule" />
         <Reference Include="UnityEngine.PhysicsModule" />
         <Reference Include="UnityEngine.UI" />
-    </ItemGroup>
-    <ItemGroup>
-        <Compile Remove="Patches\World\WorldStreamingInitPatch.cs" />
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
