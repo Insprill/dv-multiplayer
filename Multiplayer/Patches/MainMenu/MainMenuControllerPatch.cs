@@ -41,8 +41,6 @@ namespace Multiplayer.Patches.MainMenu
 
             // Set the icon for the new Multiplayer button
             SetButtonIcon(multiplayerButton);
-
-            //multiplayerButton.SetActive(true);
         }
 
         private static void ResetTooltip(GameObject button)

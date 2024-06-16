@@ -4,11 +4,21 @@ using System.ComponentModel;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using DV.Common;
+using DV.Localization;
+using DV.UIFramework;
+using Multiplayer.Utils;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TMPro;
+using UnityEngine;
 
 namespace Multiplayer.Components.MainMenu;
 
-
-// 
 public class ServerBrowserElement : AViewElement<IServerBrowserGameDetails>
 {
     private TextMeshProUGUI networkName;
@@ -20,6 +30,8 @@ public class ServerBrowserElement : AViewElement<IServerBrowserGameDetails>
 
     private const int PING_WIDTH = 62 * 2;
     private const int PING_POS_X = 650;
+    private IServerBrowserGameDetails data;
+
     private void Awake()
     {
         //Find existing fields to duplicate
@@ -48,17 +60,12 @@ public class ServerBrowserElement : AViewElement<IServerBrowserGameDetails>
 
         ping.alignment = TextAlignmentOptions.Right;
 
-
         //Update clock Icon
         icon.sprite = Sprites.Padlock;
 
-
-
-        /*
         networkName.text = "Test Network";
         playerCount.text = "1/4";
         ping.text = "102";
-        */
     }
 
     public override void SetData(IServerBrowserGameDetails data, AGridView<IServerBrowserGameDetails> _)
@@ -74,7 +81,6 @@ public class ServerBrowserElement : AViewElement<IServerBrowserGameDetails>
         UpdateView(null, null);
     }
 
-    // 
     private void UpdateView(object sender = null, PropertyChangedEventArgs e = null)
     {
         networkName.text = data.Name;

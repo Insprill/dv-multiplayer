@@ -24,6 +24,5 @@ namespace Multiplayer.Components.MainMenu
         int CurrentPlayers { get; set; }
         int Ping { get; set; }
         bool HasPassword { get; set; }
-
     }
 }
