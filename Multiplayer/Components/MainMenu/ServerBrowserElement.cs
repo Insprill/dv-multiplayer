@@ -4,93 +4,79 @@ using System.ComponentModel;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using DV.Common;
-using DV.Localization;
-using DV.UIFramework;
-using Multiplayer.Utils;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TMPro;
-using UnityEngine;
 
-namespace Multiplayer.Components.MainMenu;
-
-public class ServerBrowserElement : AViewElement<IServerBrowserGameDetails>
+namespace Multiplayer.Components.MainMenu
 {
-    private TextMeshProUGUI networkName;
-    private TextMeshProUGUI playerCount;
-    private TextMeshProUGUI ping;
-    private GameObject goIcon;
-    private Image icon;
-    private IServerBrowserGameDetails data;
-
-    private const int PING_WIDTH = 62 * 2;
-    private const int PING_POS_X = 650;
-    private IServerBrowserGameDetails data;
-
-    private void Awake()
+    public class ServerBrowserElement : AViewElement<IServerBrowserGameDetails>
     {
-        //Find existing fields to duplicate
-        networkName = this.FindChildByName("name [noloc]").GetComponent<TextMeshProUGUI>();
-        playerCount = this.FindChildByName("date [noloc]").GetComponent<TextMeshProUGUI>();
-        ping = this.FindChildByName("time [noloc]").GetComponent<TextMeshProUGUI>();
-        goIcon = this.FindChildByName("autosave icon");
-        icon = goIcon.GetComponent<Image>();
+        private TextMeshProUGUI networkName;
+        private TextMeshProUGUI playerCount;
+        private TextMeshProUGUI ping;
+        private GameObject goIcon;
+        private Image icon;
+        private IServerBrowserGameDetails data;
 
-        //Fix alignment
-        Vector3 namePos = networkName.transform.position;
-        Vector2 nameSize = networkName.rectTransform.sizeDelta;
+        private const int PING_WIDTH = 124; // Adjusted width for the ping text
+        private const int PING_POS_X = 650; // X position for the ping text
 
-        playerCount.transform.position = new Vector3(namePos.x + nameSize.x, namePos.y, namePos.z);
-
-
-        Vector2 rowSize = this.transform.GetComponentInParent<RectTransform>().sizeDelta;
-        Vector3 pingPos = ping.transform.position;
-        Vector2 pingSize = ping.rectTransform.sizeDelta;
-
-
-        ping.rectTransform.sizeDelta = new Vector2(PING_WIDTH, pingSize.y);
-        pingSize = ping.rectTransform.sizeDelta;
-
-        ping.transform.position = new Vector3(PING_POS_X, pingPos.y, pingPos.z);
-
-        ping.alignment = TextAlignmentOptions.Right;
-
-        //Update clock Icon
-        icon.sprite = Sprites.Padlock;
-
-        networkName.text = "Test Network";
-        playerCount.text = "1/4";
-        ping.text = "102";
-    }
-
-    public override void SetData(IServerBrowserGameDetails data, AGridView<IServerBrowserGameDetails> _)
-    {
-        if (this.data != null)
+        private void Awake()
         {
-            this.data = null;
+            // Find and assign TextMeshProUGUI components for displaying server details
+            networkName = this.FindChildByName("name [noloc]").GetComponent<TextMeshProUGUI>();
+            playerCount = this.FindChildByName("date [noloc]").GetComponent<TextMeshProUGUI>();
+            ping = this.FindChildByName("time [noloc]").GetComponent<TextMeshProUGUI>();
+            goIcon = this.FindChildByName("autosave icon");
+            icon = goIcon.GetComponent<Image>();
+
+            // Fix alignment of the player count text relative to the network name text
+            Vector3 namePos = networkName.transform.position;
+            Vector2 nameSize = networkName.rectTransform.sizeDelta;
+            playerCount.transform.position = new Vector3(namePos.x + nameSize.x, namePos.y, namePos.z);
+
+            // Adjust the size and position of the ping text
+            Vector2 rowSize = this.transform.GetComponentInParent<RectTransform>().sizeDelta;
+            Vector3 pingPos = ping.transform.position;
+            Vector2 pingSize = ping.rectTransform.sizeDelta;
+
+            ping.rectTransform.sizeDelta = new Vector2(PING_WIDTH, pingSize.y);
+            ping.transform.position = new Vector3(PING_POS_X, pingPos.y, pingPos.z);
+            ping.alignment = TextAlignmentOptions.Right;
+
+            // Set initial icon and text values for testing purposes
+            icon.sprite = Sprites.Padlock;
+            networkName.text = "Test Network";
+            playerCount.text = "1/4";
+            ping.text = "102 ms";
         }
-        if (data != null)
+
+        public override void SetData(IServerBrowserGameDetails data, AGridView<IServerBrowserGameDetails> _)
         {
-            this.data = data;
+            // Clear existing data
+            if (this.data != null)
+            {
+                this.data = null;
+            }
+            // Set new data
+            if (data != null)
+            {
+                this.data = data;
+            }
+            // Update the view with the new data
+            UpdateView();
         }
-        UpdateView(null, null);
-    }
 
-    private void UpdateView(object sender = null, PropertyChangedEventArgs e = null)
-    {
-        networkName.text = data.Name;
-        playerCount.text = $"{data.CurrentPlayers} / {data.MaxPlayers}";
-        ping.text = $"{data.Ping} ms";
-
-        if (!data.HasPassword)
+        private void UpdateView(object sender = null, PropertyChangedEventArgs e = null)
         {
-            goIcon.SetActive(false);
+            // Update the text fields with the data from the server
+            networkName.text = data.Name;
+            playerCount.text = $"{data.CurrentPlayers} / {data.MaxPlayers}";
+            ping.text = $"{data.Ping} ms";
+
+            // Hide the icon if the server does not have a password
+            if (!data.HasPassword)
+            {
+                goIcon.SetActive(false);
+            }
         }
     }
-
 }

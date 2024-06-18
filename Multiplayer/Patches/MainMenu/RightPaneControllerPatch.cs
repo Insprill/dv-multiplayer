@@ -26,7 +26,6 @@ namespace Multiplayer.Patches.MainMenu
 
             // Find the base pane for Load/Save
             GameObject basePane = __instance.FindChildByName("PaneRight Load/Save");
-            //GameObject basePane = __instance.FindChildByName("PaneRight Launcher");
             if (basePane == null)
             {
                 Multiplayer.LogError("Failed to find Launcher pane!");
@@ -37,21 +36,18 @@ namespace Multiplayer.Patches.MainMenu
             basePane.SetActive(false);
             GameObject multiplayerPane = GameObject.Instantiate(basePane, basePane.transform.parent);
             basePane.SetActive(true);
-
             multiplayerPane.name = "PaneRight Multiplayer";
 
-            //multiplayerPane.AddComponent<MultiplayerPane>();
-
+            // Add the multiplayer pane to the menu controller
             __instance.menuController.controlledMenus.Add(multiplayerPane.GetComponent<UIMenu>());
             MainMenuController_Awake_Patch.multiplayerButton.GetComponent<UIMenuRequester>().requestedMenuIndex = __instance.menuController.controlledMenus.Count - 1;
-            Multiplayer.LogError("before Past Destroyed stuff!");
+
             // Clean up unnecessary components and child objects
             GameObject.Destroy(multiplayerPane.GetComponent<SaveLoadController>());
             GameObject.Destroy(multiplayerPane.GetComponent<PlatformSpecificElements>());
             GameObject.Destroy(multiplayerPane.FindChildByName("ButtonIcon OpenFolder"));
             GameObject.Destroy(multiplayerPane.FindChildByName("ButtonIcon Rename"));
             GameObject.Destroy(multiplayerPane.FindChildByName("Text Content"));
-            Multiplayer.LogError("Past Destroyed stuff!");
 
             // Update UI elements
             GameObject titleObj = multiplayerPane.FindChildByName("Title");
@@ -64,13 +60,16 @@ namespace Multiplayer.Patches.MainMenu
             GameObject serverWindow = multiplayerPane.FindChildByName("Save Description");
             serverWindow.GetComponentInChildren<TextMeshProUGUI>().text = "Server information not yet implemented.";
 
+            // Update buttons on the multiplayer pane
             UpdateButton(multiplayerPane, "ButtonTextIcon Overwrite", "ButtonTextIcon Manual", Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
             UpdateButton(multiplayerPane, "ButtonTextIcon Load", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
             UpdateButton(multiplayerPane, "ButtonTextIcon Save", "ButtonTextIcon Join", Locale.SERVER_BROWSER__JOIN_KEY, null, null);
             UpdateButton(multiplayerPane, "ButtonIcon Delete", "ButtonTextIcon Refresh", Locale.SERVER_BROWSER__REFRESH, null, null);
-           
+
+            // Add the MultiplayerPane component
             multiplayerPane.AddComponent<MultiplayerPane>();
 
+            // Create and initialize MainMenuThingsAndStuff
             MainMenuThingsAndStuff.Create(manager =>
             {
                 PopupManager popupManager = null;
@@ -81,15 +80,18 @@ namespace Multiplayer.Patches.MainMenu
                 manager.uiMenuController = __instance.menuController;
             });
 
+            // Activate the multiplayer button
             MainMenuController_Awake_Patch.multiplayerButton.SetActive(true);
             Multiplayer.LogError("At end!");
         }
 
         private static void UpdateButton(GameObject pane, string oldButtonName, string newButtonName, string localeKey, string toolTipKey, Sprite icon)
         {
+            // Find and rename the button
             GameObject button = pane.FindChildByName(oldButtonName);
             button.name = newButtonName;
 
+            // Update localization and tooltip
             if (button.GetComponentInChildren<Localize>() != null)
             {
                 button.GetComponentInChildren<Localize>().key = localeKey;
@@ -97,18 +99,19 @@ namespace Multiplayer.Patches.MainMenu
                 ResetTooltip(button);
             }
 
+            // Set the button icon if provided
             if (icon != null)
             {
                 SetButtonIcon(button, icon);
             }
 
+            // Enable button interaction
             button.GetComponentInChildren<ButtonDV>().ToggleInteractable(true);
-
-
         }
 
         private static void SetButtonIcon(GameObject button, Sprite icon)
         {
+            // Find and set the icon for the button
             GameObject goIcon = button.FindChildByName("[icon]");
             if (goIcon == null)
             {
@@ -121,6 +124,7 @@ namespace Multiplayer.Patches.MainMenu
 
         private static void ResetTooltip(GameObject button)
         {
+            // Reset the tooltip keys for the button
             UIElementTooltip tooltip = button.GetComponent<UIElementTooltip>();
             tooltip.disabledKey = null;
             tooltip.enabledKey = null;

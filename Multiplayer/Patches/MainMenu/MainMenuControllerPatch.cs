@@ -7,11 +7,18 @@ using UnityEngine.UI;
 
 namespace Multiplayer.Patches.MainMenu
 {
+    /// <summary>
+    /// Harmony patch for the Awake method of MainMenuController to add a Multiplayer button.
+    /// </summary>
     [HarmonyPatch(typeof(MainMenuController), "Awake")]
     public static class MainMenuController_Awake_Patch
     {
         public static GameObject multiplayerButton;
 
+        /// <summary>
+        /// Prefix method to run before MainMenuController's Awake method.
+        /// </summary>
+        /// <param name="__instance">The instance of MainMenuController.</param>
         private static void Prefix(MainMenuController __instance)
         {
             // Find the Sessions button to base the Multiplayer button on
@@ -43,6 +50,10 @@ namespace Multiplayer.Patches.MainMenu
             SetButtonIcon(multiplayerButton);
         }
 
+        /// <summary>
+        /// Resets the tooltip for a given button.
+        /// </summary>
+        /// <param name="button">The button to reset the tooltip for.</param>
         private static void ResetTooltip(GameObject button)
         {
             UIElementTooltip tooltip = button.GetComponent<UIElementTooltip>();
@@ -50,6 +61,10 @@ namespace Multiplayer.Patches.MainMenu
             tooltip.enabledKey = null;
         }
 
+        /// <summary>
+        /// Sets the icon for the Multiplayer button.
+        /// </summary>
+        /// <param name="button">The button to set the icon for.</param>
         private static void SetButtonIcon(GameObject button)
         {
             GameObject icon = button.FindChildByName("icon");
