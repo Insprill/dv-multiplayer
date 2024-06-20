@@ -42,11 +42,8 @@ namespace Multiplayer.Components.MainMenu
             ping.transform.position = new Vector3(PING_POS_X, pingPos.y, pingPos.z);
             ping.alignment = TextAlignmentOptions.Right;
 
-            // Set initial icon and text values for testing purposes
-            icon.sprite = Sprites.Padlock;
-            networkName.text = "Test Network";
-            playerCount.text = "1/4";
-            ping.text = "102 ms";
+            // Set change icon
+            icon.sprite = Multiplayer.AssetIndex.lockIcon;
         }
 
         public override void SetData(IServerBrowserGameDetails data, AGridView<IServerBrowserGameDetails> _)

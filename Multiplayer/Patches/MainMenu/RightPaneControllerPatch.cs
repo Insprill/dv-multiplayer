@@ -1,8 +1,4 @@
-using System.Linq;
-using System;
-using DV.Common;
 using DV.Localization;
-using DV.Scenarios.Common;
 using DV.UI;
 using DV.UIFramework;
 using HarmonyLib;
@@ -11,7 +7,7 @@ using Multiplayer.Utils;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using LiteNetLib;
+
 
 namespace Multiplayer.Patches.MainMenu
 {
@@ -62,10 +58,11 @@ namespace Multiplayer.Patches.MainMenu
 
             // Update buttons on the multiplayer pane
             UpdateButton(multiplayerPane, "ButtonTextIcon Overwrite", "ButtonTextIcon Manual", Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
-            UpdateButton(multiplayerPane, "ButtonTextIcon Load", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
-            UpdateButton(multiplayerPane, "ButtonTextIcon Save", "ButtonTextIcon Join", Locale.SERVER_BROWSER__JOIN_KEY, null, null);
-            UpdateButton(multiplayerPane, "ButtonIcon Delete", "ButtonTextIcon Refresh", Locale.SERVER_BROWSER__REFRESH, null, null);
+            UpdateButton(multiplayerPane, "ButtonTextIcon Load", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, Multiplayer.AssetIndex.lockIcon);
+            UpdateButton(multiplayerPane, "ButtonTextIcon Save", "ButtonTextIcon Join", Locale.SERVER_BROWSER__JOIN_KEY, null, Multiplayer.AssetIndex.connectIcon);
+            UpdateButton(multiplayerPane, "ButtonIcon Delete", "ButtonTextIcon Refresh", Locale.SERVER_BROWSER__REFRESH, null, Multiplayer.AssetIndex.refreshIcon);
 
+            
             // Add the MultiplayerPane component
             multiplayerPane.AddComponent<MultiplayerPane>();
 
