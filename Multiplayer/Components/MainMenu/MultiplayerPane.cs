@@ -313,7 +313,7 @@ namespace Multiplayer.Components.MainMenu
         {
             // Implement join action logic here
             Debug.Log("Join button clicked.");
-            // Add your code to handle joining a game
+            // Add code to handle joining a game
         }
         private void SetupListeners(bool on)
         {
