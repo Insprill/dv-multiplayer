@@ -1,3 +1,4 @@
+
 # Lobby Server - Rust
 
 This is a [Rust](https://www.rust-lang.org/) implementation of the Derail Valley Lobby Server REST API service. The server can be run in either HTTP or HTTPS (SSL) modes (cert and key PEM files will need to be provided for SSL mode).
@@ -8,13 +9,26 @@ To build the Lobby Server code, you'll need Rust, Cargo and OpenSSL installed on
 
 
 ### Installing OpenSSL (Windows) 
-OpenSSL can be installed as follows [[source](https://stackoverflow.com/a/61921362)]:
-1. Download and extract the latest version of [vcpkg](https://github.com/microsoft/vcpkg/releases/)
-2. Run `bootstrap-vcpkg.bat`
-3. Run `vcpkg.exe install openssl-windows:x64-windows`
-4. Run `vcpkg.exe install openssl:x64-windows-static`
-5. Run `vcpkg.exe integrate install`
-6. Run `set VCPKGRS_DYNAMIC=1`
+OpenSSL can be installed as follows [[source](https://stackoverflow.com/a/70949736)]:
+1. Install OpenSSL from [http://slproweb.com/products/Win32OpenSSL.html](http://slproweb.com/products/Win32OpenSSL.html) into `C:\Program Files\OpenSSL-Win64`
+2. In an elevated terminal
+```
+$env:path = $env:path+  ";C:\Program Files\OpenSSL-Win64\bin" 
+cd "C:\Program Files\OpenSSL-Win64"
+mkdir certs
+cd certs
+wget https://curl.se/ca/cacert.pem -o cacert.pem
+```
+4. In the VSCode Rust Server terminal set the following environment variables
+```
+$env:OPENSSL_CONF='C:\Program Files\OpenSSL-Win64\bin\openssl.cfg'
+$env:OPENSSL_NO_VENDOR=1
+$env:RUSTFLAGS='-Ctarget-feature=+crt-static'
+$env:SSL_CERT = 'C:\Program Files\OpenSSL-Win64\certs\cacert.pem'
+$env:OPENSSL_DIR = 'C:\Program Files\OpenSSL-Win64'
+$env:OPENSSL_LIB_DIR = "C:\Program Files\OpenSSL-Win64\lib\VC\x64\MD"
+```
+
 
 ### Building
 The code can be built using `cargo build --release` or built and run (for testing purposes) using `cargo run --release`
@@ -29,7 +43,8 @@ Below are the available parameters along with their defaults:
 -   `ssl_cert_path` (string): Path to the SSL certificate file. Default: `"cert.pem"`
 -   `ssl_key_path` (string): Path to the SSL private key file. Default: `"key.pem"`
 
-To customize these parameters, create a `config.json` file in the project directory with the desired values. Here's an example `config.json`:
+To customise these parameters, create a `config.json` file in the project directory with the desired values.
+Example `config.json`:
 ```json
 {
   "port": 8080,
