@@ -307,3 +307,4 @@ MultiplayerAssets/ProjectSettings/*
 # Packages
 !MultiplayerAssets/Packages
 /Lobby Servers/Rust Server/target
+*.pem

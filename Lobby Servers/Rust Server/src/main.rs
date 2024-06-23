@@ -1,16 +1,15 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::fs::{File};
+use std::fs::File;
 use std::io::{Read, Write};
 use std::sync::{Arc, Mutex};
-use tokio::time::{interval, Duration};
 use std::time::{SystemTime, UNIX_EPOCH};
 use env_logger::Env;
 use log::{info, error};
 use uuid::Uuid;
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
-use std::path::Path;
+use openssl::ssl::SslAcceptorBuilder;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct ServerInfo {
@@ -90,41 +89,35 @@ async fn main() -> std::io::Result<()> {
     let state = AppState {
         servers: Arc::new(Mutex::new(HashMap::new())),
     };
-    let cleanup_state = state.clone();
 
-    if config.ssl_enabled {
-        let ssl_builder = setup_ssl(&config)?;
-        HttpServer::new(move || {
+    let server = {
+        let server_builder = HttpServer::new(move || {
             App::new()
                 .app_data(web::Data::new(state.clone()))
                 .route("/add_game_server", web::post().to(add_server))
                 .route("/update_game_server", web::post().to(update_server))
                 .route("/remove_game_server", web::post().to(remove_server))
                 .route("/list_game_servers", web::get().to(list_servers))
-        })
-        .bind_openssl(format!("0.0.0.0:{}", config.port), move || ssl_builder.clone())?
-        .run()
-        .await
-    } else {
-        HttpServer::new(move || {
-            App::new()
-                .app_data(web::Data::new(state.clone()))
-                .route("/add_game_server", web::post().to(add_server))
-                .route("/update_game_server", web::post().to(update_server))
-                .route("/remove_game_server", web::post().to(remove_server))
-                .route("/list_game_servers", web::get().to(list_servers))
-        })
-        .bind(format!("0.0.0.0:{}", config.port))?
-        .run()
-        .await
-    }
+        });
+    
+        if config.ssl_enabled {
+            let ssl_builder = setup_ssl(&config)?;
+            server_builder.bind_openssl(format!("0.0.0.0:{}", config.port), (move || ssl_builder)())?
+        } else {
+            server_builder.bind(format!("0.0.0.0:{}", config.port))?
+        }
+    };
+    
+
+    // Start the server
+    server.run().await
 }
 
-fn setup_ssl(config: &Config) -> std::io::Result<SslAcceptor> {
+fn setup_ssl(config: &Config) -> std::io::Result<SslAcceptorBuilder> {
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls())?;
     builder.set_private_key_file(&config.ssl_key_path, SslFiletype::PEM)?;
     builder.set_certificate_chain_file(&config.ssl_cert_path)?;
-    Ok(builder.build())
+    Ok(builder)
 }
 
 fn validate_server_info(info: &ServerInfo) -> Result<(), &'static str> {
