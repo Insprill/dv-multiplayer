@@ -29,11 +29,14 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public int Port = 7777;
 
     [Space(10)]
+    [Header("Lobby Server")]
+    [Draw("Lobby Server address", Tooltip = "Address of lobby server for finding multiplayer games")]
+    public string LobbyServerAddress = "http://localhost:8080";
     [Header("Last Server Connected to by IP")]
     [Draw("Last Remote IP", Tooltip = "The IP for the last server connected to by IP.")]
     public string LastRemoteIP = "";
     [Draw("Last Remote Port", Tooltip = "The port for the last server connected to by IP.")]
-    public int LastRemotePort = 7777;
+    public ushort LastRemotePort = 7777;
     [Draw("Last Remote Password", Tooltip = "The password for the last server connected to by IP.")]
     public string LastRemotePassword = "";
 

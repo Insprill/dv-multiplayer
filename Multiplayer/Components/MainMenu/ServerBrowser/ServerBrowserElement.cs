@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Multiplayer.Components.MainMenu
+namespace Multiplayer.Components.MainMenu.ServerBrowser
 {
     public class ServerBrowserElement : AViewElement<IServerBrowserGameDetails>
     {
@@ -34,7 +34,7 @@ namespace Multiplayer.Components.MainMenu
             playerCount.transform.position = new Vector3(namePos.x + nameSize.x, namePos.y, namePos.z);
 
             // Adjust the size and position of the ping text
-            Vector2 rowSize = this.transform.GetComponentInParent<RectTransform>().sizeDelta;
+            Vector2 rowSize = transform.GetComponentInParent<RectTransform>().sizeDelta;
             Vector3 pingPos = ping.transform.position;
             Vector2 pingSize = ping.rectTransform.sizeDelta;
 

@@ -42,7 +42,7 @@ The difficulty field in the request body for adding a game server must be one of
       "password_protected": "boolean",
 	  "game_mode": "integer",
 	  "difficulty": "integer",
-	  "time_passed": "string"
+	  "time_passed": "string",
       "current_players": "integer",
       "max_players": "integer",
 	  "required_mods": "string",
@@ -52,7 +52,7 @@ The difficulty field in the request body for adding a game server must be one of
   }
   ```
 	- **Fields:**
-		- ip (string): The IP address of the game server.
+		- ip (optional string): The IP address of the game server. If not supplied, the requestor's IP shall be used.
 		- port (integer): The port number of the game server.
 		- server_name (string): The name of the game server (maximum 25 characters).
 		- password_protected (boolean): Indicates if the server is password-protected.
@@ -72,10 +72,12 @@ The difficulty field in the request body for adding a game server must be one of
     - **Content:** 
       ```json
 	  {
-	      "game_server_id": "string"
+	      "game_server_id": "string",
+		  "private_key": "string"
 	  }
 	  ```
 		- game_server_id (string): A GUID assigned to the game server. This GUID uniquely identifies the game server and is used when updating the lobby server.
+		- private_key (string): A shared secret between the lobby server and the game server. Must be supplied when updating the lobby server.
   - **Error:**
     - **Code:** 500 Internal Server Error
     - **Content:** `"Failed to add server"`
@@ -89,12 +91,14 @@ The difficulty field in the request body for adding a game server must be one of
   ```json
   {
       "game_server_id": "string",
+	  "private_key": "string",
       "current_players": "integer",
 	  "time_passed": "string"
   }
   ```
   	- **Fields:**
 		- game_server_id (string): The GUID assigned to the game server (returned from `add_game_server`).
+		- private_key (string): The shared secret between the lobby server and the game server (returned from `add_game_server`).
 		- current_players (integer): The current number of players on the server (0 - max_players).
 		- time_passed (string): The in-game time passed since the game/session was started.
 - **Response:**
@@ -113,11 +117,13 @@ The difficulty field in the request body for adding a game server must be one of
 - **Request Body:**
   ```json
   {
-      "game_server_id": "string"
+      "game_server_id": "string",
+	  "private_key": "string"
   }
   ```
    	- **Fields:**
 		- game_server_id (string): The GUID assigned to the game server (returned from `add_game_server`).
+		- private_key (string): The shared secret between the lobby server and the game server (returned from `add_game_server`).
 - **Response:**
   - **Success:**
     - **Code:** 200 OK
@@ -183,7 +189,8 @@ curl -X POST -H "Content-Type: application/json" -d '{
 Example response:
 ```json
 {
-    "game_server_id": "0e1759fd-ba6e-4476-ace2-f173af9db342"
+    "game_server_id": "0e1759fd-ba6e-4476-ace2-f173af9db342",
+    "private_key": "6fca6e1499dab0358f79dc0b251b4e23"
 }
 ```
 
@@ -192,6 +199,7 @@ Example request:
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{
     "game_server_id": "0e1759fd-ba6e-4476-ace2-f173af9db342",
+	"private_key": "6fca6e1499dab0358f79dc0b251b4e23",
     "current_players": 2,
     "time_passed": "0d 10h 47m 12s"
 }' http://<lobby-server-address>/update_game_server
@@ -206,7 +214,8 @@ Example response:
 Example request:
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{
-    "game_server_id": "0e1759fd-ba6e-4476-ace2-f173af9db342"
+    "game_server_id": "0e1759fd-ba6e-4476-ace2-f173af9db342",
+	"private_key": "6fca6e1499dab0358f79dc0b251b4e23"
 }' http://<lobby-server-address>/remove_game_server
 ```
 Example response:

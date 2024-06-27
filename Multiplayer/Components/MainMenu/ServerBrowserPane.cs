@@ -1,7 +1,6 @@
 using System;
-using System.Collections.Generic;
+using System.Collections;
 using System.Text.RegularExpressions;
-using DV.Common;
 using DV.Localization;
 using DV.UI;
 using DV.UIFramework;
@@ -11,12 +10,16 @@ using Multiplayer.Components.Networking;
 using Multiplayer.Utils;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
+using UnityEngine.Networking;
+using System.Linq;
+using Multiplayer.Networking.Data;
+
+
 
 namespace Multiplayer.Components.MainMenu
 {
-    public class MultiplayerPane : MonoBehaviour
+    public class ServerBrowserPane : MonoBehaviour
     {
         // Regular expressions for IP and port validation
         // @formatter:off
@@ -26,33 +29,57 @@ namespace Multiplayer.Components.MainMenu
         private static readonly Regex PortRegex = new Regex(@"^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$");
         // @formatter:on
 
-        private string ipAddress;
-        private ushort portNumber;
-        //private ButtonDV directButton;
+        
 
+        //Gridview variables
         private ObservableCollectionExt<IServerBrowserGameDetails> gridViewModel = new ObservableCollectionExt<IServerBrowserGameDetails>();
         private ServerBrowserGridView gridView;
         private ScrollRect parentScroller;
-        private int indexToSelectOnRefresh;
+        private string serverIDOnRefresh;
+        private IServerBrowserGameDetails selectedServer;
+
+        //Button variables
+        private Button buttonJoin;
+        //private Button buttonHost;
+        private Button buttonRefresh;
+        private Button buttonDirectIP;
+
+        private bool serverRefreshing = false;
+
+        //connection parameters
+        private string ipAddress;
+        private ushort portNumber;
+        string password = null;
+        bool direct = false;
 
         private string[] testNames = new string[] { "ChooChooExpress", "RailwayRascals", "FreightFrenzy", "SteamDream", "DieselDynasty", "CargoKings", "TrackMasters", "RailwayRevolution", "ExpressElders", "IronHorseHeroes", "LocomotiveLegends", "TrainTitans", "HeavyHaulers", "RapidRails", "TimberlineTransport", "CoalCountry", "SilverRailway", "GoldenGauge", "SteelStream", "MountainMoguls", "RailRiders", "TrackTrailblazers", "FreightFanatics", "SteamSensation", "DieselDaredevils", "CargoChampions", "TrackTacticians", "RailwayRoyals", "ExpressExperts", "IronHorseInnovators", "LocomotiveLeaders", "TrainTacticians", "HeavyHitters", "RapidRunners", "TimberlineTrains", "CoalCrushers", "SilverStreamliners", "GoldenGears", "SteelSurge", "MountainMovers", "RailwayWarriors", "TrackTerminators", "FreightFighters", "SteamStreak", "DieselDynamos", "CargoCommanders", "TrackTrailblazers", "RailwayRangers", "ExpressEngineers", "IronHorseInnovators", "LocomotiveLovers", "TrainTrailblazers", "HeavyHaulersHub", "RapidRailsRacers", "TimberlineTrackers", "CoalCountryCarriers", "SilverSpeedsters", "GoldenGaugeGang", "SteelStalwarts", "MountainMoversClub", "RailRunners", "TrackTitans", "FreightFalcons", "SteamSprinters", "DieselDukes", "CargoCommandos", "TrackTracers", "RailwayRebels", "ExpressElite", "IronHorseIcons", "LocomotiveLunatics", "TrainTornadoes", "HeavyHaulersCrew", "RapidRailsRunners", "TimberlineTrackMasters", "CoalCountryCrew", "SilverSprinters", "GoldenGale", "SteelSpeedsters", "MountainMarauders", "RailwayRiders", "TrackTactics", "FreightFury", "SteamSquires", "DieselDefenders", "CargoCrusaders", "TrackTechnicians", "RailwayRaiders", "ExpressEnthusiasts", "IronHorseIlluminati", "LocomotiveLoyalists", "TrainTurbulence", "HeavyHaulersHeroes", "RapidRailsRiders", "TimberlineTrackTitans", "CoalCountryCaravans", "SilverSpeedRacers", "GoldenGaugeGangsters", "SteelStorm", "MountainMasters", "RailwayRoadrunners", "TrackTerror", "FreightFleets", "SteamSurgeons", "DieselDragons", "CargoCrushers", "TrackTaskmasters", "RailwayRevolutionaries", "ExpressExplorers", "IronHorseInquisitors", "LocomotiveLegion", "TrainTriumph", "HeavyHaulersHorde", "RapidRailsRenegades", "TimberlineTrackTeam", "CoalCountryCrusade", "SilverSprintersSquad", "GoldenGaugeGroup", "SteelStrike", "MountainMonarchs", "RailwayRaid", "TrackTacticiansTeam", "FreightForce", "SteamSquad", "DieselDynastyClan", "CargoCrew", "TrackTeam", "RailwayRalliers", "ExpressExpedition", "IronHorseInitiative", "LocomotiveLeague", "TrainTribe", "HeavyHaulersHustle", "RapidRailsRevolution", "TimberlineTrackersTeam", "CoalCountryConvoy", "SilverSprint", "GoldenGaugeGuild", "SteelSpirits", "MountainMayhem", "RailwayRaidersCrew", "TrackTrailblazersTribe", "FreightFleetForce", "SteamStalwarts", "DieselDragonsDen", "CargoCaptains", "TrackTrailblazersTeam", "RailwayRidersRevolution", "ExpressEliteExpedition", "IronHorseInsiders", "LocomotiveLords", "TrainTacticiansTribe", "HeavyHaulersHeroesHorde", "RapidRailsRacersTeam", "TimberlineTrackMastersTeam", "CoalCountryCarriersCrew", "SilverSpeedstersSprint", "GoldenGaugeGangGuild", "SteelSurgeStrike", "MountainMoversMonarchs" };
+
+        #region setup
 
         private void Awake()
         {
             Multiplayer.Log("MultiplayerPane Awake()");
             SetupMultiplayerButtons();
             SetupServerBrowser();
+            FillDummyServers();
         }
 
         private void OnEnable()
         {
+            Multiplayer.Log("MultiplayerPane OnEnable()");
             if (!this.parentScroller)
             {
+                Multiplayer.Log("Find ScrollRect");
                 this.parentScroller = this.gridView.GetComponentInParent<ScrollRect>();
+                Multiplayer.Log("Found ScrollRect");
             }
             this.SetupListeners(true);
-            this.indexToSelectOnRefresh = 0;
-            this.RefreshData();
+            this.serverIDOnRefresh = "";
+
+            buttonDirectIP.interactable = true;
+            buttonRefresh.interactable = true;
+            //buttonHost.interactable = true;
+
         }
 
         // Disable listeners
@@ -63,45 +90,42 @@ namespace Multiplayer.Components.MainMenu
 
         private void SetupMultiplayerButtons()
         {
-            GameObject buttonDirectIP = GameObject.Find("ButtonTextIcon Manual");
-            GameObject buttonHost = GameObject.Find("ButtonTextIcon Host");
-            GameObject buttonJoin = GameObject.Find("ButtonTextIcon Join");
-            GameObject buttonRefresh = GameObject.Find("ButtonTextIcon Refresh");
+            GameObject goDirectIP = GameObject.Find("ButtonTextIcon Manual");
+            //GameObject goHost = GameObject.Find("ButtonTextIcon Host");
+            GameObject goJoin = GameObject.Find("ButtonTextIcon Join");
+            GameObject goRefresh = GameObject.Find("ButtonIcon Refresh");
 
-            if (buttonDirectIP == null || buttonHost == null || buttonJoin == null || buttonRefresh == null)
+            if (goDirectIP == null || /*goHost == null ||*/ goJoin == null || goRefresh == null)
             {
                 Multiplayer.LogError("One or more buttons not found.");
                 return;
             }
 
             // Modify the existing buttons' properties
-            ModifyButton(buttonDirectIP, Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY);
-            ModifyButton(buttonHost, Locale.SERVER_BROWSER__HOST_KEY);
-            ModifyButton(buttonJoin, Locale.SERVER_BROWSER__JOIN_KEY);
-            //ModifyButton(buttonRefresh, Locale.SERVER_BROWSER__REFRESH);
+            ModifyButton(goDirectIP, Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY);
+            //ModifyButton(goHost, Locale.SERVER_BROWSER__HOST_KEY);
+            ModifyButton(goJoin, Locale.SERVER_BROWSER__JOIN_KEY);
+
 
             // Set up event listeners and localization for DirectIP button
-            ButtonDV buttonDirectIPDV = buttonDirectIP.GetComponent<ButtonDV>();
-            buttonDirectIPDV.onClick.AddListener(ShowIpPopup);
-
-            // Set up event listeners and localization for Host button
-            ButtonDV buttonHostDV = buttonHost.GetComponent<ButtonDV>();
-            buttonHostDV.onClick.AddListener(HostAction);
+            buttonDirectIP = goDirectIP.GetComponent<ButtonDV>();
+            buttonDirectIP.onClick.AddListener(DirectAction);
 
             // Set up event listeners and localization for Join button
-            ButtonDV buttonJoinDV = buttonJoin.GetComponent<ButtonDV>();
-            buttonJoinDV.onClick.AddListener(JoinAction);
+            buttonJoin = goJoin.GetComponent<ButtonDV>();
+            buttonJoin.onClick.AddListener(JoinAction);
 
             // Set up event listeners and localization for Refresh button
-            //ButtonDV buttonRefreshDV = buttonRefresh.GetComponent<ButtonDV>();
-            //buttonRefreshDV.onClick.AddListener(RefreshAction);
+            buttonRefresh = goRefresh.GetComponent<ButtonDV>();
+            buttonRefresh.onClick.AddListener(RefreshAction);
 
-            //Debug.Log("Setting buttons active: " + buttonDirectIP.name + ", " + buttonHost.name + ", " + buttonJoin.name + ", " + buttonRefresh.name );
-            Debug.Log("Setting buttons active: " + buttonDirectIP.name + ", " + buttonHost.name + ", " + buttonJoin.name);
-            buttonDirectIP.SetActive(true);
-            buttonHost.SetActive(true);
-            buttonJoin.SetActive(true);
-            //buttonRefresh.SetActive(true);
+            goDirectIP.SetActive(true);
+            //goHost.SetActive(true);
+            goJoin.SetActive(true);
+            goRefresh.SetActive(true);
+
+            buttonJoin.interactable = false;
+
         }
 
         private void SetupServerBrowser()
@@ -119,11 +143,17 @@ namespace Multiplayer.Components.MainMenu
 
             GridviewGO.SetActive(true);
         }
-
-        private GameObject FindButton(string name)
+        private void SetupListeners(bool on)
         {
+            if (on)
+            {
+                this.gridView.SelectedIndexChanged += this.IndexChanged;
+            }
+            else
+            {
+                this.gridView.SelectedIndexChanged -= this.IndexChanged;
+            }
 
-            return GameObject.Find(name);
         }
 
         private void ModifyButton(GameObject button, string key)
@@ -131,6 +161,89 @@ namespace Multiplayer.Components.MainMenu
             button.GetComponentInChildren<Localize>().key = key;
 
         }
+        private GameObject FindButton(string name)
+        {
+
+            return GameObject.Find(name);
+        }
+
+        #endregion
+
+        #region UI callbacks
+
+        private void RefreshAction()
+        {
+            if (serverRefreshing)
+                return;
+
+            serverRefreshing = true;
+            buttonJoin.interactable = false;
+
+            if (selectedServer != null)
+            {
+                serverIDOnRefresh = selectedServer.id;
+            }
+
+            StartCoroutine(GetRequest($"{Multiplayer.Settings.LobbyServerAddress}/list_game_servers"));
+
+        }
+        private void JoinAction()
+        {
+            if (selectedServer != null)
+            {
+                buttonDirectIP.interactable = false;
+                buttonJoin.interactable = false;
+                //buttonHost.interactable = false;
+
+                if (selectedServer.HasPassword)
+                {
+                    //not making a direct connection
+                    direct = false;
+                    ipAddress = selectedServer.ip;
+                    portNumber = selectedServer.port;
+
+                    ShowPasswordPopup();
+
+                    return;
+                }
+
+                SingletonBehaviour<NetworkLifecycle>.Instance.StartClient(selectedServer.ip, selectedServer.port, null);
+            }
+        }
+
+        private void DirectAction()
+        {
+            Debug.Log($"DirectAction()");
+            buttonDirectIP.interactable = false;
+            buttonJoin.interactable = false;
+            //buttonHost.interactable = false;
+
+            //making a direct connection
+            direct = true;
+
+            ShowIpPopup();
+        }
+
+        private void IndexChanged(AGridView<IServerBrowserGameDetails> gridView)
+        {
+            Debug.Log($"Index: {gridView.SelectedModelIndex}");
+            if (serverRefreshing)
+                return;
+
+            if (gridView.SelectedModelIndex >= 0)
+            {
+                Debug.Log($"Selected server: {gridViewModel[gridView.SelectedModelIndex].Name}");
+
+                selectedServer = gridViewModel[gridView.SelectedModelIndex];
+                buttonJoin.interactable = true;
+            }
+            else
+            {
+                buttonJoin.interactable = false;
+            }
+        }
+
+        #endregion
 
         private void ShowIpPopup()
         {
@@ -148,29 +261,23 @@ namespace Multiplayer.Components.MainMenu
             popup.Closed += result =>
             {
                 if (result.closedBy == PopupClosedByAction.Abortion)
-                {
-                    MainMenuThingsAndStuff.Instance.SwitchToDefaultMenu();
                     return;
+
+                if (!IPv4Regex.IsMatch(result.data) && !IPv6Regex.IsMatch(result.data))
+                {
+                    ShowOkPopup(Locale.SERVER_BROWSER__IP_INVALID, ShowIpPopup);
                 }
-
-                HandleIpAddressInput(result.data);
+                else
+                {
+                    ipAddress = result.data;
+                    ShowPortPopup();
+                }
             };
-        }
-
-        private void HandleIpAddressInput(string input)
-        {
-            if (!IPv4Regex.IsMatch(input) && !IPv6Regex.IsMatch(input))
-            {
-                ShowOkPopup(Locale.SERVER_BROWSER__IP_INVALID, ShowIpPopup);
-                return;
-            }
-
-            ipAddress = input;
-            ShowPortPopup();
         }
 
         private void ShowPortPopup()
         {
+
             var popup = MainMenuThingsAndStuff.Instance.ShowRenamePopup();
             if (popup == null)
             {
@@ -179,30 +286,24 @@ namespace Multiplayer.Components.MainMenu
             }
 
             popup.labelTMPro.text = Locale.SERVER_BROWSER__PORT;
-            popup.GetComponentInChildren<TMP_InputField>().text = Multiplayer.Settings.LastRemotePort.ToString();
+            popup.GetComponentInChildren<TMP_InputField>().text = $"{Multiplayer.Settings.LastRemotePort}";
 
             popup.Closed += result =>
             {
                 if (result.closedBy == PopupClosedByAction.Abortion)
-                {
-                    MainMenuThingsAndStuff.Instance.SwitchToDefaultMenu();
                     return;
+
+                if (!PortRegex.IsMatch(result.data))
+                {
+                    ShowOkPopup(Locale.SERVER_BROWSER__PORT_INVALID, ShowIpPopup);
                 }
-
-                HandlePortInput(result.data);
+                else
+                {
+                    portNumber = ushort.Parse(result.data);
+                    ShowPasswordPopup();
+                }
             };
-        }
 
-        private void HandlePortInput(string input)
-        {
-            if (!PortRegex.IsMatch(input))
-            {
-                ShowOkPopup(Locale.SERVER_BROWSER__PORT_INVALID, ShowPortPopup);
-                return;
-            }
-
-            portNumber = ushort.Parse(input);
-            ShowPasswordPopup();
         }
 
         private void ShowPasswordPopup()
@@ -215,21 +316,33 @@ namespace Multiplayer.Components.MainMenu
             }
 
             popup.labelTMPro.text = Locale.SERVER_BROWSER__PASSWORD;
-            popup.GetComponentInChildren<TMP_InputField>().text = Multiplayer.Settings.LastRemotePassword;
 
-            DestroyImmediate(popup.GetComponentInChildren<PopupTextInputFieldController>());
-            popup.GetOrAddComponent<PopupTextInputFieldControllerNoValidation>();
+            //direct IP connection
+            if (direct)
+            {
+                //Prefill with stored password
+                popup.GetComponentInChildren<TMP_InputField>().text = Multiplayer.Settings.LastRemotePassword;
+
+                //Set us up to allow a blank password
+                DestroyImmediate(popup.GetComponentInChildren<PopupTextInputFieldController>());
+                popup.GetOrAddComponent<PopupTextInputFieldControllerNoValidation>();
+             }
 
             popup.Closed += result =>
             {
-                if (result.closedBy == PopupClosedByAction.Abortion) return;
+                if (result.closedBy == PopupClosedByAction.Abortion)
+                    return;
 
-                //directButton.enabled = false;
+                if (direct)
+                {
+                    //store params for later
+                    Multiplayer.Settings.LastRemoteIP = ipAddress;
+                    Multiplayer.Settings.LastRemotePort = portNumber;
+                    Multiplayer.Settings.LastRemotePassword = result.data;
+
+                }
+
                 SingletonBehaviour<NetworkLifecycle>.Instance.StartClient(ipAddress, portNumber, result.data);
-
-                Multiplayer.Settings.LastRemoteIP = ipAddress;
-                Multiplayer.Settings.LastRemotePort = portNumber;
-                Multiplayer.Settings.LastRemotePassword = result.data;
 
                 //ShowConnectingPopup(); // Show a connecting message
                 //SingletonBehaviour<NetworkLifecycle>.Instance.ConnectionFailed += HandleConnectionFailed;
@@ -253,13 +366,62 @@ namespace Multiplayer.Components.MainMenu
             // ShowConnectionFailedPopup();
         }
 
-        private void RefreshAction()
-        {
-            // Implement refresh action logic here
-            Debug.Log("Refresh button clicked.");
-            // Add your code to refresh the multiplayer list or perform any other refresh-related action
-        }
 
+
+        IEnumerator GetRequest(string uri)
+        {
+            using (UnityWebRequest webRequest = UnityWebRequest.Get(uri))
+            {
+                // Request and wait for the desired page.
+                yield return webRequest.SendWebRequest();
+
+                string[] pages = uri.Split('/');
+                int page = pages.Length - 1;
+
+                if (webRequest.isNetworkError)
+                {
+                    Debug.Log(pages[page] + ": Error: " + webRequest.error);
+                }
+                else
+                {
+                    Debug.Log(pages[page] + ":\nReceived: " + webRequest.downloadHandler.text);
+
+                    ServerData[] response;
+
+                    response = Newtonsoft.Json.JsonConvert.DeserializeObject<ServerData[]>(webRequest.downloadHandler.text);
+
+                    Debug.Log($"servers: {response.Length}");
+
+                    foreach (ServerData server in response)
+                    {
+                        Debug.Log($"Name: {server.Name}\tIP: {server.ip}");
+                    }
+
+                    gridViewModel.Clear();
+                    gridView.SetModel(gridViewModel);
+                    gridViewModel.AddRange(response);
+
+                    //if we have a server selected, we need to re-select it after refresh
+                    if (serverIDOnRefresh != null)
+                    {
+                        int selID = Array.FindIndex(gridViewModel.ToArray(), server => server.id == serverIDOnRefresh);
+                        if (selID >= 0)
+                        {
+                            gridView.SetSelected(selID);
+
+                            if (this.parentScroller)
+                            {
+                                this.parentScroller.verticalNormalizedPosition = 1f - (float)selID / (float)gridView.Model.Count;
+                            }
+                        }
+
+                        serverIDOnRefresh = null;
+                    }
+
+                    serverRefreshing = false;
+                }
+            }
+        }
 
         private static void ShowOkPopup(string text, Action onClick)
         {
@@ -278,13 +440,8 @@ namespace Multiplayer.Components.MainMenu
             }
         }
 
-        private void HostAction()
+        private void FillDummyServers()
         {
-            // Implement host action logic here
-            Debug.Log("Host button clicked.");
-            // Add your code to handle hosting a game
-
-
             //gridView.showDummyElement = true;
             gridViewModel.Clear();
 
@@ -306,38 +463,8 @@ namespace Multiplayer.Components.MainMenu
             }
 
             gridView.SetModel(gridViewModel);
-
-        }
-
-        private void JoinAction()
-        {
-            // Implement join action logic here
-            Debug.Log("Join button clicked.");
-            // Add code to handle joining a game
-        }
-        private void SetupListeners(bool on)
-        {
-            if (on)
-            {
-                return;
-            }
-            
-        }
-        private void RefreshData()
-        {
-            
         }
     }
 
-    public class ServerData : IServerBrowserGameDetails
-    {
-        public int ServerID { get; }
-        public string Name { get; set; }
-        public int MaxPlayers { get; set; }
-        public int CurrentPlayers { get; set; }
-        public int Ping { get; set; }
-        public bool HasPassword { get; set; }
-
-        public void Dispose() { }
-    }
+   
 }

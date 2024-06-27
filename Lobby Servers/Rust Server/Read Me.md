@@ -1,4 +1,3 @@
-
 # Lobby Server - Rust
 
 This is a [Rust](https://www.rust-lang.org/) implementation of the Derail Valley Lobby Server REST API service. The server can be run in either HTTP or HTTPS (SSL) modes (cert and key PEM files will need to be provided for SSL mode).

@@ -6,7 +6,7 @@ using Multiplayer.Components.MainMenu;
 using Multiplayer.Utils;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+
 
 
 namespace Multiplayer.Patches.MainMenu
@@ -14,8 +14,11 @@ namespace Multiplayer.Patches.MainMenu
     [HarmonyPatch(typeof(RightPaneController), "OnEnable")]
     public static class RightPaneController_OnEnable_Patch
     {
+        public static int hostMenuIndex;
+        public static UIMenuController uIMenuController;
         private static void Prefix(RightPaneController __instance)
         {
+            uIMenuController = __instance.menuController;
             // Check if the multiplayer pane already exists
             if (__instance.HasChildWithName("PaneRight Multiplayer"))
                 return;
@@ -23,7 +26,7 @@ namespace Multiplayer.Patches.MainMenu
             // Find the base pane for Load/Save
             GameObject basePane = __instance.FindChildByName("PaneRight Load/Save");
             if (basePane == null)
-            {
+            { 
                 Multiplayer.LogError("Failed to find Launcher pane!");
                 return;
             }
@@ -43,6 +46,7 @@ namespace Multiplayer.Patches.MainMenu
             GameObject.Destroy(multiplayerPane.GetComponent<PlatformSpecificElements>());
             GameObject.Destroy(multiplayerPane.FindChildByName("ButtonIcon OpenFolder"));
             GameObject.Destroy(multiplayerPane.FindChildByName("ButtonIcon Rename"));
+            GameObject.Destroy(multiplayerPane.FindChildByName("ButtonTextIcon Load"));
             GameObject.Destroy(multiplayerPane.FindChildByName("Text Content"));
 
             // Update UI elements
@@ -51,20 +55,20 @@ namespace Multiplayer.Patches.MainMenu
             GameObject.Destroy(titleObj.GetComponentInChildren<I2.Loc.Localize>());
 
             GameObject content = multiplayerPane.FindChildByName("text main");
-            content.GetComponentInChildren<TextMeshProUGUI>().text = "Server browser not yet implemented.";
+            //content.GetComponentInChildren<TextMeshProUGUI>().text = "Server browser not yet implemented.";
 
             GameObject serverWindow = multiplayerPane.FindChildByName("Save Description");
-            serverWindow.GetComponentInChildren<TextMeshProUGUI>().text = "Server information not yet implemented.";
+            serverWindow.GetComponentInChildren<TextMeshProUGUI>().textWrappingMode = TextWrappingModes.Normal;
+            serverWindow.GetComponentInChildren<TextMeshProUGUI>().text = "Server browser not yet implemented.<br><br>Dummy servers are shown for demonstration purposes only.<br><br>Press refresh to load real servers.";
 
             // Update buttons on the multiplayer pane
-            UpdateButton(multiplayerPane, "ButtonTextIcon Overwrite", "ButtonTextIcon Manual", Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
-            UpdateButton(multiplayerPane, "ButtonTextIcon Load", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, Multiplayer.AssetIndex.lockIcon);
-            UpdateButton(multiplayerPane, "ButtonTextIcon Save", "ButtonTextIcon Join", Locale.SERVER_BROWSER__JOIN_KEY, null, Multiplayer.AssetIndex.connectIcon);
-            UpdateButton(multiplayerPane, "ButtonIcon Delete", "ButtonTextIcon Refresh", Locale.SERVER_BROWSER__REFRESH, null, Multiplayer.AssetIndex.refreshIcon);
+            multiplayerPane.UpdateButton("ButtonTextIcon Overwrite", "ButtonTextIcon Manual", Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
+            //multiplayerPane.UpdateButton("ButtonTextIcon Load", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, Multiplayer.AssetIndex.lockIcon);
+            multiplayerPane.UpdateButton("ButtonTextIcon Save", "ButtonTextIcon Join", Locale.SERVER_BROWSER__JOIN_KEY, null, Multiplayer.AssetIndex.connectIcon);
+            multiplayerPane.UpdateButton("ButtonIcon Delete", "ButtonIcon Refresh", Locale.SERVER_BROWSER__REFRESH_KEY, null, Multiplayer.AssetIndex.refreshIcon);
 
-            
             // Add the MultiplayerPane component
-            multiplayerPane.AddComponent<MultiplayerPane>();
+            multiplayerPane.AddComponent<ServerBrowserPane>();
 
             // Create and initialize MainMenuThingsAndStuff
             MainMenuThingsAndStuff.Create(manager =>
@@ -80,51 +84,38 @@ namespace Multiplayer.Patches.MainMenu
             // Activate the multiplayer button
             MainMenuController_Awake_Patch.multiplayerButton.SetActive(true);
             Multiplayer.LogError("At end!");
-        }
 
-        private static void UpdateButton(GameObject pane, string oldButtonName, string newButtonName, string localeKey, string toolTipKey, Sprite icon)
-        {
-            // Find and rename the button
-            GameObject button = pane.FindChildByName(oldButtonName);
-            button.name = newButtonName;
 
-            // Update localization and tooltip
-            if (button.GetComponentInChildren<Localize>() != null)
+
+
+
+
+
+
+            // Check if the host pane already exists
+            if (__instance.HasChildWithName("PaneRight Host"))
+                return;
+
+            if (basePane == null)
             {
-                button.GetComponentInChildren<Localize>().key = localeKey;
-                GameObject.Destroy(button.GetComponentInChildren<I2.Loc.Localize>());
-                ResetTooltip(button);
-            }
-
-            // Set the button icon if provided
-            if (icon != null)
-            {
-                SetButtonIcon(button, icon);
-            }
-
-            // Enable button interaction
-            button.GetComponentInChildren<ButtonDV>().ToggleInteractable(true);
-        }
-
-        private static void SetButtonIcon(GameObject button, Sprite icon)
-        {
-            // Find and set the icon for the button
-            GameObject goIcon = button.FindChildByName("[icon]");
-            if (goIcon == null)
-            {
-                Multiplayer.LogError("Failed to find icon!");
+                Multiplayer.LogError("Failed to find Load/Save pane!");
                 return;
             }
 
-            goIcon.GetComponent<Image>().sprite = icon;
-        }
+            // Create a new host pane based on the base pane
+            basePane.SetActive(false);
+            GameObject hostPane = GameObject.Instantiate(basePane, basePane.transform.parent);
+            basePane.SetActive(true);
+            hostPane.name = "PaneRight Host";
 
-        private static void ResetTooltip(GameObject button)
-        {
-            // Reset the tooltip keys for the button
-            UIElementTooltip tooltip = button.GetComponent<UIElementTooltip>();
-            tooltip.disabledKey = null;
-            tooltip.enabledKey = null;
+            GameObject.Destroy(hostPane.GetComponent<SaveLoadController>());
+            GameObject.Destroy(hostPane.GetComponent<PlatformSpecificElements>());
+            HostGamePane hp =  hostPane.GetOrAddComponent<HostGamePane>();
+
+            // Add the host pane to the menu controller
+            __instance.menuController.controlledMenus.Add(hostPane.GetComponent<UIMenu>());
+            hostMenuIndex = __instance.menuController.controlledMenus.Count - 1;
+            //MainMenuController_Awake_Patch.multiplayerButton.GetComponent<UIMenuRequester>().requestedMenuIndex = __instance.menuController.controlledMenus.Count - 1;
         }
     }
 }
