@@ -39,10 +39,10 @@ namespace Multiplayer.Components.MainMenu
         private IServerBrowserGameDetails selectedServer;
 
         //Button variables
-        private Button buttonJoin;
+        private ButtonDV buttonJoin;
         //private Button buttonHost;
-        private Button buttonRefresh;
-        private Button buttonDirectIP;
+        private ButtonDV buttonRefresh;
+        private ButtonDV buttonDirectIP;
 
         private bool serverRefreshing = false;
 
@@ -76,8 +76,8 @@ namespace Multiplayer.Components.MainMenu
             this.SetupListeners(true);
             this.serverIDOnRefresh = "";
 
-            buttonDirectIP.interactable = true;
-            buttonRefresh.interactable = true;
+            buttonDirectIP.ToggleInteractable(true);
+            buttonRefresh.ToggleInteractable(true);
             //buttonHost.interactable = true;
 
         }
@@ -124,7 +124,7 @@ namespace Multiplayer.Components.MainMenu
             goJoin.SetActive(true);
             goRefresh.SetActive(true);
 
-            buttonJoin.interactable = false;
+            buttonJoin.ToggleInteractable(false);
 
         }
 
@@ -177,7 +177,7 @@ namespace Multiplayer.Components.MainMenu
                 return;
 
             serverRefreshing = true;
-            buttonJoin.interactable = false;
+            buttonJoin.ToggleInteractable(false);
 
             if (selectedServer != null)
             {
@@ -191,8 +191,8 @@ namespace Multiplayer.Components.MainMenu
         {
             if (selectedServer != null)
             {
-                buttonDirectIP.interactable = false;
-                buttonJoin.interactable = false;
+                buttonDirectIP.ToggleInteractable(false);
+                buttonJoin.ToggleInteractable(false);
                 //buttonHost.interactable = false;
 
                 if (selectedServer.HasPassword)
@@ -214,8 +214,8 @@ namespace Multiplayer.Components.MainMenu
         private void DirectAction()
         {
             Debug.Log($"DirectAction()");
-            buttonDirectIP.interactable = false;
-            buttonJoin.interactable = false;
+            buttonDirectIP.ToggleInteractable(false);
+            buttonJoin.ToggleInteractable(false)    ;
             //buttonHost.interactable = false;
 
             //making a direct connection
@@ -235,11 +235,11 @@ namespace Multiplayer.Components.MainMenu
                 Debug.Log($"Selected server: {gridViewModel[gridView.SelectedModelIndex].Name}");
 
                 selectedServer = gridViewModel[gridView.SelectedModelIndex];
-                buttonJoin.interactable = true;
+                buttonJoin.ToggleInteractable(true);
             }
             else
             {
-                buttonJoin.interactable = false;
+                buttonJoin.ToggleInteractable(false);
             }
         }
 
@@ -262,7 +262,7 @@ namespace Multiplayer.Components.MainMenu
             {
                 if (result.closedBy == PopupClosedByAction.Abortion)
                 {
-                    buttonDirectIP.interactable = true;
+                    buttonDirectIP.ToggleInteractable(true);
                     return;
                 }
 
@@ -295,7 +295,7 @@ namespace Multiplayer.Components.MainMenu
             {
                 if (result.closedBy == PopupClosedByAction.Abortion)
                 {
-                    buttonDirectIP.interactable = true;
+                    buttonDirectIP.ToggleInteractable(true);
                     return;
                 }
 
@@ -338,7 +338,7 @@ namespace Multiplayer.Components.MainMenu
             {
                 if (result.closedBy == PopupClosedByAction.Abortion)
                 {
-                    buttonDirectIP.interactable = true;
+                    buttonDirectIP.ToggleInteractable(true);
                     return;
                 }
 

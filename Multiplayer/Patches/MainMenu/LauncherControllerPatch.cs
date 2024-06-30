@@ -50,8 +50,8 @@ public static class LauncherController_Patch
 
             btnHostRT.localPosition = new Vector3(curPos.x - curSize.x - PADDING, curPos.y,curPos.z);
 
-            __instance.transform.gameObject.UpdateButton("ButtonTextIcon Host", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, Multiplayer.AssetIndex.lockIcon);
-
+            Sprite arrowSprite = GameObject.FindObjectOfType<MainMenuController>().continueButton.FindChildByName("icon").GetComponent<Image>().sprite;
+            __instance.transform.gameObject.UpdateButton("ButtonTextIcon Host", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, arrowSprite);
 
             // Set up event listeners
             Button btnHost = goHost.GetComponent<ButtonDV>();

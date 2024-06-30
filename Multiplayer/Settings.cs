@@ -31,11 +31,14 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     public int MaxPlayers = 4;
     [Draw("Port", Tooltip = "The port that your server will listen on. You generally don't need to change this.")]
     public int Port = 7777;
+    [Draw("Details", Tooltip = "Details shown in the server browser")]
+    public string Details = "";
+
 
     [Space(10)]
     [Header("Lobby Server")]
     [Draw("Lobby Server address", Tooltip = "Address of lobby server for finding multiplayer games")]
-    public string LobbyServerAddress = "http://localhost:8080";
+    public string LobbyServerAddress = "http://dv.mineit.space";//"http://localhost:8080";
     [Header("Last Server Connected to by IP")]
     [Draw("Last Remote IP", Tooltip = "The IP for the last server connected to by IP.")]
     public string LastRemoteIP = "";

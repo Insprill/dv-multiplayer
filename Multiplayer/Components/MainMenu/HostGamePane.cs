@@ -323,7 +323,7 @@ private void SetupListeners(bool on)
         if( port.text == "" && (Multiplayer.Settings.Port < MIN_PORT || Multiplayer.Settings.Port > MAX_PORT))
             valid = false;
 
-        startButton.interactable = valid;
+        startButton.ToggleInteractable(valid);
 
         Debug.Log($"Validated: {valid}");
     }
@@ -366,6 +366,14 @@ private void SetupListeners(bool on)
             serverData.Difficulty = LobbyServerData.GetDifficultyFromString(this.startGameData.difficulty.Name);
             serverData.GameMode = LobbyServerData.GetGameModeFromString(startGameData.session.GameMode);
         }
+
+
+        Multiplayer.Settings.ServerName = serverData.Name;
+        Multiplayer.Settings.Password = password.text;
+        Multiplayer.Settings.PublicGame = gamePublic.isOn;
+        Multiplayer.Settings.Port = serverData.port;
+        Multiplayer.Settings.MaxPlayers = serverData.MaxPlayers;
+        Multiplayer.Settings.Details = serverData.ServerDetails;
 
 
         //Pass the server data to the NetworkLifecycle manager
