@@ -44,7 +44,7 @@ namespace Multiplayer.Patches.MainMenu
 
             // Remove existing localization components to reset them
             Object.Destroy(multiplayerButton.GetComponentInChildren<I2.Loc.Localize>());
-            ResetTooltip(multiplayerButton);
+            multiplayerButton.ResetTooltip();
 
             // Set the icon for the new Multiplayer button
             SetButtonIcon(multiplayerButton);
@@ -54,12 +54,12 @@ namespace Multiplayer.Patches.MainMenu
         /// Resets the tooltip for a given button.
         /// </summary>
         /// <param name="button">The button to reset the tooltip for.</param>
-        private static void ResetTooltip(GameObject button)
-        {
-            UIElementTooltip tooltip = button.GetComponent<UIElementTooltip>();
-            tooltip.disabledKey = null;
-            tooltip.enabledKey = null;
-        }
+        //private static void ResetTooltip(GameObject button)
+        //{
+        //    UIElementTooltip tooltip = button.GetComponent<UIElementTooltip>();
+        //    tooltip.disabledKey = null;
+        //    tooltip.enabledKey = null;
+        //}
 
         /// <summary>
         /// Sets the icon for the Multiplayer button.

@@ -16,6 +16,7 @@ namespace Multiplayer
 
         private const string PREFIX_MAIN_MENU = $"{PREFIX}mm";
         private const string PREFIX_SERVER_BROWSER = $"{PREFIX}sb";
+        private const string PREFIX_SERVER_HOST = $"{PREFIX}host";
         private const string PREFIX_DISCONN_REASON = $"{PREFIX}dr";
         private const string PREFIX_CAREER_MANAGER = $"{PREFIX}carman";
         private const string PREFIX_PLAYER_LIST = $"{PREFIX}plist";
@@ -32,10 +33,9 @@ namespace Multiplayer
 
         public static string SERVER_BROWSER__MANUAL_CONNECT => Get(SERVER_BROWSER__MANUAL_CONNECT_KEY);
         public const string SERVER_BROWSER__MANUAL_CONNECT_KEY = $"{PREFIX_SERVER_BROWSER}/manual_connect";
-
-        public static string SERVER_BROWSER__HOST => Get(SERVER_BROWSER__HOST_KEY);
-        public const string SERVER_BROWSER__HOST_KEY = $"{PREFIX_SERVER_BROWSER}/host";
                 
+        public static string SERVER_BROWSER__HOST => Get(SERVER_BROWSER__HOST_KEY);
+        public const string SERVER_BROWSER__HOST_KEY = $"{PREFIX_SERVER_BROWSER}/host";                
         public static string SERVER_BROWSER__REFRESH => Get(SERVER_BROWSER__REFRESH_KEY);
         public const string SERVER_BROWSER__REFRESH_KEY = $"{PREFIX_SERVER_BROWSER}/refresh";
 
@@ -58,6 +58,26 @@ namespace Multiplayer
         private const string SERVER_BROWSER__PASSWORD_KEY = $"{PREFIX_SERVER_BROWSER}/password";
         #endregion
 
+        #region Server Host
+        public static string SERVER_HOST__TITLE => Get(SERVER_HOST__TITLE_KEY);
+        public const string SERVER_HOST__TITLE_KEY = $"{PREFIX_SERVER_HOST}/title";
+
+        public static string SERVER_HOST_PASSWORD => Get(SERVER_HOST_PASSWORD_KEY);
+        public const string SERVER_HOST_PASSWORD_KEY = $"{PREFIX_SERVER_HOST}/password";
+        public static string SERVER_HOST_NAME => Get(SERVER_HOST_NAME_KEY);
+        public const string SERVER_HOST_NAME_KEY = $"{PREFIX_SERVER_HOST}/name";
+        public static string SERVER_HOST_PUBLIC => Get(SERVER_HOST_PUBLIC_KEY);
+        public const string SERVER_HOST_PUBLIC_KEY = $"{PREFIX_SERVER_HOST}/public";
+        public static string SERVER_HOST_DETAILS => Get(SERVER_HOST_DETAILS_KEY);
+        public const string SERVER_HOST_DETAILS_KEY = $"{PREFIX_SERVER_HOST}/details";
+        public static string SERVER_HOST_MAX_PLAYERS => Get(SERVER_HOST_MAX_PLAYERS_KEY);
+        public const string SERVER_HOST_MAX_PLAYERS_KEY = $"{PREFIX_SERVER_HOST}/max_players";
+        public static string SERVER_HOST_START => Get(SERVER_HOST_START_KEY);
+        public const string SERVER_HOST_START_KEY = $"{PREFIX_SERVER_HOST}/start";
+
+
+
+        #endregion
         #region Disconnect Reason
         public static string DISCONN_REASON__INVALID_PASSWORD => Get(DISCONN_REASON__INVALID_PASSWORD_KEY);
         public const string DISCONN_REASON__INVALID_PASSWORD_KEY = $"{PREFIX_DISCONN_REASON}/invalid_password";

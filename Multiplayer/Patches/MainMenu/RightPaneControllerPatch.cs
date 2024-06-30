@@ -4,6 +4,7 @@ using DV.UIFramework;
 using HarmonyLib;
 using Multiplayer.Components.MainMenu;
 using Multiplayer.Utils;
+using System.Reflection;
 using TMPro;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ namespace Multiplayer.Patches.MainMenu
     {
         public static int hostMenuIndex;
         public static UIMenuController uIMenuController;
+        public static HostGamePane hgpInstance;
         private static void Prefix(RightPaneController __instance)
         {
             uIMenuController = __instance.menuController;
@@ -59,13 +61,14 @@ namespace Multiplayer.Patches.MainMenu
 
             GameObject serverWindow = multiplayerPane.FindChildByName("Save Description");
             serverWindow.GetComponentInChildren<TextMeshProUGUI>().textWrappingMode = TextWrappingModes.Normal;
-            serverWindow.GetComponentInChildren<TextMeshProUGUI>().text = "Server browser not yet implemented.<br><br>Dummy servers are shown for demonstration purposes only.<br><br>Press refresh to load real servers.";
+            serverWindow.GetComponentInChildren<TextMeshProUGUI>().text = "Server browser not <i>fully</i> implemented.<br><br>Dummy servers are shown for demonstration purposes only.<br><br>Press refresh to attempt loading real servers.";
 
             // Update buttons on the multiplayer pane
             multiplayerPane.UpdateButton("ButtonTextIcon Overwrite", "ButtonTextIcon Manual", Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
             //multiplayerPane.UpdateButton("ButtonTextIcon Load", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, Multiplayer.AssetIndex.lockIcon);
             multiplayerPane.UpdateButton("ButtonTextIcon Save", "ButtonTextIcon Join", Locale.SERVER_BROWSER__JOIN_KEY, null, Multiplayer.AssetIndex.connectIcon);
-            multiplayerPane.UpdateButton("ButtonIcon Delete", "ButtonIcon Refresh", Locale.SERVER_BROWSER__REFRESH_KEY, null, Multiplayer.AssetIndex.refreshIcon);
+            GameObject go = multiplayerPane.UpdateButton("ButtonIcon Delete", "ButtonIcon Refresh", Locale.SERVER_BROWSER__REFRESH_KEY, null, Multiplayer.AssetIndex.refreshIcon);
+
 
             // Add the MultiplayerPane component
             multiplayerPane.AddComponent<ServerBrowserPane>();
@@ -110,7 +113,7 @@ namespace Multiplayer.Patches.MainMenu
 
             GameObject.Destroy(hostPane.GetComponent<SaveLoadController>());
             GameObject.Destroy(hostPane.GetComponent<PlatformSpecificElements>());
-            HostGamePane hp =  hostPane.GetOrAddComponent<HostGamePane>();
+            hgpInstance = hostPane.GetOrAddComponent<HostGamePane>();
 
             // Add the host pane to the menu controller
             __instance.menuController.controlledMenus.Add(hostPane.GetComponent<UIMenu>());

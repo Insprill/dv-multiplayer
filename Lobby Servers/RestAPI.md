@@ -16,6 +16,7 @@ The game_mode field in the request body for adding a game server must be one of 
 
 - 0: Career
 - 1: Sandbox
+- 2: Scenario
 
 ### Difficulty Levels
 

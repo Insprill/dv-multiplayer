@@ -38,7 +38,7 @@ pub async fn add_server(data: web::Data<AppState>, server_info: web::Json<AddSer
 
     let private_key = generate_private_key(); // Generate a private key
     let info = ServerInfo {
-        ip,
+        ip: ip.clone(),
         port: server_info.port,
         server_name: server_info.server_name.clone(),
         password_protected: server_info.password_protected,

@@ -1,4 +1,5 @@
 <?php
+include 'DatabaseInterface.php';
 
 class FlatfileDatabase implements DatabaseInterface {
     private $filePath;
@@ -25,7 +26,10 @@ class FlatfileDatabase implements DatabaseInterface {
         $servers[] = $data;
         $this->writeData($servers);
         
-        return json_encode(["game_server_id" => $data['game_server_id']]);
+        return json_encode([
+            "game_server_id" => $data['game_server_id'],
+            "private_key" => $data['private_key']
+        ]);
     }
 
     public function updateGameServer($data) {

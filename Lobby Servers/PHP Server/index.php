@@ -49,14 +49,12 @@ function add_game_server($db, $data) {
         return json_encode(["error" => "Invalid server information"]);
     }
 
-    $data['game_server_id'] = uuid_create();
-    $data['private_key'] = generate_private_key();
-
     if (!isset($data['ip']) || !filter_var($data['ip'], FILTER_VALIDATE_IP)) {
         $data['ip'] = $_SERVER['REMOTE_ADDR'];
     }
 
-    $data['last_update'] = time();
+    $data['game_server_id'] = uuid_create();
+    $data['private_key'] = generate_private_key();
 
     return $db->addGameServer($data);
 }
@@ -83,6 +81,7 @@ function list_game_servers($db) {
     // Remove private keys from the servers before returning
     foreach ($servers as &$server) {
         unset($server['private_key']);
+        unset($server['last_update']);
     }
     return json_encode($servers);
 }

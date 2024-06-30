@@ -7,12 +7,15 @@ As this implementation is not persistent in memory, a database is used to store 
 
 ## Installing
 
+The following instructions assume you will be using an Apache web server and may need to be modified for other configurations.
+
 1. Copy the following files to your public html folder (consult your web server/web host's documentation)
 ```
 index.php
 DatabaseInterface.php
 FlatfileDatabase.php
 MySQLDatabase.php
+.htaccess
 ```
 2. Copy `config.php` to a secure location outside of your public html directory
 3. Edit `index.php` and update the path to the config file on line 2:

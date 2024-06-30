@@ -48,7 +48,7 @@ namespace Multiplayer.Components.MainMenu
 
         //connection parameters
         private string ipAddress;
-        private ushort portNumber;
+        private int portNumber;
         string password = null;
         bool direct = false;
 
@@ -261,7 +261,10 @@ namespace Multiplayer.Components.MainMenu
             popup.Closed += result =>
             {
                 if (result.closedBy == PopupClosedByAction.Abortion)
+                {
+                    buttonDirectIP.interactable = true;
                     return;
+                }
 
                 if (!IPv4Regex.IsMatch(result.data) && !IPv6Regex.IsMatch(result.data))
                 {
@@ -291,7 +294,10 @@ namespace Multiplayer.Components.MainMenu
             popup.Closed += result =>
             {
                 if (result.closedBy == PopupClosedByAction.Abortion)
+                {
+                    buttonDirectIP.interactable = true;
                     return;
+                }
 
                 if (!PortRegex.IsMatch(result.data))
                 {
@@ -331,7 +337,10 @@ namespace Multiplayer.Components.MainMenu
             popup.Closed += result =>
             {
                 if (result.closedBy == PopupClosedByAction.Abortion)
+                {
+                    buttonDirectIP.interactable = true;
                     return;
+                }
 
                 if (direct)
                 {
@@ -386,13 +395,13 @@ namespace Multiplayer.Components.MainMenu
                 {
                     Debug.Log(pages[page] + ":\nReceived: " + webRequest.downloadHandler.text);
 
-                    ServerData[] response;
+                    LobbyServerData[] response;
 
-                    response = Newtonsoft.Json.JsonConvert.DeserializeObject<ServerData[]>(webRequest.downloadHandler.text);
+                    response = Newtonsoft.Json.JsonConvert.DeserializeObject<LobbyServerData[]>(webRequest.downloadHandler.text);
 
                     Debug.Log($"servers: {response.Length}");
 
-                    foreach (ServerData server in response)
+                    foreach (LobbyServerData server in response)
                     {
                         Debug.Log($"Name: {server.Name}\tIP: {server.ip}");
                     }
@@ -451,7 +460,7 @@ namespace Multiplayer.Components.MainMenu
             for (int i = 0; i < UnityEngine.Random.Range(1, 50); i++)
             {
 
-                item = new ServerData();
+                item = new LobbyServerData();
                 item.Name = testNames[UnityEngine.Random.Range(0, testNames.Length - 1)];
                 item.MaxPlayers = UnityEngine.Random.Range(1, 10);
                 item.CurrentPlayers = UnityEngine.Random.Range(1, item.MaxPlayers);

@@ -1,0 +1,7 @@
+# Enable the RewriteEngine
+RewriteEngine On
+
+# Redirect all non-existing paths to index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

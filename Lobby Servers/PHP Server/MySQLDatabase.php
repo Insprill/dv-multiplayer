@@ -1,4 +1,5 @@
 <?php
+include 'DatabaseInterface.php';
 
 class MySQLDatabase implements DatabaseInterface {
     private $pdo;
@@ -29,7 +30,10 @@ class MySQLDatabase implements DatabaseInterface {
             ':server_info' => $data['server_info'],
             ':last_update' => time() //use current time
         ]);
-        return json_encode(["game_server_id" => $data['game_server_id']]);
+        return json_encode([
+            "game_server_id" => $data['game_server_id'],
+            "private_key" => $data['private_key']
+        ]);
     }
 
     public function updateGameServer($data) {

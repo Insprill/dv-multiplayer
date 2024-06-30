@@ -1,5 +1,7 @@
-using DV.Localization;
+using System;
+using DV.Common;
 using DV.UI;
+using DV.UI.PresetEditors;
 using DV.UIFramework;
 using HarmonyLib;
 using Multiplayer.Components.MainMenu;
@@ -10,14 +12,19 @@ using UnityEngine.UI;
 
 namespace Multiplayer.Patches.MainMenu;
 
-[HarmonyPatch(typeof(LauncherController), "OnEnable")]
+[HarmonyPatch(typeof(LauncherController))]
 public static class LauncherController_Patch
 {
     private const int PADDING = 10;
     
     private static GameObject goHost;
+    private static LauncherController lcInstance;
+    
 
-    private static void Postfix(LauncherController __instance)
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(LauncherController), "OnEnable")]
+    private static void OnEnable(LauncherController __instance)
     {
 
         Multiplayer.Log("LauncherController_Patch()");
@@ -48,9 +55,6 @@ public static class LauncherController_Patch
 
             // Set up event listeners
             Button btnHost = goHost.GetComponent<ButtonDV>();
-            //UIMenuRequester uim = btnHost.GetOrAddComponent<UIMenuRequester>();
-            //uim.targetMenuController = RightPaneController_OnEnable_Patch.uIMenuController;
-            //uim.requestedMenuIndex = RightPaneController_OnEnable_Patch.hostMenuIndex;
 
             btnHost.onClick.AddListener(HostAction);
 
@@ -59,12 +63,40 @@ public static class LauncherController_Patch
             Multiplayer.Log("LauncherController_Patch() complete");
         }
     }
+ 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(LauncherController), "SetData", new Type[] { typeof(ISaveGame), typeof(AUserProfileProvider) , typeof(AScenarioProvider) , typeof(LauncherController.UpdateRequest) })]
+    private static void SetData(LauncherController __instance, ISaveGame saveGame, AUserProfileProvider userProvider, AScenarioProvider scenarioProvider, LauncherController.UpdateRequest updateCallback)
+    {
+        if (RightPaneController_OnEnable_Patch.hgpInstance == null)
+            return;
+
+        RightPaneController_OnEnable_Patch.hgpInstance.saveGame = saveGame;
+        RightPaneController_OnEnable_Patch.hgpInstance.userProvider = userProvider;
+        RightPaneController_OnEnable_Patch.hgpInstance.scenarioProvider = scenarioProvider;
+  
+
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(LauncherController), "SetData", new Type[] { typeof(UIStartGameData), typeof(AUserProfileProvider), typeof(AScenarioProvider), typeof(LauncherController.UpdateRequest) })]
+    private static void SetData(LauncherController __instance, UIStartGameData startGameData, AUserProfileProvider userProvider, AScenarioProvider scenarioProvider, LauncherController.UpdateRequest updateCallback)
+    {
+        if (RightPaneController_OnEnable_Patch.hgpInstance == null)
+            return;
+
+        RightPaneController_OnEnable_Patch.hgpInstance.startGameData = startGameData;
+        RightPaneController_OnEnable_Patch.hgpInstance.userProvider = userProvider;
+        RightPaneController_OnEnable_Patch.hgpInstance.scenarioProvider = scenarioProvider;
+       
+    }
 
     private static void HostAction()
     {
         // Implement host action logic here
         Debug.Log("Host button clicked.");
-        // Add your code to handle hosting a game
+
+        
 
         RightPaneController_OnEnable_Patch.uIMenuController.SwitchMenu(RightPaneController_OnEnable_Patch.hostMenuIndex);
 

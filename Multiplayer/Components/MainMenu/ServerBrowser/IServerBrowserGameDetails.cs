@@ -15,7 +15,7 @@ namespace Multiplayer.Components.MainMenu
     {
         string id { get; set; }
         string ip { get; set; }
-        public ushort port { get; set; }
+        int port { get; set; }
         string Name { get; set; }
         bool HasPassword { get; set; }
         int GameMode { get; set; }
@@ -26,7 +26,7 @@ namespace Multiplayer.Components.MainMenu
         string RequiredMods { get; set; }
         string GameVersion { get; set; }
         string MultiplayerVersion { get; set; }
-        public string ServerDetails { get; set; }
+        string ServerDetails { get; set; }
         int Ping { get; set; }
         
     }
