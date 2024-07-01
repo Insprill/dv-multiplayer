@@ -38,7 +38,7 @@ public class Settings : UnityModManager.ModSettings, IDrawable
     [Space(10)]
     [Header("Lobby Server")]
     [Draw("Lobby Server address", Tooltip = "Address of lobby server for finding multiplayer games")]
-    public string LobbyServerAddress = "http://dv.mineit.space";//"http://localhost:8080";
+    public string LobbyServerAddress = "https://dv.mineit.space";//"http://localhost:8080";
     [Header("Last Server Connected to by IP")]
     [Draw("Last Remote IP", Tooltip = "The IP for the last server connected to by IP.")]
     public string LastRemoteIP = "";
