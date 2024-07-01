@@ -46,31 +46,6 @@ namespace Multiplayer.Patches.MainMenu
             // Clean up unnecessary components and child objects
             GameObject.Destroy(multiplayerPane.GetComponent<SaveLoadController>());
             GameObject.Destroy(multiplayerPane.GetComponent<PlatformSpecificElements>());
-            GameObject.Destroy(multiplayerPane.FindChildByName("ButtonIcon OpenFolder"));
-            GameObject.Destroy(multiplayerPane.FindChildByName("ButtonIcon Rename"));
-            GameObject.Destroy(multiplayerPane.FindChildByName("ButtonTextIcon Load"));
-            GameObject.Destroy(multiplayerPane.FindChildByName("Text Content"));
-
-            // Update UI elements
-            GameObject titleObj = multiplayerPane.FindChildByName("Title");
-            titleObj.GetComponentInChildren<Localize>().key = Locale.SERVER_BROWSER__TITLE_KEY;
-            GameObject.Destroy(titleObj.GetComponentInChildren<I2.Loc.Localize>());
-
-            GameObject content = multiplayerPane.FindChildByName("text main");
-            //content.GetComponentInChildren<TextMeshProUGUI>().text = "Server browser not yet implemented.";
-
-            GameObject serverWindow = multiplayerPane.FindChildByName("Save Description");
-            serverWindow.GetComponentInChildren<TextMeshProUGUI>().textWrappingMode = TextWrappingModes.Normal;
-            serverWindow.GetComponentInChildren<TextMeshProUGUI>().text = "Server browser not <i>fully</i> implemented.<br><br>Dummy servers are shown for demonstration purposes only.<br><br>Press refresh to attempt loading real servers.";
-
-            // Update buttons on the multiplayer pane
-            multiplayerPane.UpdateButton("ButtonTextIcon Overwrite", "ButtonTextIcon Manual", Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
-            //multiplayerPane.UpdateButton("ButtonTextIcon Load", "ButtonTextIcon Host", Locale.SERVER_BROWSER__HOST_KEY, null, Multiplayer.AssetIndex.lockIcon);
-            multiplayerPane.UpdateButton("ButtonTextIcon Save", "ButtonTextIcon Join", Locale.SERVER_BROWSER__JOIN_KEY, null, Multiplayer.AssetIndex.connectIcon);
-            GameObject go = multiplayerPane.UpdateButton("ButtonIcon Delete", "ButtonIcon Refresh", Locale.SERVER_BROWSER__REFRESH_KEY, null, Multiplayer.AssetIndex.refreshIcon);
-
-
-            // Add the MultiplayerPane component
             multiplayerPane.AddComponent<ServerBrowserPane>();
 
             // Create and initialize MainMenuThingsAndStuff
@@ -87,11 +62,6 @@ namespace Multiplayer.Patches.MainMenu
             // Activate the multiplayer button
             MainMenuController_Awake_Patch.multiplayerButton.SetActive(true);
             Multiplayer.LogError("At end!");
-
-
-
-
-
 
 
 

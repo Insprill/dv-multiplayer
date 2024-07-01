@@ -29,7 +29,9 @@ namespace Multiplayer.Components.MainMenu
         private static readonly Regex PortRegex = new Regex(@"^((6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4}))$");
         // @formatter:on
 
-        
+        private const int MAX_PORT_LEN = 5;
+        private const int MIN_PORT = 1024;
+        private const int MAX_PORT = 49151;
 
         //Gridview variables
         private ObservableCollectionExt<IServerBrowserGameDetails> gridViewModel = new ObservableCollectionExt<IServerBrowserGameDetails>();
@@ -40,7 +42,6 @@ namespace Multiplayer.Components.MainMenu
 
         //Button variables
         private ButtonDV buttonJoin;
-        //private Button buttonHost;
         private ButtonDV buttonRefresh;
         private ButtonDV buttonDirectIP;
 
@@ -59,9 +60,12 @@ namespace Multiplayer.Components.MainMenu
         private void Awake()
         {
             Multiplayer.Log("MultiplayerPane Awake()");
-            SetupMultiplayerButtons();
+            CleanUI();
+            BuildUI();
+
             SetupServerBrowser();
             FillDummyServers();
+
         }
 
         private void OnEnable()
@@ -78,8 +82,6 @@ namespace Multiplayer.Components.MainMenu
 
             buttonDirectIP.ToggleInteractable(true);
             buttonRefresh.ToggleInteractable(true);
-            //buttonHost.interactable = true;
-
         }
 
         // Disable listeners
@@ -88,46 +90,56 @@ namespace Multiplayer.Components.MainMenu
             this.SetupListeners(false);
         }
 
-        private void SetupMultiplayerButtons()
+        private void CleanUI()
         {
-            GameObject goDirectIP = GameObject.Find("ButtonTextIcon Manual");
-            //GameObject goHost = GameObject.Find("ButtonTextIcon Host");
-            GameObject goJoin = GameObject.Find("ButtonTextIcon Join");
-            GameObject goRefresh = GameObject.Find("ButtonIcon Refresh");
+            GameObject.Destroy(this.FindChildByName("Text Content"));
 
-            if (goDirectIP == null || /*goHost == null ||*/ goJoin == null || goRefresh == null)
+            GameObject.Destroy(this.FindChildByName("HardcoreSavingBanner"));
+            GameObject.Destroy(this.FindChildByName("TutorialSavingBanner"));
+
+            GameObject.Destroy(this.FindChildByName("ButtonIcon OpenFolder"));
+            GameObject.Destroy(this.FindChildByName("ButtonIcon Rename"));
+            GameObject.Destroy(this.FindChildByName("ButtonTextIcon Load"));
+
+        }
+        private void BuildUI()
+        {
+
+            // Update title
+            GameObject titleObj = this.FindChildByName("Title");
+            GameObject.Destroy(titleObj.GetComponentInChildren<I2.Loc.Localize>());
+            titleObj.GetComponentInChildren<Localize>().key = Locale.SERVER_BROWSER__TITLE_KEY;
+            titleObj.GetComponentInChildren<Localize>().UpdateLocalization();
+
+            GameObject serverWindow = this.FindChildByName("Save Description");
+            serverWindow.GetComponentInChildren<TextMeshProUGUI>().textWrappingMode = TextWrappingModes.Normal;
+            serverWindow.GetComponentInChildren<TextMeshProUGUI>().text = "Server browser not <i>fully</i> implemented.<br><br>Dummy servers are shown for demonstration purposes only.<br><br>Press refresh to attempt loading real servers.";
+
+            // Update buttons on the multiplayer pane
+            GameObject goDirectIP = this.gameObject.UpdateButton("ButtonTextIcon Overwrite", "ButtonTextIcon Manual", Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY, null, Multiplayer.AssetIndex.multiplayerIcon);
+            GameObject goJoin = this.gameObject.UpdateButton("ButtonTextIcon Save", "ButtonTextIcon Join", Locale.SERVER_BROWSER__JOIN_KEY, null, Multiplayer.AssetIndex.connectIcon);
+            GameObject goRefresh = this.gameObject.UpdateButton("ButtonIcon Delete", "ButtonIcon Refresh", Locale.SERVER_BROWSER__REFRESH_KEY, null, Multiplayer.AssetIndex.refreshIcon);
+
+
+            if (goDirectIP == null || goJoin == null || goRefresh == null)
             {
                 Multiplayer.LogError("One or more buttons not found.");
                 return;
             }
 
-            // Modify the existing buttons' properties
-            ModifyButton(goDirectIP, Locale.SERVER_BROWSER__MANUAL_CONNECT_KEY);
-            //ModifyButton(goHost, Locale.SERVER_BROWSER__HOST_KEY);
-            ModifyButton(goJoin, Locale.SERVER_BROWSER__JOIN_KEY);
-
-
-            // Set up event listeners and localization for DirectIP button
+            // Set up event listeners
             buttonDirectIP = goDirectIP.GetComponent<ButtonDV>();
             buttonDirectIP.onClick.AddListener(DirectAction);
 
-            // Set up event listeners and localization for Join button
             buttonJoin = goJoin.GetComponent<ButtonDV>();
             buttonJoin.onClick.AddListener(JoinAction);
 
-            // Set up event listeners and localization for Refresh button
             buttonRefresh = goRefresh.GetComponent<ButtonDV>();
             buttonRefresh.onClick.AddListener(RefreshAction);
 
-            goDirectIP.SetActive(true);
-            //goHost.SetActive(true);
-            goJoin.SetActive(true);
-            goRefresh.SetActive(true);
-
+            //Lock out the join button until a server has been selected
             buttonJoin.ToggleInteractable(false);
-
         }
-
         private void SetupServerBrowser()
         {
             GameObject GridviewGO = this.FindChildByName("GRID VIEW");
@@ -156,21 +168,9 @@ namespace Multiplayer.Components.MainMenu
 
         }
 
-        private void ModifyButton(GameObject button, string key)
-        {
-            button.GetComponentInChildren<Localize>().key = key;
-
-        }
-        private GameObject FindButton(string name)
-        {
-
-            return GameObject.Find(name);
-        }
-
         #endregion
 
         #region UI callbacks
-
         private void RefreshAction()
         {
             if (serverRefreshing)
@@ -193,7 +193,6 @@ namespace Multiplayer.Components.MainMenu
             {
                 buttonDirectIP.ToggleInteractable(false);
                 buttonJoin.ToggleInteractable(false);
-                //buttonHost.interactable = false;
 
                 if (selectedServer.HasPassword)
                 {
@@ -207,6 +206,7 @@ namespace Multiplayer.Components.MainMenu
                     return;
                 }
 
+                //No password, just connect
                 SingletonBehaviour<NetworkLifecycle>.Instance.StartClient(selectedServer.ip, selectedServer.port, null);
             }
         }
@@ -216,7 +216,6 @@ namespace Multiplayer.Components.MainMenu
             Debug.Log($"DirectAction()");
             buttonDirectIP.ToggleInteractable(false);
             buttonJoin.ToggleInteractable(false)    ;
-            //buttonHost.interactable = false;
 
             //making a direct connection
             direct = true;
@@ -263,6 +262,7 @@ namespace Multiplayer.Components.MainMenu
                 if (result.closedBy == PopupClosedByAction.Abortion)
                 {
                     buttonDirectIP.ToggleInteractable(true);
+                    IndexChanged(gridView); //re-enable the join button if a valid gridview item is selected
                     return;
                 }
 
@@ -290,6 +290,8 @@ namespace Multiplayer.Components.MainMenu
 
             popup.labelTMPro.text = Locale.SERVER_BROWSER__PORT;
             popup.GetComponentInChildren<TMP_InputField>().text = $"{Multiplayer.Settings.LastRemotePort}";
+            popup.GetComponentInChildren<TMP_InputField>().contentType = TMP_InputField.ContentType.IntegerNumber;
+            popup.GetComponentInChildren<TMP_InputField>().characterLimit = MAX_PORT_LEN;
 
             popup.Closed += result =>
             {
