@@ -11,6 +11,7 @@ using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Data;
 using Multiplayer.Networking.Packets.Common.Train;
 using Multiplayer.Utils;
+using UnityEngine;
 
 namespace Multiplayer.Components.Networking.Train;
 
@@ -63,6 +64,7 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
     private SimulationFlow simulationFlow;
 
     private HashSet<string> dirtyPorts;
+    private Dictionary<string, float> lastSentPortValues;
     private HashSet<string> dirtyFuses;
     private bool handbrakeDirty;
     public bool BogieTracksDirty;
@@ -124,6 +126,7 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
             simulationFlow = simController.SimulationFlow;
 
             dirtyPorts = new HashSet<string>(simulationFlow.fullPortIdToPort.Count);
+            lastSentPortValues = new Dictionary<string, float>(dirtyPorts.Count);
             foreach (KeyValuePair<string, Port> kvp in simulationFlow.fullPortIdToPort)
                 if (kvp.Value.valueType == PortValueType.CONTROL || NetworkLifecycle.Instance.IsHost())
                     kvp.Value.ValueUpdatedInternally += _ => { Common_OnPortUpdated(kvp.Value); };
@@ -196,7 +199,12 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         if (!hasSimFlow)
             return;
         foreach (string portId in simulationFlow.fullPortIdToPort.Keys)
+        {
             dirtyPorts.Add(portId);
+            if (simulationFlow.TryGetPort(portId, out Port port))
+                lastSentPortValues[portId] = port.value;
+        }
+
         foreach (string fuseId in simulationFlow.fullFuseIdToFuse.Keys)
             dirtyFuses.Add(fuseId);
     }
@@ -360,7 +368,11 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
         string[] portIds = dirtyPorts.ToArray();
         float[] portValues = new float[portIds.Length];
         foreach (string portId in dirtyPorts)
-            portValues[i++] = simulationFlow.fullPortIdToPort[portId].Value;
+        {
+            float value = simulationFlow.fullPortIdToPort[portId].Value;
+            portValues[i++] = value;
+            lastSentPortValues[portId] = value;
+        }
 
         dirtyPorts.Clear();
 
@@ -403,9 +415,8 @@ public class NetworkedTrainCar : IdMonoBehaviour<ushort, NetworkedTrainCar>
             return;
         if (float.IsNaN(port.prevValue) && float.IsNaN(port.Value))
             return;
-        // todo: check this against the last value that was synced over the network
-        // if (Mathf.Abs(port.prevValue - port.Value) < 0.001f)
-        // return;
+        if (lastSentPortValues.TryGetValue(port.id, out float value) && Mathf.Abs(value - port.Value) < 0.001f)
+            return;
         dirtyPorts.Add(port.id);
     }
 

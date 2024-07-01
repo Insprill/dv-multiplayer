@@ -179,8 +179,21 @@ public class NetworkClient : NetworkManager
             if (popup == null)
                 return;
             string text = Locale.Get(packet.ReasonKey, packet.ReasonArgs);
-            if (packet.Extra.Length != 0 || packet.Missing.Length != 0)
-                text += Locale.Get(Locale.DISCONN_REASON__MOD_LIST, string.Join("\n - ", packet.Missing), string.Join("\n - ", packet.Extra));
+
+            if (packet.Missing.Length != 0 || packet.Extra.Length != 0)
+            {
+                text += "\n\n";
+                if (packet.Missing.Length != 0)
+                {
+                    text += Locale.Get(Locale.DISCONN_REASON__MODS_MISSING_KEY, placeholders: string.Join("\n - ", packet.Missing));
+                    if (packet.Extra.Length != 0)
+                        text += "\n";
+                }
+
+                if (packet.Extra.Length != 0)
+                    text += Locale.Get(Locale.DISCONN_REASON__MODS_EXTRA_KEY, placeholders: string.Join("\n - ", packet.Extra));
+            }
+
             popup.labelTMPro.text = text;
         });
     }
@@ -230,7 +243,7 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        displayLoadingInfo.OnLoadingStatusChanged("Waiting for server to load", false, 100);
+        displayLoadingInfo.OnLoadingStatusChanged(Locale.LOADING_INFO__WAIT_FOR_SERVER, false, 100);
     }
 
     private void OnClientboundGameParamsPacket(ClientboundGameParamsPacket packet)
@@ -275,7 +288,7 @@ public class NetworkClient : NetworkManager
             return;
         }
 
-        displayLoadingInfo.OnLoadingStatusChanged("Syncing world state", false, 100);
+        displayLoadingInfo.OnLoadingStatusChanged(Locale.LOADING_INFO__SYNC_WORLD_STATE, false, 100);
     }
 
     private void OnClientboundWeatherPacket(ClientboundWeatherPacket packet)
