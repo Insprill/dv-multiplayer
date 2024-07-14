@@ -1,6 +1,6 @@
 {
   "Id": "Multiplayer",
-  "Version": "0.1.0",
+  "Version": "0.1.5",
   "DisplayName": "Multiplayer",
   "Author": "Insprill",
   "EntryMethod": "Multiplayer.Multiplayer.Load",

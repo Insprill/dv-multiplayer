@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using DV;
 using DV.InventorySystem;
 using DV.Logic.Job;
@@ -15,6 +16,7 @@ using Multiplayer.Components.Networking;
 using Multiplayer.Components.Networking.Train;
 using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Data;
+using Multiplayer.Networking.Managers.Server;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Networking.Packets.Clientbound.SaveGame;
 using Multiplayer.Networking.Packets.Clientbound.Train;
@@ -36,6 +38,11 @@ public class NetworkServer : NetworkManager
     private readonly Dictionary<byte, ServerPlayer> serverPlayers = new();
     private readonly Dictionary<byte, NetPeer> netPeers = new();
 
+    private LobbyServerManager lobbyServerManager;
+    public bool isPublic;
+    public bool isSinglePlayer;
+    public LobbyServerData serverData;
+
     public IReadOnlyCollection<ServerPlayer> ServerPlayers => serverPlayers.Values;
     public int PlayerCount => netManager.ConnectedPeersCount;
 
@@ -46,8 +53,12 @@ public class NetworkServer : NetworkManager
     public readonly IDifficulty Difficulty;
     private bool IsLoaded;
 
-    public NetworkServer(IDifficulty difficulty, Settings settings) : base(settings)
+    public NetworkServer(IDifficulty difficulty, Settings settings, bool isPublic, bool isSinglePlayer, LobbyServerData serverData) : base(settings)
     {
+        this.isPublic = isPublic;
+        this.isSinglePlayer = isSinglePlayer;
+        this.serverData = serverData;
+
         Difficulty = difficulty;
         serverMods = ModInfo.FromModEntries(UnityModManager.modEntries);
     }
@@ -56,6 +67,17 @@ public class NetworkServer : NetworkManager
     {
         WorldStreamingInit.LoadingFinished += OnLoaded;
         return netManager.Start(port);
+    }
+
+    public override void Stop()
+    {
+        if (lobbyServerManager != null)
+        {
+            lobbyServerManager.RemoveFromLobbyServer();
+            GameObject.Destroy(lobbyServerManager);
+        }
+
+        base.Stop();
     }
 
     protected override void Subscribe()
@@ -87,6 +109,12 @@ public class NetworkServer : NetworkManager
 
     private void OnLoaded()
     {
+        Debug.Log($"Server loaded, isSinglePlayer: {isSinglePlayer} isPublic: {isPublic}");
+        if (!isSinglePlayer && isPublic)
+        {
+            lobbyServerManager = NetworkLifecycle.Instance.GetOrAddComponent<LobbyServerManager>();
+        }
+
         Log($"Server loaded, processing {joinQueue.Count} queued players");
         IsLoaded = true;
         while (joinQueue.Count > 0)
@@ -310,7 +338,7 @@ public class NetworkServer : NetworkManager
             return;
         }
 
-        if (netManager.ConnectedPeersCount >= Multiplayer.Settings.MaxPlayers)
+        if (netManager.ConnectedPeersCount >= Multiplayer.Settings.MaxPlayers || isSinglePlayer && netManager.ConnectedPeersCount >= 1)
         {
             LogWarning("Denied login due to server being full!");
             ClientboundServerDenyPacket denyPacket = new() {
