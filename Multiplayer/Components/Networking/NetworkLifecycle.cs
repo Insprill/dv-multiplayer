@@ -1,15 +1,20 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using DV.Scenarios.Common;
 using DV.Utils;
 using LiteNetLib;
-using LiteNetLib.Utils;
-using Multiplayer.Networking.Listeners;
+using MPAPI;
+using Multiplayer.API;
+using Multiplayer.Components.Networking.UI;
+using Multiplayer.Networking.Data;
+using Multiplayer.Networking.Managers.Client;
+using Multiplayer.Networking.Managers.Server;
+using Multiplayer.Networking.Managers;
 using Multiplayer.Utils;
-using UnityEngine;
+using System.Collections.Generic;
+using System.Collections;
+using System.Net;
+using System;
 using UnityEngine.SceneManagement;
+using UnityEngine;
 
 namespace Multiplayer.Components.Networking;
 
@@ -18,6 +23,11 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 {
     public const byte TICK_RATE = 24;
     private const float TICK_INTERVAL = 1.0f / TICK_RATE;
+
+    public LobbyServerData serverData;
+    public bool IsPublicGame { get; set; } = false;
+    public bool IsSinglePlayer { get; set; } = true;
+
 
     public NetworkServer Server { get; private set; }
     public NetworkClient Client { get; private set; }
@@ -28,7 +38,9 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     public bool IsServerRunning => Server?.IsRunning ?? false;
     public bool IsClientRunning => Client?.IsRunning ?? false;
 
-    public bool IsProcessingPacket => Client.IsProcessingPacket;
+    public bool IsProcessingPacket => Client?.IsProcessingPacket ?? false;
+
+    public bool IsReturningToMenu { get; private set; } = false;
 
     private PlayerListGUI playerList;
     private NetworkStatsGui Stats;
@@ -36,12 +48,12 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     private readonly ExecutionTimer tickWatchdog = new(0.25f);
 
     /// <summary>
-    ///     Whether the provided NetPeer is the host.
+    ///     Whether the provided ITransportPeer is the host.
     ///     Note that this does NOT check authority, and should only be used for client-only logic.
     /// </summary>
-    public bool IsHost(NetPeer peer)
+    public bool IsHost(ServerPlayer player)
     {
-        return Server?.IsRunning == true && Client?.IsRunning == true && Client?.selfPeer?.Id == peer?.Id;
+        return Server?.IsRunning == true && Client?.IsRunning == true && Client.PlayerId == player.PlayerId;
     }
 
     /// <summary>
@@ -50,7 +62,7 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     /// </summary>
     public bool IsHost()
     {
-        return IsHost(Client?.selfPeer);
+        return Server?.IsRunning == true;
     }
 
     private readonly Queue<Action> mainMenuLoadedQueue = new();
@@ -60,28 +72,24 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         base.Awake();
         playerList = gameObject.AddComponent<PlayerListGUI>();
         Stats = gameObject.AddComponent<NetworkStatsGui>();
-        RegisterPackets();
+        //RegisterPackets();
         WorldStreamingInit.LoadingFinished += () => { playerList.RegisterListeners(); };
         Settings.OnSettingsUpdated += OnSettingsUpdated;
+        SceneSwitcher.SceneRequested += OnSceneSwitchRequested;
         SceneManager.sceneLoaded += (scene, _) =>
         {
             if (scene.buildIndex != (int)DVScenes.MainMenu)
                 return;
+
+            playerList.UnRegisterListeners();
             TriggerMainMenuEventLater();
         };
         StartCoroutine(PollEvents());
     }
 
-    private static void RegisterPackets()
+    private void OnSceneSwitchRequested(DVScenes scene)
     {
-        IReadOnlyDictionary<Type, byte> packetMappings = NetPacketProcessor.RegisterPacketTypes();
-        Multiplayer.LogDebug(() =>
-        {
-            StringBuilder stringBuilder = new($"Registered {packetMappings.Count} packets. Mappings:\n");
-            foreach (KeyValuePair<Type, byte> kvp in packetMappings)
-                stringBuilder.AppendLine($"{kvp.Value}: {kvp.Key}");
-            return stringBuilder;
-        });
+        IsReturningToMenu = scene == DVScenes.MainMenu;
     }
 
     private void OnSettingsUpdated(Settings settings)
@@ -111,26 +119,55 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         mainMenuLoadedQueue.Enqueue(action);
     }
 
-    public bool StartServer(int port, IDifficulty difficulty)
+    public bool StartServer(IDifficulty difficulty)
     {
+        int port = Multiplayer.Settings.Port;
+
         if (Server != null)
             throw new InvalidOperationException("NetworkManager already exists!");
+
+        if (!IsSinglePlayer)
+        {
+            if (serverData != null)
+            {
+                port = serverData.port;
+            }
+        }
+
         Multiplayer.Log($"Starting server on port {port}");
-        NetworkServer server = new(difficulty, Multiplayer.Settings);
+        NetworkServer server = new(difficulty, Multiplayer.Settings, IsSinglePlayer, serverData);
+
         if (!server.Start(port))
             return false;
+
         Server = server;
-        StartClient("localhost", port, Multiplayer.Settings.Password);
+
+        // Register server API
+        var serverAPI = new ServerAPIProvider(server);
+        MultiplayerAPI.RegisterServer(serverAPI);
+
+        StartClient(IPAddress.Loopback.ToString(), port, Multiplayer.Settings.Password, IsSinglePlayer, null);
+
+        //reset for next game
+        IsSinglePlayer = true;
+        serverData = null;
+
         return true;
     }
 
-    public void StartClient(string address, int port, string password)
+    public void StartClient(string address, int port, string password, bool isSinglePlayer, Action<DisconnectReason, string> onDisconnect)
     {
         if (Client != null)
             throw new InvalidOperationException("NetworkManager already exists!");
-        NetworkClient client = new(Multiplayer.Settings);
-        client.Start(address, port, password);
+        NetworkClient client = new(Multiplayer.Settings, isSinglePlayer);
+        client.Start(address, port, password, isSinglePlayer, onDisconnect);
+
         Client = client;
+
+        // Register client API
+        var clientAPI = new ClientAPIProvider(client);
+        MultiplayerAPI.RegisterClient(clientAPI);
+
         OnSettingsUpdated(Multiplayer.Settings); // Show stats if enabled
     }
 
@@ -144,20 +181,24 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
             tickWatchdog.Start();
             try
             {
-                if (!UnloadWatcher.isUnloading)
+                if (!UnloadWatcher.isUnloading && !UnloadWatcher.isQuitting && !IsReturningToMenu)
                     OnTick?.Invoke(Tick);
             }
             catch (Exception e)
             {
-                Multiplayer.LogError($"Exception while processing OnTick: {e}");
+                if (!UnloadWatcher.isUnloading && !UnloadWatcher.isQuitting && !IsReturningToMenu)
+                    Multiplayer.LogError($"Exception while processing OnTick: {e}");
             }
             finally
             {
                 tickWatchdog.Stop(time => Multiplayer.LogWarning($"OnTick took {time} ms!"));
             }
 
-            TickManager(Client);
-            TickManager(Server);
+            if (Client != null)
+                TickManager(Client);
+
+            if (Server != null)
+                TickManager(Server);
 
             float elapsedTime = tickTimer.Stop();
             float remainingTime = Mathf.Max(0f, TICK_INTERVAL - elapsedTime);
@@ -169,7 +210,9 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
     {
         if (manager == null)
             return;
+
         tickWatchdog.Start();
+
         try
         {
             manager.PollEvents();
@@ -186,14 +229,24 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
 
     public void Stop()
     {
-        if (Stats != null) Stats.Hide();
-        Server?.Stop();
-        Client?.Stop();
-        Server = null;
-        Client = null;
+        Stats?.Hide();
+
+        if (Server != null)
+        {
+            Server?.Stop();
+            MultiplayerAPI.ClearServer();
+            Server = null;
+        }
+
+        if (Client != null)
+        {
+            Client?.Stop();
+            MultiplayerAPI.ClearClient();
+            Client = null;
+        }
     }
 
-    private void OnApplicationQuit()
+    protected void OnApplicationQuit()
     {
         Stop();
     }
@@ -206,4 +259,5 @@ public class NetworkLifecycle : SingletonBehaviour<NetworkLifecycle>
         gameObject.AddComponent<NetworkLifecycle>();
         DontDestroyOnLoad(gameObject);
     }
+
 }

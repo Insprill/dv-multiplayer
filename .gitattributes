@@ -1,1 +1,9 @@
-﻿* text=auto eol=lf
+﻿# Set default behavior to automatically normalize line endings
+* text=auto
+
+# Force CRLF line endings for C# files
+*.cs text eol=crlf
+
+# Force CRLF for other common Windows development files (optional)
+*.csproj text eol=crlf
+*.sln text eol=crlf

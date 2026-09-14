@@ -1,11 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using DV.Logic.Job;
 using DV.ThingTypes;
 using DV.Utils;
 using HarmonyLib;
 using Multiplayer.Components.Networking;
-using Multiplayer.Networking.Data;
+using Multiplayer.Utils;
 using UnityEngine;
 
 namespace Multiplayer.Patches.World;
@@ -22,7 +23,7 @@ public static class StationLocoSpawner_Start_Patch
 
     private static IEnumerator WaitForSetup(StationLocoSpawner __instance)
     {
-        if (!AStartGameData.carsAndJobsLoadingFinished || SingletonBehaviour<CarSpawner>.Instance.PoolSetupInProgress)
+        if (!AStartGameData.carsAndJobsLoadingFinished || CarSpawner.Instance.PoolSetupInProgress)
             yield return null;
         while (NetworkLifecycle.Instance.Client == null)
             yield return null;
@@ -37,7 +38,10 @@ public static class StationLocoSpawner_Start_Patch
         {
             yield return CHECK_DELAY;
 
-            bool anyoneWithinRange = IsAnyoneWithinRange(__instance, __instance.spawnTrackMiddleAnchor.transform.position);
+            if (UnloadWatcher.isUnloading)
+                yield break;
+
+            bool anyoneWithinRange = __instance.spawnTrackMiddleAnchor.transform.position.AnyPlayerSqrMag() < __instance.spawnLocoPlayerSqrDistanceFromTrack;
 
             switch (__instance.playerEnteredLocoSpawnRange)
             {
@@ -52,25 +56,29 @@ public static class StationLocoSpawner_Start_Patch
         }
     }
 
-    private static bool IsAnyoneWithinRange(StationLocoSpawner stationLocoSpawner, Vector3 targetPosition)
-    {
-        foreach (ServerPlayer serverPlayer in NetworkLifecycle.Instance.Server.ServerPlayers)
-            if ((serverPlayer.WorldPosition - targetPosition).sqrMagnitude < stationLocoSpawner.spawnLocoPlayerSqrDistanceFromTrack)
-                return true;
-        return false;
-    }
-
     private static void SpawnLocomotives(StationLocoSpawner stationLocoSpawner)
     {
-        List<Car> carsFullyOnTrack = stationLocoSpawner.locoSpawnTrack.logicTrack.GetCarsFullyOnTrack();
+        List<Car> carsFullyOnTrack = stationLocoSpawner.locoSpawnTrack.LogicTrack().GetCarsFullyOnTrack();
         if (carsFullyOnTrack.Count != 0 && carsFullyOnTrack.Exists(car => CarTypes.IsLocomotive(car.carType)))
             return;
         List<TrainCarLivery> trainCarTypes = new(stationLocoSpawner.locoTypeGroupsToSpawn[stationLocoSpawner.nextLocoGroupSpawnIndex].liveries);
         stationLocoSpawner.nextLocoGroupSpawnIndex = Random.Range(0, stationLocoSpawner.locoTypeGroupsToSpawn.Count);
-        List<TrainCar> unusedTrainCars =
-            SingletonBehaviour<CarSpawner>.Instance.SpawnCarTypesOnTrack(trainCarTypes, null, stationLocoSpawner.locoSpawnTrack, true, true, flipTrainConsist: stationLocoSpawner.spawnRotationFlipped);
+
+        List<Car> unusedTrainCars =
+            CarSpawner.Instance.SpawnCarTypesOnTrack
+            (
+                trainCarTypes,
+                null,
+                stationLocoSpawner.locoSpawnTrack,
+                true,
+                true,
+                flipTrainConsist: stationLocoSpawner.spawnRotationFlipped
+            )
+            ?.Select(TC => TC.logicCar)
+            ?.ToList();
+
         if (unusedTrainCars != null)
-            SingletonBehaviour<UnusedTrainCarDeleter>.Instance.MarkForDelete(unusedTrainCars);
+            UnusedTrainCarDeleter.Instance.MarkForDelete(unusedTrainCars);
     }
 }
 

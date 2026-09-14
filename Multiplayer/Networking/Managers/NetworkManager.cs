@@ -1,73 +1,126 @@
+using LiteNetLib;
+using LiteNetLib.Utils;
+using Multiplayer.API;
+using Multiplayer.Networking.Data;
+using Multiplayer.Networking.Data.Items;
+using Multiplayer.Networking.Data.Jobs;
+using Multiplayer.Networking.Data.Player;
+using Multiplayer.Networking.Data.Train;
+using Multiplayer.Networking.Data.World;
+using Multiplayer.Networking.Packets.Clientbound.Train;
+using Multiplayer.Networking.Serialization;
+using Multiplayer.Networking.TransportLayers;
 using System;
 using System.Net;
 using System.Net.Sockets;
-using LiteNetLib;
-using LiteNetLib.Utils;
-using Multiplayer.Networking.Data;
-using Multiplayer.Networking.Serialization;
 
-namespace Multiplayer.Networking.Listeners;
+namespace Multiplayer.Networking.Managers;
 
-public abstract class NetworkManager : INetEventListener
+public abstract class NetworkManager
 {
+    protected const int LATENCY_FLAG = 150;
+
     protected readonly NetPacketProcessor netPacketProcessor;
-    protected readonly NetManager netManager;
     protected readonly NetDataWriter cachedWriter = new();
+
+    private readonly ITransport transport;
+    //protected readonly NetManager netManager;
 
     protected abstract string LogPrefix { get; }
 
-    public NetStatistics Statistics => netManager.Statistics;
-    public bool IsRunning => netManager.IsRunning;
+    public NetStatistics Statistics => transport.Statistics;
+    public bool IsRunning => transport.IsRunning;
     public bool IsProcessingPacket { get; private set; }
 
     protected NetworkManager(Settings settings)
     {
-        netManager = new NetManager(this) {
-            DisconnectTimeout = 10000
-        };
-        netPacketProcessor = new NetPacketProcessor(netManager);
+        netPacketProcessor = new NetPacketProcessor();
+        //transport = new LiteNetLibTransport();
+        transport = new SteamWorksTransport();
+
+        transport.OnConnectionRequest += OnConnectionRequest;
+        transport.OnPeerConnected += OnPeerConnected;
+        transport.OnPeerDisconnected += OnPeerDisconnected;
+        transport.OnNetworkReceive += OnNetworkReceive;
+        transport.OnNetworkError += OnNetworkError;
+        transport.OnNetworkLatencyUpdate += OnNetworkLatencyUpdate;
+
         RegisterNestedTypes();
+
         OnSettingsUpdated(settings);
         Settings.OnSettingsUpdated += OnSettingsUpdated;
-        // ReSharper disable once VirtualMemberCallInConstructor
+
         Subscribe();
+
     }
 
     private void RegisterNestedTypes()
     {
         netPacketProcessor.RegisterNestedType(BogieData.Serialize, BogieData.Deserialize);
+        netPacketProcessor.RegisterNestedType<JobUpdateStruct>();
+        netPacketProcessor.RegisterNestedType(JobData.Serialize, JobData.Deserialize);
         netPacketProcessor.RegisterNestedType(ModInfo.Serialize, ModInfo.Deserialize);
         netPacketProcessor.RegisterNestedType(RigidbodySnapshot.Serialize, RigidbodySnapshot.Deserialize);
+        netPacketProcessor.RegisterNestedType(StationsChainNetworkData.Serialize, StationsChainNetworkData.Deserialize);
         netPacketProcessor.RegisterNestedType(TrainsetMovementPart.Serialize, TrainsetMovementPart.Deserialize);
         netPacketProcessor.RegisterNestedType(TrainsetSpawnPart.Serialize, TrainsetSpawnPart.Deserialize);
+        netPacketProcessor.RegisterNestedType(CouplingData.Serialize, CouplingData.Deserialize);
+        netPacketProcessor.RegisterNestedType(TrainCarHealthData.Serialize, TrainCarHealthData.Deserialize);
+        netPacketProcessor.RegisterNestedType(PitStopPlugMappingData.Serialize, PitStopPlugMappingData.Deserialize);
+        netPacketProcessor.RegisterNestedType(LocoResourceModuleData.Serialize, LocoResourceModuleData.Deserialize);
+        netPacketProcessor.RegisterNestedType(PitStopPlugData.Serialize, PitStopPlugData.Deserialize);
+        netPacketProcessor.RegisterNestedType(PlayerItemSaveData.Serialize, PlayerItemSaveData.Deserialize);
+        netPacketProcessor.RegisterNestedType(PlayerTrackingData.Serialize, PlayerTrackingData.Deserialize);
         netPacketProcessor.RegisterNestedType(Vector2Serializer.Serialize, Vector2Serializer.Deserialize);
         netPacketProcessor.RegisterNestedType(Vector3Serializer.Serialize, Vector3Serializer.Deserialize);
+        netPacketProcessor.RegisterNestedType(ColorSerializer.Serialize, ColorSerializer.Deserialize);
     }
 
-    private void OnSettingsUpdated(Settings settings)
+    public virtual void OnSettingsUpdated(Settings settings)
     {
-        if (netManager == null)
-            return;
-        netManager.NatPunchEnabled = settings.EnableNatPunch;
-        netManager.AutoRecycle = settings.ReuseNetPacketReaders;
-        netManager.UseNativeSockets = settings.UseNativeSockets;
-        netManager.EnableStatistics = settings.ShowStats;
-        netManager.SimulatePacketLoss = settings.SimulatePacketLoss;
-        netManager.SimulateLatency = settings.SimulateLatency;
-        netManager.SimulationPacketLossChance = settings.SimulationPacketLossChance;
-        netManager.SimulationMinLatency = settings.SimulationMinLatency;
-        netManager.SimulationMaxLatency = settings.SimulationMaxLatency;
+        transport?.UpdateSettings(settings);
     }
 
     public void PollEvents()
     {
-        netManager.PollEvents();
+        //netManager.PollEvents();
+        transport?.PollEvents();
     }
 
-    public void Stop()
+    public virtual bool Start()
     {
-        netManager.Stop(true);
+        NetIdProvider.Instance.CheckInitialization();
+        return transport.Start();
+    }
+    public virtual bool Start(IPAddress ipv4, IPAddress ipv6, int port)
+    {
+        return transport.Start(ipv4, ipv6, port);
+    }
+    public virtual bool Start(int port)
+    {
+        return transport.Start(port);
+    }
+
+    protected virtual ITransportPeer Connect(string address, int port, NetDataWriter netDataWriter)
+    {
+        return transport.Connect(address, port, netDataWriter);
+    }
+
+
+    public virtual void Stop()
+    {
+        transport.Stop(true);
+
+        transport.OnConnectionRequest -= OnConnectionRequest;
+        transport.OnPeerConnected -= OnPeerConnected;
+        transport.OnPeerDisconnected -= OnPeerDisconnected;
+        transport.OnNetworkReceive -= OnNetworkReceive;
+        transport.OnNetworkError -= OnNetworkError;
+        transport.OnNetworkLatencyUpdate -= OnNetworkLatencyUpdate;
+
         Settings.OnSettingsUpdated -= OnSettingsUpdated;
+
+        NetIdProvider.Destroy(NetIdProvider.Instance);
     }
 
     protected NetDataWriter WritePacket<T>(T packet) where T : class, new()
@@ -77,17 +130,34 @@ public abstract class NetworkManager : INetEventListener
         return cachedWriter;
     }
 
-    protected void SendPacket<T>(NetPeer peer, T packet, DeliveryMethod deliveryMethod) where T : class, new()
+    protected NetDataWriter WriteNetSerializablePacket<T>(T packet) where T : INetSerializable, new()
+    {
+        cachedWriter.Reset();
+        netPacketProcessor.WriteNetSerializable(cachedWriter, ref packet);
+        return cachedWriter;
+    }
+
+    protected void SendPacket<T>(ITransportPeer peer, T packet, DeliveryMethod deliveryMethod) where T : class, new()
     {
         peer?.Send(WritePacket(packet), deliveryMethod);
     }
 
+    protected void SendNetSerializablePacket<T>(ITransportPeer peer, T packet, DeliveryMethod deliveryMethod) where T : INetSerializable, new()
+    {
+        peer?.Send(WriteNetSerializablePacket(packet), deliveryMethod);
+    }
+
+    //protected void SendUnconnectedPacket<T>(T packet, string ipAddress, int port) where T : class, new()
+    //{
+    //    transport.SendUnconnectedMessage(WritePacket(packet), ipAddress, port);
+    //}
+
     protected abstract void Subscribe();
 
     #region Net Events
-
-    public void OnNetworkReceive(NetPeer peer, NetPacketReader reader, byte channelNumber, DeliveryMethod deliveryMethod)
+    public void OnNetworkReceive(ITransportPeer peer, NetDataReader reader, byte channel, DeliveryMethod deliveryMethod)
     {
+        //LogDebug(() => $"NetworkManager.OnNetworkReceive()");
         try
         {
             IsProcessingPacket = true;
@@ -95,7 +165,7 @@ public abstract class NetworkManager : INetEventListener
         }
         catch (ParseException e)
         {
-            Multiplayer.LogWarning($"Failed to parse packet: {e.Message}");
+            Multiplayer.LogWarning($"[{GetType()}] Failed to parse packet: {e.Message}\r\n{e.StackTrace}");
         }
         finally
         {
@@ -110,13 +180,27 @@ public abstract class NetworkManager : INetEventListener
 
     public void OnNetworkReceiveUnconnected(IPEndPoint remoteEndPoint, NetPacketReader reader, UnconnectedMessageType messageType)
     {
-        // todo
+        //Multiplayer.Log($"OnNetworkReceiveUnconnected({remoteEndPoint}, {messageType})");
+        try
+        {
+            IsProcessingPacket = true;
+            netPacketProcessor.ReadAllPackets(reader, remoteEndPoint);
+        }
+        catch (ParseException e)
+        {
+            Multiplayer.LogWarning($"Failed to parse packet: {e.Message}");
+        }
+        finally
+        {
+            IsProcessingPacket = false;
+        }
     }
 
-    public abstract void OnPeerConnected(NetPeer peer);
-    public abstract void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo);
-    public abstract void OnNetworkLatencyUpdate(NetPeer peer, int latency);
-    public abstract void OnConnectionRequest(ConnectionRequest request);
+    //Standard networking callbacks
+    public abstract void OnPeerConnected(ITransportPeer peer);
+    public abstract void OnPeerDisconnected(ITransportPeer peer, DisconnectReason disconnectInfo);
+    public abstract void OnConnectionRequest(NetDataReader requestData, IConnectionRequest request);
+    public abstract void OnNetworkLatencyUpdate(ITransportPeer peer, int latency);
 
     #endregion
 

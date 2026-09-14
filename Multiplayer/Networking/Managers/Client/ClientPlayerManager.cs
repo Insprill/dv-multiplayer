@@ -1,71 +1,163 @@
-using System;
-using System.Collections.Generic;
 using DV;
 using Multiplayer.Components.Networking.Player;
+using Multiplayer.Networking.Data.Player;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Multiplayer.Networking.Listeners;
+namespace Multiplayer.Networking.Managers.Client;
 
-public class ClientPlayerManager
+public class ClientPlayerManager : IDisposable
 {
+    private const float CULLING_CHECK_INTERVAL = 2f;
+    private const float CULLING_CHECK_INTERVAL_EXTERNAL_CAM = 1f;
+    private const float CULL_SQR_DISTANCE = 150f * 150f;
+    private const float ACTIVATE_SQR_DISTANCE = 145f * 145f;
+
     private readonly Dictionary<byte, NetworkedPlayer> playerMap = new();
 
-    public Action<byte, NetworkedPlayer> OnPlayerConnected;
-    public Action<byte, NetworkedPlayer> OnPlayerDisconnected;
+    public Action<NetworkedPlayer> OnPlayerConnected;
+    public Action<NetworkedPlayer> OnPlayerDisconnected;
+    public Action<NetworkedPlayer> OnPlayerPrefsUpdated;
     public IReadOnlyCollection<NetworkedPlayer> Players => playerMap.Values;
 
-    private readonly GameObject playerPrefab;
+    private GameObject playerTagPrefab => Multiplayer.AssetIndex.PlayerTag;
+
+    private Coroutine cullingRoutine;
 
     public ClientPlayerManager()
     {
-        playerPrefab = Multiplayer.AssetIndex.playerPrefab;
+        StartCulling();
     }
 
-    public bool TryGetPlayer(byte id, out NetworkedPlayer player)
+    public void StartCulling()
     {
-        return playerMap.TryGetValue(id, out player);
+        if (cullingRoutine != null)
+        {
+            CoroutineManager.Instance.Stop(cullingRoutine);
+            cullingRoutine = null;
+        }
+
+        cullingRoutine = CoroutineManager.Instance.StartCoroutine(CullingCoro());
     }
 
-    public void AddPlayer(byte id, string username, Guid guid)
+    void IDisposable.Dispose()
     {
-        GameObject go = Object.Instantiate(playerPrefab, WorldMover.Instance.originShiftParent);
-        go.layer = LayerMask.NameToLayer(Layers.Player);
-        NetworkedPlayer networkedPlayer = go.AddComponent<NetworkedPlayer>();
-        networkedPlayer.Id = id;
-        networkedPlayer.Username = username;
-        networkedPlayer.Guid = guid;
-        playerMap.Add(id, networkedPlayer);
-        OnPlayerConnected?.Invoke(id, networkedPlayer);
-    }
-
-    public void RemovePlayer(byte id)
-    {
-        if (!playerMap.TryGetValue(id, out NetworkedPlayer networkedPlayer))
+        if (UnloadWatcher.isQuitting)
             return;
-        OnPlayerDisconnected?.Invoke(id, networkedPlayer);
-        Object.Destroy(networkedPlayer.gameObject);
-        playerMap.Remove(id);
+
+        if (cullingRoutine != null)
+            CoroutineManager.Instance?.Stop(cullingRoutine);
     }
 
-    public void UpdatePing(byte id, int ping)
+    public bool TryGetPlayer(byte playerid, out NetworkedPlayer player)
     {
-        if (!playerMap.TryGetValue(id, out NetworkedPlayer player))
+        return playerMap.TryGetValue(playerid, out player);
+    }
+
+    public void AddPlayer(byte playerId, string username, string crewName, string characterId, bool isVr)
+    {
+        if (playerMap.ContainsKey(playerId))
+        {
+            Multiplayer.LogWarning($"Player with id {playerId} already exists. Removing existing player {playerMap[playerId].Username}");
+            RemovePlayer(playerId);
+        }
+
+        // Player model holder
+        GameObject go = new($"Player[{username}]");
+        go.transform.SetParent(WorldMover.OriginShiftParent);
+        go.layer = LayerMask.NameToLayer(Layers.Player);
+
+        // Setup player tag
+        Object.Instantiate(playerTagPrefab, go.transform);
+        NetworkedPlayer networkedPlayer = go.AddComponent<NetworkedPlayer>();
+
+        networkedPlayer.PlayerId = playerId;
+        networkedPlayer.Username = username;
+        networkedPlayer.CrewName = crewName;
+        networkedPlayer.IsVR = isVr;
+
+        // Get player model from registry and apply it to the player
+        var model = Multiplayer.PlayerModelRegistry.GetModelById(characterId);
+
+        networkedPlayer.ChangeModel(model.Prefab);
+
+        playerMap.Add(playerId, networkedPlayer);
+        OnPlayerConnected?.Invoke(networkedPlayer);
+    }
+
+    public void RemovePlayer(byte playerid)
+    {
+        if (!TryGetPlayer(playerid, out NetworkedPlayer networkedPlayer))
+            return;
+
+        OnPlayerDisconnected?.Invoke(networkedPlayer);
+        Object.Destroy(networkedPlayer.gameObject);
+        playerMap.Remove(playerid);
+    }
+
+    public void UpdatePing(byte playerId, int ping)
+    {
+        if (!TryGetPlayer(playerId, out NetworkedPlayer player))
             return;
         player.SetPing(ping);
     }
 
-    public void UpdatePosition(byte id, Vector3 position, Vector3 moveDir, float rotation, bool isJumping, bool isOnCar)
+    public void UpdatePosition(byte playerId, PlayerTrackingData trackingData, PlayerPostureFlags posture, bool isOnCar, ushort carId)
     {
-        if (!playerMap.TryGetValue(id, out NetworkedPlayer player))
-            return;
-        player.UpdatePosition(position, moveDir, rotation, isJumping, isOnCar);
-    }
-
-    public void UpdateCar(byte playerId, ushort carId)
-    {
-        if (!playerMap.TryGetValue(playerId, out NetworkedPlayer player))
+        if (!TryGetPlayer(playerId, out NetworkedPlayer player))
             return;
         player.UpdateCar(carId);
+        player.UpdatePosition(trackingData, posture, isOnCar);
+    }
+
+    public void UpdatePreferences(byte playerId, Dictionary<PlayerPreference, string> preferences)
+    {
+        Multiplayer.LogDebug(() => $"Updating preferences for playerId: {playerId}, Preference count : {preferences?.Count}");
+
+        if (!TryGetPlayer(playerId, out NetworkedPlayer player))
+            return;
+
+        if (preferences.TryGetValue(PlayerPreference.CrewName, out string crewName))
+            player.CrewName = crewName;
+
+        if (preferences.TryGetValue(PlayerPreference.CharacterModel, out string characterId))
+        {
+            var model = Multiplayer.PlayerModelRegistry.GetModelById(characterId);
+            player.ChangeModel(model.Prefab);
+        }
+
+        OnPlayerPrefsUpdated?.Invoke(player);
+    }
+
+    private IEnumerator CullingCoro()
+    {
+        while (true)
+        {
+            float interval = PlayerManager.ActiveCamera == PlayerManager.PlayerCamera ? CULLING_CHECK_INTERVAL : CULLING_CHECK_INTERVAL_EXTERNAL_CAM;
+
+            yield return new WaitForSeconds(interval);
+
+            var localPlayer = PlayerManager.ActiveCamera?.transform ?? PlayerManager.PlayerTransform;
+            Vector3 localPos = localPlayer?.position ?? Vector3.zero;
+
+            if (Players == null || Players.Count == 0)
+                continue;
+
+            foreach (var player in Players)
+            {
+                if (player == null)
+                    continue;
+
+                float sqrDist = (player.transform.position - localPos).sqrMagnitude;
+
+                if (player.IsCulled && sqrDist < ACTIVATE_SQR_DISTANCE)
+                    player.IsCulled = false;
+                else if (!player.IsCulled && sqrDist > CULL_SQR_DISTANCE)
+                    player.IsCulled = true;
+            }
+        }
     }
 }

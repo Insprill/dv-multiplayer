@@ -1,9 +1,13 @@
 {
-  "Id": "Multiplayer",
-  "Version": "0.1.0",
-  "DisplayName": "Multiplayer",
-  "Author": "Insprill",
-  "EntryMethod": "Multiplayer.Multiplayer.Load",
-  "ManagerVersion": "0.27.3",
-  "LoadAfter": [ "RemoteDispatch" ]
+    "Id":  "Multiplayer",
+    "Version":  "0.1.16.0",
+    "DisplayName":  "Multiplayer",
+    "Author":  "Insprill, Macka, Morm",
+    "EntryMethod":  "Multiplayer.Multiplayer.Load",
+    "ManagerVersion":  "0.27.3",
+    "LoadAfter":  [
+
+                  ],
+    "HomePage":  "https://www.nexusmods.com/derailvalley/mods/1070",
+    "Repository":  "https://raw.githubusercontent.com/AMacro/dv-multiplayer/refs/heads/beta/releases.json"
 }

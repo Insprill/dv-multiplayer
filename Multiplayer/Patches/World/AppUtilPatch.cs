@@ -1,14 +1,23 @@
 using DV;
 using HarmonyLib;
-using Multiplayer.Components.Networking;
+using Multiplayer.Utils;
 
 namespace Multiplayer.Patches.World;
 
-[HarmonyPatch(typeof(AppUtil), nameof(AppUtil.RequestSystemOnValueChanged))]
-public static class AppUtil_RequestSystemOnValueChanged_Patch
+[HarmonyPatch(typeof(AppUtil))]
+public static class AppUtilPatch
 {
-    private static bool Prefix(AppUtil __instance, float value)
+    [HarmonyPatch(nameof(AppUtil.RequestSystemOnValueChanged))]
+    [HarmonyPrefix]
+    private static bool RequestSystemOnValueChanged(AppUtil __instance, float value)
     {
-        return (__instance.IsTimePaused && value < 0.5f) || (NetworkLifecycle.Instance.IsHost() && NetworkLifecycle.Instance.Server.PlayerCount == 1);
+        return (__instance.IsTimePaused && value < 0.5f) || DvExtensions.AllowPause();
+    }
+
+    [HarmonyPatch(nameof(AppUtil.RequestPause))]
+    [HarmonyPrefix]
+    private static bool RequestPause(AppUtil __instance, object caller, bool paused, int priority)
+    {
+        return !paused || DvExtensions.AllowPause();
     }
 }

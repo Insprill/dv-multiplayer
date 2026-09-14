@@ -20,8 +20,14 @@ public class TrainSpeedQueue : TickedQueue<float>
     {
         // TrainCar#SetForwardSpeed doesn't check for derailed bogies
         trainCar.rb.velocity = trainCar.transform.forward * snapshot;
-        foreach (Bogie bogey in trainCar.Bogies)
-            if (!bogey.HasDerailed)
-                bogey.rb.velocity = bogey.transform.forward * snapshot;
+
+        if (trainCar.Bogies != null)
+        {
+            foreach (Bogie bogey in trainCar.Bogies)
+            {
+                if (bogey != null && !bogey.HasDerailed)
+                    bogey.rb.velocity = bogey.transform.forward * snapshot;
+            }
+        }
     }
 }

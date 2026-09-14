@@ -1,4 +1,4 @@
-﻿using DV.Localization;
+using DV.Localization;
 using DV.UI;
 using HarmonyLib;
 using Multiplayer.Utils;
@@ -7,37 +7,62 @@ using UnityEngine.UI;
 
 namespace Multiplayer.Patches.MainMenu;
 
-[HarmonyPatch(typeof(MainMenuController), "Awake")]
-public static class MainMenuController_Awake_Patch
+/// <summary>
+/// Harmony patch MainMenuController to add a Multiplayer button.
+/// </summary>
+[HarmonyPatch(typeof(MainMenuController))]
+public static class MainMenuControllerPatch
 {
-    public static GameObject MultiplayerButton;
+    public static AMainMenuProvider MenuProvider => MainMenuControllerInstance.provider;
+    public static GameObject MultiplayerButton { get; private set; }
+    public static MainMenuController MainMenuControllerInstance { get; private set; }
 
-    private static void Prefix(MainMenuController __instance)
+    /// <summary>
+    /// Prefix method to run before MainMenuController's Awake method.
+    /// </summary>
+    /// <param name="__instance">The instance of MainMenuController.</param>
+    [HarmonyPatch(typeof(MainMenuController), nameof(MainMenuController.Awake))]
+    [HarmonyPrefix]
+    private static void Awake(MainMenuController __instance)
     {
-        GameObject button = __instance.FindChildByName("ButtonSelectable Sessions");
-        if (button == null)
+        MainMenuControllerInstance = __instance;
+
+        // Find the Sessions button to base the Multiplayer button on
+        GameObject sessionsButton = __instance.FindChildByName("ButtonSelectable Sessions");
+        if (sessionsButton == null)
         {
             Multiplayer.LogError("Failed to find Sessions button!");
             return;
         }
 
-        button.SetActive(false);
-        MultiplayerButton = Object.Instantiate(button, button.transform.parent);
-        button.SetActive(true);
+        // Deactivate the sessions button temporarily to duplicate it
+        sessionsButton.SetActive(false);
+        MultiplayerButton = Object.Instantiate(sessionsButton, sessionsButton.transform.parent);
+        sessionsButton.SetActive(true);
 
-        MultiplayerButton.transform.SetSiblingIndex(button.transform.GetSiblingIndex() + 1);
+        // Configure the new Multiplayer button
+        MultiplayerButton.transform.SetSiblingIndex(sessionsButton.transform.GetSiblingIndex() + 1);
         MultiplayerButton.name = "ButtonSelectable Multiplayer";
 
+        // Set the localization key for the new button
         Localize localize = MultiplayerButton.GetComponentInChildren<Localize>();
         localize.key = Locale.MAIN_MENU__JOIN_SERVER_KEY;
 
-        // Reset existing localization components that were added when the Sessions button was initialized.
+        // Remove existing localization components to reset them
         Object.Destroy(MultiplayerButton.GetComponentInChildren<I2.Loc.Localize>());
-        UIElementTooltip tooltip = MultiplayerButton.GetComponent<UIElementTooltip>();
-        tooltip.disabledKey = null;
-        tooltip.enabledKey = null;
+        MultiplayerButton.ResetTooltip();
 
-        GameObject icon = MultiplayerButton.FindChildByName("icon");
+        // Set the icon for the new Multiplayer button
+        SetButtonIcon(MultiplayerButton);
+    }
+
+    /// <summary>
+    /// Sets the icon for the Multiplayer button.
+    /// </summary>
+    /// <param name="button">The button to set the icon for.</param>
+    private static void SetButtonIcon(GameObject button)
+    {
+        GameObject icon = button.FindChildByName("icon");
         if (icon == null)
         {
             Multiplayer.LogError("Failed to find icon on Sessions button, destroying the Multiplayer button!");

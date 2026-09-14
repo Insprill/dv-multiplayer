@@ -5,6 +5,7 @@ namespace Multiplayer.Networking.Packets.Clientbound.World;
 public class ClientboundGameParamsPacket
 {
     public string SerializedGameParams { get; set; }
+    public bool FastTravelAdvancesTime { get; set; }
 
     public void Apply(GameParams gameParams)
     {

@@ -1,9 +1,19 @@
-using System;
-using System.Collections;
+using DV;
+using DV.CabControls;
+using DV.Common;
+using DV.Logic.Job;
 using DV.UserManagement;
+using DV.Utils;
+using Multiplayer.Components.Networking;
+using Multiplayer.Components.Networking.World;
 using Multiplayer.Networking.Packets.Clientbound;
 using Multiplayer.Patches.SaveGame;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using UnityEngine;
 
 namespace Multiplayer.Components.SaveGame;
@@ -13,6 +23,8 @@ public class StartGameData_ServerSave : AStartGameData
     private SaveGameData saveGameData;
 
     private ClientboundSaveGameDataPacket packet;
+
+    public override bool IsStartingNewSession => false;
 
     public void SetFromPacket(ClientboundSaveGameDataPacket packet)
     {
@@ -35,8 +47,51 @@ public class StartGameData_ServerSave : AStartGameData
         saveGameData.SetBool(SaveGameKeys.Damage_Popup_Shown, true);
 
         CareerManagerDebtControllerPatch.HasDebt = packet.HasDebt;
-    }
 
+        Multiplayer.LogDebug(() =>
+        {
+            string unlockedGen = string.Join(", ", UnlockablesManager.Instance.UnlockedGeneralLicenses);
+            string packetGen = string.Join(", ", packet.AcquiredGeneralLicenses);
+
+            string unlockedJob = string.Join(", ", UnlockablesManager.Instance.UnlockedJobLicenses);
+            string packetJob = string.Join(", ", packet.AcquiredJobLicenses);
+
+            return $"StartGameData_ServerSave.SetFromPacket() UnlockedGen: {{{unlockedGen}}}, PacketGen: {{{packetGen}}},  UnlockedJob: {{{unlockedJob}}}, PacketJob: {{{packetJob}}}";
+        });
+
+        // Load player inventory
+        List<StorageItemData> items = [];
+
+        foreach (var item in packet.PlayerItems)
+        {
+            StorageItemData itemData = new
+            (
+                item.ItemPrefabName,
+                new Vector3(item.ItemPositionX, item.ItemPositionY, item.ItemPositionZ),
+                new Quaternion(item.ItemRotationX, item.ItemRotationY, item.ItemRotationZ, item.ItemRotationW),
+                item.BelongsToPlayer,
+                item.IsGrabbed,
+                item.CarGuid,
+                item.State,
+                item.InventorySlotIndex,
+                item.ContainerSlotIndex,
+                item.InLockedSlot,
+                item.IsDropped,
+                item.ContainerId
+            );
+
+            items.Add(itemData);
+        }
+        Multiplayer.LogDebug(() => $"StartGameData_ServerSave.SetFromPacket() PlayerItems count: {packet.PlayerItems.Length}, items string count: {items.Count()}");
+        saveGameData.SetObject(SaveGameKeys.Storage_Inventory, items);
+
+        //For clients we need to have a session - new users may not have a session and this may also be causing problems with licenses syncing
+        if (NetworkLifecycle.Instance.IsHost())
+            return;
+
+        Client_GameSession.SetCurrent(new Client_GameSession(packet.GameMode, DifficultyToUse));
+    }
+    
     public override void Initialize()
     {
         throw new InvalidOperationException($"Use {nameof(SetFromPacket)} instead!");
@@ -51,16 +106,23 @@ public class StartGameData_ServerSave : AStartGameData
 
     public override IEnumerator DoLoad(Transform playerContainer)
     {
+
         Transform playerTransform = playerContainer.transform;
         playerTransform.position = PlayerManager.IsPlayerPositionValid(packet.Position) ? packet.Position : LevelInfo.Instance.defaultSpawnPosition;
         playerTransform.eulerAngles = new Vector3(0, packet.Rotation, 0);
 
         LicenseManager.Instance.LoadData(saveGameData);
 
+        Multiplayer.Log("Waiting for Logic Controller...");
+        yield return new WaitUntil(() => LogicController.Instance.initialized);
+        Multiplayer.Log("Logic Controller initialised.");
+
+        JobsManager.Instance.LoadTime(packet.JobManagerTime);
+
         if (saveGameData.GetString(SaveGameKeys.Game_mode) == "FreeRoam")
             LicenseManager.Instance.GrabAllGameModeSpecificUnlockables(SaveGameKeys.Game_mode);
-        else
-            StartingItemsController.Instance.AddStartingItems(saveGameData, true);
+        //else
+        StartingItemsController.Instance.AddStartingItems(saveGameData, true);
 
         // if (packet.Debt_existing_locos != null)
         //     LocoDebtController.Instance.LoadExistingLocosDebtsSaveData(packet.Debt_existing_locos.Select(JObject.Parse).ToArray());
@@ -91,5 +153,6 @@ public class StartGameData_ServerSave : AStartGameData
         return false;
     }
 
-    public override void MakeCurrent(){}
+    public override void MakeCurrent() { }
 }
+
